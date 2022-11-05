@@ -1,16 +1,16 @@
 {
-  "name": "Obverse",
+  "name": "SocialChat v2",
   "tree": {
     "$className": "DataModel",
 
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "$path": "src/ServerScriptService"
+      "$path": "src/Server"
     },
 
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
-      "$path": "src/ReplicatedStorage"
+      "$path": "src/Shared"
     },
 
     "StarterPlayer": {
@@ -18,19 +18,7 @@
 
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "$path": "src/StarterPlayer/StarterPlayerScripts"
-      },  
-
-      "StarterCharacterScripts": {
-        "$className": "StarterCharacterScripts",
-        "$path": "src/StarterPlayer/StarterCharacterScripts"
-      }  
-    },
-
-    "SoundService": {
-      "$className": "SoundService",
-      "$properties": {
-        "RespectFilteringEnabled": true
+        "$path": "src/Client"
       }
     }
   }
