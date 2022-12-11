@@ -7,10 +7,10 @@
 
 ]]--
 
-local Markdown = require(script.Markdown);
-local MarkupGUI = script.Markup_Example
+local RichString = require(script.RichString);
+local Markdown = require(script.RichString.Markdown);
 
-MarkupGUI.main.Text = Markdown:Markup([[
+local str = [[
     This text was written by my string **markup** tool!
     
     You can write your **OWN** richText using my *tool* now :)
@@ -20,6 +20,21 @@ MarkupGUI.main.Text = Markdown:Markup([[
     
     PS: ||whar? \*cool\*||
     ~~This text should be crossed out~~
-]]);
+]]
 
+--// Markdown Example
+local MarkupGUI = script.Markup_Example
+
+MarkupGUI.main.Text = Markdown:Markup(str);
 MarkupGUI.Parent = game.Players.LocalPlayer.PlayerGui
+
+--// RichString usage
+local MarkdownObject = RichString.new({
+    Font = Enum.Font.Arial
+});
+
+MarkdownObject:Define("myCoolFunction", function(connectedText : string)
+    print("Connected:", connectedText);
+end);
+
+MarkdownObject:Generate(MarkupGUI.yeah, str);
