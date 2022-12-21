@@ -18,11 +18,13 @@ local str = [[
     
     PS: ||whar? \*cool\*||
     ~~This text should be crossed out~~
+
+    /shrug
 ]]
 
 local str2 = [[
     This is a second **TextGroup!**
-    Make sure you dont *mess up* the (__sizing__)[thisIsCool] and the ~~positioning~~.
+    Make sure (:test:)[thisIsCool] you dont *mess up* the __sizing__ and the ~~positioning~~.
 ]]
 
 --// Markdown Example
@@ -40,11 +42,18 @@ MarkdownObject:Define("myCoolFunction", function(connectedText : string)
     MarkupGUI.two.Visible = not MarkupGUI.two.Visible
 end);
 
+MarkdownObject:Replace("/shrug", "¯\\_(ツ)_/¯");
+
 local MarkdownLabels = MarkdownObject:Generate(MarkupGUI.yeah, str);
 
 local MD2 = RichString.new({
     Font = Enum.Font.Antique
 });
+
+MD2:Replace(":test:", function()
+    local test = Instance.new("ImageButton");
+    return test
+end);
 
 MD2:Define("thisIsCool", function(connectedText : string)
     print("CONNECTED:", connectedText);

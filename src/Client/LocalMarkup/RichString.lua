@@ -44,7 +44,8 @@ function RichString.new(properties : table?) : stringObject
 
         --// Programmable \\--
         
-        ["_hyperFunctions"] = {}
+        ["_hyperFunctions"] = {}, -- { key = function }
+        ["_replacements"] = {} -- { keyword = function OR string }
 
     }, stringObject);
 end
@@ -62,6 +63,13 @@ function stringObject:Define(key : string, callback : callback)
     end
 
     self._hyperFunctions[key] = callback
+end
+
+function stringObject:Replace(keyWord : string, replacement : callback | string)
+    assert(type(keyWord) == "string", "A string type was not passed for the \"key\" parameter. Recieved \""..(type(keyWord)).."\"");
+    assert(not self._replacements[keyWord], "The provided KeyWord \""..(keyWord).."\" is already in use!");
+
+    self._replacements[keyWord] = replacement
 end
 
 --- Creates a new set of TextLabels under the provided parent Instance using previously assigned property metadata. [ THIS WILL NOT FORMAT YOUR LABELS! You must use the SmartText module for further functuality! ]
@@ -87,34 +95,57 @@ function stringObject:Generate(Parent : GuiObject, Text : string, callback : cal
             ]]);
         end
 
-        for i, utf8Code in utf8.codes(Word) do -- We need to use utf8 for special characters like Japanese symbols, etc.
-            if ((hyperText) and ((i < allowedIndexes[1]) or (i > allowedIndexes[2]))) then continue; end
+        --// Replacements
+        --\\ Here we can look for phrase replacements (if any)
 
-            local NewTextObject = CreateTextObject(
-                self.Font,
-                utf8.char(utf8Code),
-                (hyperText and "TextButton") or "TextLabel"
-            );
-            
-            if (self.MarkdownEnabled) then -- We only need to markdown our string IF "MarkdownEnabled" is true
-                for _, format in ipairs(Formatting) do
-                    NewTextObject.Text = string.format(format, NewTextObject.Text);
-                end
-                
-                NewTextObject.RichText = true
+        local PurifiedText = ((hyperText or Word):gsub("%s+", ""):gsub(" ", "")); -- We need to use gsub to remove whitespace & newline(s)
+        local PhraseReplacement : string | callback = self._replacements[PurifiedText];
+
+        if (type(PhraseReplacement) == "function") then
+            local ReplacementObject = PhraseReplacement(); -- This function MUST return an instance!
+
+            if ((not ReplacementObject) or (typeof(ReplacementObject) ~= "Instance") or (not ReplacementObject:IsA("GuiObject"))) then
+                error("RichString replacement error. The replacement for \""..(PurifiedText).."\" did not return a GuiObject Instance!");
             end
 
-            if (hyperFunction) then
-                NewTextObject.MouseButton1Click:Connect(function()
-                    hyperFunction(hyperText);
+            if (hyperFunction and (ReplacementObject:IsA("ImageButton") or ReplacementObject:IsA("TextButton"))) then
+                ReplacementObject.MouseButton1Click:Connect(function()
+                    hyperFunction(hyperText, hyperKey);
                 end);
             end
-            
-            table.insert(Graphemes, NewTextObject);
-            NewTextObject.Parent = Parent
 
-            if (callback) then
-                callback(NewTextObject);
+            table.insert(Graphemes, ReplacementObject);
+            ReplacementObject.Parent = Parent
+        else
+            for i, utf8Code in utf8.codes(PhraseReplacement or Word) do -- We need to use utf8 for special characters like Japanese symbols, etc.
+                if ((hyperText) and ((i < allowedIndexes[1]) or (i > allowedIndexes[2]))) then continue; end
+    
+                local NewTextObject = CreateTextObject(
+                    self.Font,
+                    utf8.char(utf8Code),
+                    (hyperText and "TextButton") or "TextLabel"
+                );
+                
+                if (self.MarkdownEnabled) then -- We only need to markdown our string IF "MarkdownEnabled" is true
+                    for _, format in ipairs(Formatting) do
+                        NewTextObject.Text = string.format(format, NewTextObject.Text);
+                    end
+                    
+                    NewTextObject.RichText = true
+                end
+    
+                if (hyperFunction) then
+                    NewTextObject.MouseButton1Click:Connect(function()
+                        hyperFunction(hyperText, hyperKey);
+                    end);
+                end
+                
+                table.insert(Graphemes, NewTextObject);
+                NewTextObject.Parent = Parent
+    
+                if (callback) then
+                    callback(NewTextObject);
+                end
             end
         end
 
@@ -126,7 +157,7 @@ function stringObject:Generate(Parent : GuiObject, Text : string, callback : cal
 
         table.insert(Labels, {
             ["Graphemes"] = Graphemes,
-            ["Content"] = hyperText or Word
+            ["Content"] = (not PhraseReplacement and (hyperKey or Word)) or nil
         });
     end
 

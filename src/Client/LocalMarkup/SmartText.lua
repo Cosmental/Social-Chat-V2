@@ -37,11 +37,6 @@ function SmartText.new(Container : GuiObject, properties : table?) : SmartString
 
         ["MinFontSize"] = (properties and properties.MinFontSize) or 0,
         ["MaxFontSize"] = (properties and properties.MaxFontSize) or 16,
-        
-        --// Behaviors \\--
-        
-        ["GroupMode"] = (properties and properties.GroupMode) or "Default", -- { "Default" : Applies LayoutOrder , "None" : All Together (no LayoutOrder) }
-        ["Margin"] = (properties and properties.Margin) or 0, -- Margin determines the distance between text groups
 
         --// Programmable \\--
 
@@ -68,18 +63,18 @@ end
 
 --// Metamethods
 
---- Adds a new TextGroup using the provided TextObjects and LayoutOrder (if any)
-function SmartStringObject:AddGroup(key : string, TextObjects : table, TextFont : Enum.Font, LayoutOrder : number?)
+--- Adds a new TextGroup using the provided TextObjects that originate from the RichString module
+function SmartStringObject:AddGroup(key : string, TextObjects : table, TextFont : Enum.Font)
     assert(type(key) == "string", "Expected \"string\" as an identifier key. Got \""..(type(key)).."\" instead!");
     assert(type(TextObjects) == "table", "Expected an array as a TextObject group. Got "..(type(TextObjects)).." instead!");
     assert(typeof(TextFont) == "EnumItem", "The provided Font Enum was not an EnumItem type! Got \""..(typeof(TextFont)).."\"");
     assert(table.find(Enum.Font:GetEnumItems(), TextFont), "The provided Font \""..(tostring(TextFont)).."\" was not a real Font EnumItem!");
-    assert(not LayoutOrder or type(LayoutOrder) == "number", "Expected \"number\" as a layout order. Got \""..(type(LayoutOrder)).."\" instead!");
     assert(not self._registeredTextGroups[key], "The provided identifier key has already been used! ( \""..(key).."\" is unavaliable. ) ");
 
     local GroupTextContent : string = ""
 
     for i, WordGroup in pairs(TextObjects) do
+        if (not WordGroup.Content) then continue; end
         GroupTextContent = (GroupTextContent..WordGroup.Content..((i ~= #TextObjects and " ") or ""));
     end
 
@@ -89,8 +84,7 @@ function SmartStringObject:AddGroup(key : string, TextObjects : table, TextFont 
             ["Content"] = GroupTextContent
         };
 
-        ["WordGroups"] = TextObjects,
-        ["LayoutOrder"] = LayoutOrder
+        ["WordGroups"] = TextObjects
     };
 
     self:Update();
@@ -152,9 +146,20 @@ function SmartStringObject:Update()
         --\\ We need to calculate the best size and position for our Grapheme word groups!
 
         for _, WordGroup in pairs(TextGroup.WordGroups) do
-            local WordSize = GetTextSize(WordGroup.Content, self.Container, GroupFontSize, TextGroup.Metadata.Font, true);
+            
+            --// Content Sizing Check
+            --\\ This is where we check to see if we need to create a newline or not!
 
-            if (TotalSizeX + WordSize.X >= MaxBounds.X) then
+            local ContentSize : number
+
+            if (WordGroup.Content) then
+                local WordSize = GetTextSize(WordGroup.Content, self.Container, GroupFontSize, TextGroup.Metadata.Font, true);
+                ContentSize = WordSize.X
+            else
+                ContentSize = GroupFontSize
+            end
+
+            if (TotalSizeX + ContentSize >= MaxBounds.X) then
                 TotalSizeY += LineYSpacing -- New Line indentation for cases where our WordGroup becomes too big
                 TotalSizeX = 0
             end
@@ -162,22 +167,35 @@ function SmartStringObject:Update()
             --// Individual Grapheme Sizing & Positioning
             --\\ Since our WordGroup's have different Font needs, we can scale things according to their desired inputs!
 
-            for _, GraphemeLabel in pairs(WordGroup.Graphemes) do
+            for _, GraphemeObject in pairs(WordGroup.Graphemes) do
+                if ((not GraphemeObject:IsA("TextLabel")) and (not GraphemeObject:IsA("TextButton")) and (not GraphemeObject:IsA("TextBox"))) then
+                    GraphemeObject.Size = UDim2.fromOffset(GroupFontSize, GroupFontSize);
+                    GraphemeObject.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
+                    TotalSizeX += GroupFontSize
+
+                    continue;
+                end
+
                 local GraphemeSize = GetTextSize(
-                    GraphemeLabel.Text:gsub("(\\?)<[^<>]->", ""), -- Gets rid of any richText formatting that may interfere with calculations
+                    GraphemeObject.Text:gsub("(\\?)<[^<>]->", ""), -- Gets rid of any richText formatting that may interfere with calculations
                     self.Container,
                     GroupFontSize,
-                    GraphemeLabel.Font
+                    GraphemeObject.Font
                 );
                 
-                GraphemeLabel.Size = UDim2.fromOffset(GraphemeSize.X, GraphemeSize.Y);
-                GraphemeLabel.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
+                GraphemeObject.Size = UDim2.fromOffset(GraphemeSize.X, GraphemeSize.Y);
+                GraphemeObject.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
 
-                GraphemeLabel.TextSize = GroupFontSize
+                GraphemeObject.TextSize = GroupFontSize
                 TotalSizeX += GraphemeSize.X
             end
         end
     end
+
+    self.FullSize = UDim2.fromOffset(
+        (TotalSizeY > 0 and MaxBounds.X) or TotalSizeX,
+        TotalSizeY
+    );
     
 end
 
@@ -186,7 +204,7 @@ function SmartStringObject:Destroy(callback : Callback?)
     for _, TextGroup in pairs(self._registeredTextGroups) do
         for _, WordGroup in pairs(TextGroup.WordGroups) do
             for _, Grapheme in pairs(WordGroup.Graphemes) do
-                if (callback) then
+                if (callback and (Grapheme:IsA("TextLabel") or Grapheme:IsA("TextButton"))) then
                     callback(Grapheme); -- Can be used as a standalone garbage collection function
                 end
     
