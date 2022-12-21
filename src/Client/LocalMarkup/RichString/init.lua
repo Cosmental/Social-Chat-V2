@@ -36,6 +36,7 @@ function RichString.new(properties : table?) : stringObject
         ["ResponsiveSizing"] = (properties and properties.ResponsiveSizing) or true, -- Will text automatically resize when the ancestor does? ( boolean )
 
         --// Programmable \\--
+        
         ["_hyperFunctions"] = {}
 
     }, stringObject);
@@ -65,11 +66,13 @@ function stringObject:Generate(Parent : GuiObject, Text : string, callback : cal
     local PureText, MarkdownInfo : string | table? = Markdown:GetMarkdownData(Text);
     local Labels = {};
     
-    for Index, Word in pairs(PureText:split(" ")) do
+    for Index, Word in ipairs(PureText:split(" ")) do
         local Formatting = getMarkdown(PureText, Index, MarkdownInfo);
 
         local hyperText : boolean, hyperKey : string, allowedIndexes : table = getHyperFormatting(Word);
         local hyperFunction : callback? = (hyperText and self._hyperFunctions[hyperKey]);
+
+        local Graphemes : table = {};
 
         if (hyperText and not hyperFunction) then
             warn([[Requested HyperFunction "]]..(hyperKey)..[[" is undefined. Please define your function using 
@@ -88,7 +91,7 @@ function stringObject:Generate(Parent : GuiObject, Text : string, callback : cal
             );
             
             if (self.MarkdownEnabled) then -- We only need to markdown our string IF "MarkdownEnabled" is true
-                for _, format in pairs(Formatting) do
+                for _, format in ipairs(Formatting) do
                     NewTextObject.Text = string.format(format, NewTextObject.Text);
                 end
                 
@@ -101,7 +104,7 @@ function stringObject:Generate(Parent : GuiObject, Text : string, callback : cal
                 end);
             end
             
-            table.insert(Labels, NewTextObject);
+            table.insert(Graphemes, NewTextObject);
             NewTextObject.Parent = Parent
 
             if (callback) then
@@ -109,11 +112,16 @@ function stringObject:Generate(Parent : GuiObject, Text : string, callback : cal
             end
         end
 
-        if (Index == #PureText:split(" ")) then break; end -- No spacing is needed for our last word
+        if (Index ~= #PureText:split(" ")) then -- No spacing is needed for our last word
+            local SpaceLabel = CreateTextObject(self.Font, " ");
+            SpaceLabel.Name = "RichString_WHITESPACE"
+            table.insert(Graphemes, SpaceLabel); -- We still need to account for actual word spacings!
+        end
 
-        local SpaceLabel = CreateTextObject(self.Font, " ");
-        SpaceLabel.Name = "RichString_WHITESPACE"
-        table.insert(Labels, SpaceLabel); -- We still need to account for actual word spacings!
+        table.insert(Labels, {
+            ["Graphemes"] = Graphemes,
+            ["Content"] = hyperText or Word
+        });
     end
 
     return Labels
