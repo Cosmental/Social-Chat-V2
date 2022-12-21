@@ -9,6 +9,14 @@
 
     v1.01
 
+    ========================================================================================================================================
+
+    TODO:
+
+    [ ] - Fix bug with multi-layered richText. This causes the richtext to malformat when using ":GetMarkdownData" and thus, the markdown
+    moves ahead of where it is actually meant to be! This is potentially due to the fact that the desired pure word is wrapped around two or
+    more richText formats that confuse the current algorithm.
+
 ]]--
 
 --// Module
@@ -17,8 +25,7 @@ local stringObject = {};
 stringObject.__index = stringObject
 
 --// Imports
-local Markdown = require(script.Markdown);
-local Settings = require(script.Settings);
+local Markdown = require(script.Parent.Markdown);
 
 --// Main Methods
 
@@ -67,11 +74,10 @@ function stringObject:Generate(Parent : GuiObject, Text : string, callback : cal
     local Labels = {};
     
     for Index, Word in ipairs(PureText:split(" ")) do
-        local Formatting = getMarkdown(PureText, Index, MarkdownInfo);
-
         local hyperText : boolean, hyperKey : string, allowedIndexes : table = getHyperFormatting(Word);
         local hyperFunction : callback? = (hyperText and self._hyperFunctions[hyperKey]);
 
+        local Formatting = getMarkdown(PureText, Index, MarkdownInfo, hyperText ~= nil);
         local Graphemes : table = {};
 
         if (hyperText and not hyperFunction) then
@@ -130,7 +136,7 @@ end
 --// Functions
 
 --- Returns a markdown table based on whether a word from the provided string has markdown information available
-function getMarkdown(text : string, wordIndex : number, fromData : table) : table?
+function getMarkdown(text : string, wordIndex : number, fromData : table, isFromHyperText : boolean?) : table?
     local words = text:split(" ");
     local characterIndex : number = 0
 
@@ -156,7 +162,10 @@ function getMarkdown(text : string, wordIndex : number, fromData : table) : tabl
         local syntax = data.mdInfo.syntax
 
         for _, occurence in pairs(data.occurences) do
-            local isWithinMarkdownSyntax = ((characterIndex >= occurence.starts - #syntax) and (characterIndex <= occurence.ends - #syntax));
+            local isWithinMarkdownSyntax = (
+                (((isFromHyperText and characterIndex + 1 + #syntax) or (characterIndex)) >= occurence.starts - #syntax)
+                and (((isFromHyperText and characterIndex - 1 - #syntax) or (characterIndex)) <= occurence.ends - #syntax)
+            ); -- HyperText formatting requires a special index because it loses an additional set of index characters
 
             if (isWithinMarkdownSyntax) then -- This word is within a markdown finding!
                 hasThisFormat = true
