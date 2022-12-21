@@ -92,6 +92,8 @@ function SmartStringObject:AddGroup(key : string, TextObjects : table, TextFont 
         ["WordGroups"] = TextObjects,
         ["LayoutOrder"] = LayoutOrder
     };
+
+    self:Update();
 end
 
 --- Removes a TextGroup using it's string identifier key ( NOTE: This does NOT destroy the Text group itself )

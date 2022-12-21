@@ -20,6 +20,11 @@ local str = [[
     ~~This text should be crossed out~~
 ]]
 
+local str2 = [[
+    This is a second **TextGroup!**
+    Make sure you dont *mess up* the (__sizing__)[thisIsCool] and the ~~positioning~~.
+]]
+
 --// Markdown Example
 local MarkupGUI = script.Markup_Example
 
@@ -32,12 +37,20 @@ local MarkdownObject = RichString.new({
 });
 
 MarkdownObject:Define("myCoolFunction", function(connectedText : string)
-    print("Connected:", connectedText);
+    MarkupGUI.two.Visible = not MarkupGUI.two.Visible
 end);
 
-local MarkdownLabels = MarkdownObject:Generate(MarkupGUI.yeah, str, function(TextObject)
-    TextObject.TextSize = 16
+local MarkdownLabels = MarkdownObject:Generate(MarkupGUI.yeah, str);
+
+local MD2 = RichString.new({
+    Font = Enum.Font.Antique
+});
+
+MD2:Define("thisIsCool", function(connectedText : string)
+    print("CONNECTED:", connectedText);
 end);
+
+local MDLs = MD2:Generate(MarkupGUI.yeah, str2);
 
 --// Formatting
 
@@ -48,4 +61,6 @@ local TextObject = SmartText.new(MarkupGUI.yeah, {
 });
 
 TextObject:AddGroup("Test", MarkdownLabels, MarkdownObject.Font);
+TextObject:AddGroup("Test2", MDLs, MD2.Font);
+
 TextObject:Update();
