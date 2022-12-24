@@ -54,8 +54,8 @@ end
 
 --- Defines a function for programmic string functuality!
 function stringObject:Define(key : string, callback : callback)
-    assert(type(key) == "string", "A string type was not passed for the \"key\" parameter. Recieved \""..(type(key)).."\"");
-    assert(type(callback) == "function", "A callback function type was not passed for the \"callback\" parameter. Recieved \""..(type(callback)).."\"");
+    assert(type(key) == "string", "A string type was not passed for the \"key\" parameter. Received \""..(type(key)).."\"");
+    assert(type(callback) == "function", "A callback function type was not passed for the \"callback\" parameter. Received \""..(type(callback)).."\"");
 
     if (self._hyperFunctions[key]) then
         warn("A function with the name \""..(key).."\" has already exists!");
@@ -66,17 +66,15 @@ function stringObject:Define(key : string, callback : callback)
 end
 
 function stringObject:Replace(keyWord : string, replacement : callback | string)
-    assert(type(keyWord) == "string", "A string type was not passed for the \"key\" parameter. Recieved \""..(type(keyWord)).."\"");
+    assert(type(keyWord) == "string", "A string type was not passed for the \"key\" parameter. Received \""..(type(keyWord)).."\"");
     assert(not self._replacements[keyWord], "The provided KeyWord \""..(keyWord).."\" is already in use!");
 
     self._replacements[keyWord] = replacement
 end
 
---- Creates a new set of TextLabels under the provided parent Instance using previously assigned property metadata. [ THIS WILL NOT FORMAT YOUR LABELS! You must use the SmartText module for further functuality! ]
-function stringObject:Generate(Parent : GuiObject, Text : string, callback : callback?) : table
-    assert(typeof(Parent) == "Instance", "Unable to use a type other than \"Instance\" for this method. Recieved \""..(typeof(Parent)).."\"");
-    assert(Parent:IsA("GuiObject"), "The provided Parent instance was not of classtype \"GuiObject\". Got \""..(Parent.ClassName).."\"");
-    assert((not callback) or (type(callback) == "function"), "The provided callback function was not of type \"function\". Recieved \""..(type(callback)).."\"");
+--- Creates a new set of TextLabels using previously assigned property metadata. [ THIS WILL NOT FORMAT YOUR LABELS! You must use the SmartText module for further functuality! ]
+function stringObject:Generate(Text : string, callback : callback?) : table
+    assert((not callback) or (type(callback) == "function"), "The provided callback function was not of type \"function\". Received \""..(type(callback)).."\"");
 
     local PureText, MarkdownInfo : string | table? = Markdown:GetMarkdownData(Text);
     local Labels = {};
@@ -115,7 +113,6 @@ function stringObject:Generate(Parent : GuiObject, Text : string, callback : cal
             end
 
             table.insert(Graphemes, ReplacementObject);
-            ReplacementObject.Parent = Parent
         else
             for i, utf8Code in utf8.codes(PhraseReplacement or Word) do -- We need to use utf8 for special characters like Japanese symbols, etc.
                 if ((hyperText) and ((i < allowedIndexes[1]) or (i > allowedIndexes[2]))) then continue; end
@@ -141,7 +138,6 @@ function stringObject:Generate(Parent : GuiObject, Text : string, callback : cal
                 end
                 
                 table.insert(Graphemes, NewTextObject);
-                NewTextObject.Parent = Parent
     
                 if (callback) then
                     callback(NewTextObject);
@@ -169,18 +165,25 @@ end
 --- Returns a markdown table based on whether a word from the provided string has markdown information available
 function getMarkdown(text : string, wordIndex : number, fromData : table, isFromHyperText : boolean?) : table?
     local words = text:split(" ");
-    local characterIndex : number = 0
+
+    local WordStartSub : number = 0
+    local WordEndSub : number = 0
 
     --// Index Searching
     --\\ We need to find where our word's EXACT index is in order for us to pinpoint if our word is marked or not
 
     if (wordIndex > 1) then -- If our word index is ONE, then we already know that our character index is ZERO
         for i, word in pairs(words) do
+            WordEndSub += word:len()
             if (i == wordIndex) then break; end
-            characterIndex += (word:len() + 1);
+
+            WordStartSub += (word:len() + 1);
+            WordEndSub += 1
         end
-    
-        characterIndex += 1
+
+        if (wordIndex ~= 1) then WordStartSub += 1 end -- Account for spacing
+    else
+        WordEndSub += words[1]:len();
     end
 
     --// Markdown determination
@@ -194,8 +197,8 @@ function getMarkdown(text : string, wordIndex : number, fromData : table, isFrom
 
         for _, occurence in pairs(data.occurences) do
             local isWithinMarkdownSyntax = (
-                (((isFromHyperText and characterIndex + 1 + #syntax) or (characterIndex)) >= occurence.starts - #syntax)
-                and (((isFromHyperText and characterIndex - 1 - #syntax) or (characterIndex)) <= occurence.ends - #syntax)
+                (((isFromHyperText and WordStartSub + 1 + #syntax) or (WordStartSub)) >= occurence.starts - #syntax - 1)
+                and (((isFromHyperText and WordStartSub - 1 - #syntax) or (WordStartSub)) <= occurence.ends - #syntax)
             ); -- HyperText formatting requires a special index because it loses an additional set of index characters
 
             if (isWithinMarkdownSyntax) then -- This word is within a markdown finding!
