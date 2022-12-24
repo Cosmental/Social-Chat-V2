@@ -12,6 +12,8 @@
 
 ]]--
 
+--// Services
+local CollectionService = game:GetService("CollectionService");
 local IsServer = game:GetService("RunService"):IsServer();
 
 --// Imports
@@ -20,9 +22,6 @@ local Resources = script.Resources
 
 local ChatServer = ((IsServer) and (require(Environments.Server)));
 local ChatClient = ((not IsServer) and (require(Environments.Client)));
-
---// Constants
-local ChatRemotes = script.Remotes
 
 --// States
 local wasInitialized : boolean
@@ -58,18 +57,28 @@ function getSocialChat()
 
         local Configurations = {};
 
-        for _, Module in pairs(EnvironmentConfiguration:GetChildren()) do
-            if (Module:IsA("ModuleScript")) then
+        for _, Module in pairs(EnvironmentConfiguration:GetDescendants()) do
+            if (Module:IsA("ModuleScript") and not Module.Parent:IsA("ModuleScript")) then
                 Configurations[Module.Name] = require(Module);
             end
         end
 
         --// Initialization
         if (IsServer) then
+            local Remotes = script.Remotes
+
             ChatServer:Init({
                 ["Library"] = Library,
                 ["Settings"] = Configurations
             });
+
+            Remotes.Name = "SocialChatEvents"
+            Remotes.Parent = game.ReplicatedStorage
+
+            Remotes.EventClientReady.OnServerEvent:Connect(function(Player : Player)
+                if (CollectionService:HasTag(Player, "SocialChatClientReady")) then return; end
+                CollectionService:AddTag(Player, "SocialChatClientReady");
+            end)
         else
 
             --// Temporary Fixes
@@ -81,12 +90,12 @@ function getSocialChat()
             end
 
             --// Game Setup
+
+            game.ReplicatedStorage:WaitForChild("SocialChatEvents"); -- This ensures that our server gets setup before any of our clients do
+
             if (not game:IsLoaded()) then
                 game.Loaded:Wait(); -- Wait for our game to load on our client
             end
-
-            game.StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false);
-            script.Chat.Parent = game.Players.LocalPlayer.PlayerGui -- Our ChatGUI needs to be parented BEFORE we initialize our Service!
             
             ChatClient:Init({
                 ["Library"] = Library,
@@ -94,6 +103,8 @@ function getSocialChat()
             });
 
         end
+
+        wasInitialized = true
     end
 
     return (
