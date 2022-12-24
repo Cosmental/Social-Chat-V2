@@ -233,6 +233,13 @@ function Channel:Render(Message : string, TagData : table?) : table
         MainFrame.Parent = MessageContainer
     end
 
+    if (#self._cache >= Settings.MaxRenderableMessages) then
+        self._cache[1].SmartStringObject:Destroy();
+        self._cache[1].Render:Destroy();
+
+        table.remove(self._cache, 1); -- Our oldest rendered content will always be our 1st index!
+    end
+
     table.insert(self._cache, Content);
     StringRenderer:Update(); -- We need to AGAIN update our renderer to match up with its parent container
 

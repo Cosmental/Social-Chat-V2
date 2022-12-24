@@ -170,13 +170,17 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
                 Network.EventSendMessage:FireClient(Member, FilterResponse, Recipient, Speaker.TagData);
             end
     
+            if (#Recipient._cache >= Settings.MaxMessagesPerChannel) then
+                table.remove(Recipient._cache, 1); -- The oldest message will always be our 1st Index
+            end
+
             table.insert(Recipient._cache, {
                 ["Author"] = Author, -- string | Player
                 ["Message"] = Message, -- string
                 ["AtTime"] = os.clock() -- number
             });
         end
-    else -- Filtering failed :(
+    else -- Oh no! Filtering failed :(
         Network.EventSendMessage:FireClient(
             Author,
             {

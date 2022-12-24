@@ -16,6 +16,8 @@ return {
 
     --// MISC \\--
 
+    ["MaxRenderableMessages"] = 50, -- This determines the maximum amount of displayable messages! This is NOT the same as the Server equivalent setting and should be dependent on what the client wants and what the client can run on their system
+
     ["ChannelFocusTweenInfo"] = TweenInfo.new(
         0.5,
         Enum.EasingStyle.Exponential
