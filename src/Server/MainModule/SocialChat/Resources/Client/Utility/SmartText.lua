@@ -19,13 +19,10 @@ SmartStringObject.__index = SmartStringObject
 local TextService = game:GetService("TextService");
 
 --// Container
-local SizeCheckUI = Instance.new("ScreenGui");
-
-SizeCheckUI.Enabled = false
-SizeCheckUI.Name = "SMRTXT_VISUAL_UI"
-SizeCheckUI.Parent = game.Players.LocalPlayer.PlayerGui
-
 local Camera = workspace.CurrentCamera
+
+local SizeCheckUI = Instance.new("ScreenGui");
+local API_LABEL : Instance? -- This label can be used for arbitrary API calls
 
 --// Main Methods
 
@@ -34,13 +31,11 @@ function SmartText.new(Container : GuiObject, properties : table?) : SmartString
     assert(Container:IsA("GuiObject"), "Expected Instance of class \"GuiObject\". Got \""..(Container.ClassName).."\"");
     assert(type(properties) == "table", "Failed to read from \"properties\" parameter. Expected typeof \"table\", but received \""..(type(properties)).."\"!");
 
-    local SIZE_CHECK_LABEL = Instance.new("TextLabel"); -- We need this for our maxFontSize method
     local StringObject = setmetatable({
 
         --// Constants \\--
 
         ["Container"] = Container,
-        ["__sizeObj"] = SIZE_CHECK_LABEL,
 
         --// Properties \\--
 
@@ -55,16 +50,6 @@ function SmartText.new(Container : GuiObject, properties : table?) : SmartString
         ["TextGroups"] = {}
 
     }, SmartStringObject);
-
-    SIZE_CHECK_LABEL.Parent = SizeCheckUI -- NOTE: Parenting this object to our container can lead to UIListLayout issues that we dont want!
-    -- SIZE_CHECK_LABEL.Size = UDim2.new(1, 0, 0, StringObject.MaxFontSize);
-
-    SIZE_CHECK_LABEL.Text = "This is one standard sentence."
-    SIZE_CHECK_LABEL.Name = "SIZE_CHECK_LABEL_DO_NOT_DELETE"
-
-    SIZE_CHECK_LABEL.BackgroundTransparency = 1
-    SIZE_CHECK_LABEL.TextStrokeTransparency = 1
-    SIZE_CHECK_LABEL.TextTransparency = 1
 
     --// Automatic container resizing
     local OnSizingChanged : RBXScriptSignal
@@ -86,9 +71,14 @@ function SmartText.new(Container : GuiObject, properties : table?) : SmartString
 end
 
 --- Returns the absolute Vector2 spacing required to fit the provided text string using the specified Font and FontSize
-function SmartText:GetTextSize(text : string, container : GuiObject, fontSize : number, font : Enum.Font, byGrapheme : boolean?) : Vector2
-    local Abs = container.AbsoluteSize
-    local SpaceSize = TextService:GetTextSize(text, fontSize, font, Abs);
+function SmartText:GetTextSize(text : string, fontSize : number, font : Enum.Font, absoluteSize : Vector2, byGrapheme : boolean?) : Vector2
+    assert(type(text) == "string", "The provided text content was not of type \"string\". (received \""..(type(text)).."\" )");
+    assert(type(fontSize) == "number", "The provided font size was not of type \"number\"! (received \""..(type(fontSize)).."\")");
+    assert(typeof(font) == "EnumItem", "The provided font was not of type \"EnumItem\"! (received \""..(typeof(font)).."\")");
+    assert(table.find(Enum.Font:GetEnumItems(), font), "The provided font EnumItem was not a valid Font EnumItem!");
+    assert(typeof(absoluteSize) == "Vector2", "The provided AbsoluteSize was not a \"Vector2\" type! (received \""..(typeof(absoluteSize)).."\")");
+
+    local SpaceSize = TextService:GetTextSize(text, fontSize, font, absoluteSize);
 
     if (byGrapheme) then
         local doesWordOverflow = false
@@ -101,12 +91,12 @@ function SmartText:GetTextSize(text : string, container : GuiObject, fontSize : 
                 Grapheme,
                 fontSize,
                 font,
-                Abs
+                absoluteSize
             );
 
             GraphemeX += GraphemeSize.X
 
-            if (GraphemeX >= Abs.X) then
+            if (GraphemeX >= absoluteSize.X) then
                 GraphemeX = 0
                 GraphemeY += SpaceSize.Y
 
@@ -115,7 +105,7 @@ function SmartText:GetTextSize(text : string, container : GuiObject, fontSize : 
         end
 
         return Vector2.new(
-            (((doesWordOverflow) and (Abs.X)) or (GraphemeX)),
+            (((doesWordOverflow) and (absoluteSize.X)) or (GraphemeX)),
             GraphemeY
         ), doesWordOverflow
     else
@@ -123,9 +113,39 @@ function SmartText:GetTextSize(text : string, container : GuiObject, fontSize : 
             text,
             fontSize,
             font,
-            Abs
+            absoluteSize
         );
     end
+end
+
+--- Returns the best fontsize for the requested GuiObject
+function SmartText:GetBestFontSize(AbsoluteSize : Vector2, font : Enum.Font, minFontSize : number, maxFontSize : number)
+    assert(typeof(AbsoluteSize) == "Vector2", "The provided AbsoluteSize was not of type \"Vector2\"! (received \""..(typeof(AbsoluteSize)).."\")");
+    assert(typeof(font) == "EnumItem", "The provided font was not of type \"EnumItem\"! (received \""..(typeof(font)).."\")");
+    assert(table.find(Enum.Font:GetEnumItems(), font), "The provided font EnumItem was not a valid Font EnumItem!");
+    assert(type(maxFontSize) == "number", "The provided maximum font size was not a number! (FontSize can only be calculated with numbers.)");
+    assert(type(minFontSize) == "number", "The provided minimum font size was not a number! (FontSize can only be calculated with numbers.)");
+    assert(maxFontSize <= 100 and minFontSize >= 0, "The provided font sizes exceed legitimate font size ranges! (FontSize can only range from 0 - 100)");
+
+    local BestFontSize : number = maxFontSize
+
+    API_LABEL.Size = UDim2.fromOffset(AbsoluteSize.X, self.MaxFontSize);
+    API_LABEL.Font = font
+
+    for _ = 1, (maxFontSize - minFontSize) do
+        API_LABEL.TextSize = BestFontSize
+
+        local TextFitsX = (API_LABEL.TextFits == true);
+        local TextFitsY = (API_LABEL.TextBounds.Y <= AbsoluteSize.Y);
+
+        if (not TextFitsX or not TextFitsY) then
+            BestFontSize -= 1
+        else
+            break;
+        end
+    end
+
+    return BestFontSize
 end
 
 --// Metamethods
@@ -195,26 +215,17 @@ function SmartStringObject:Update()
     local TotalSizeY = 0
     local TotalSizeX = 0
 
-    self.__sizeObj.Size = UDim2.fromOffset(MaxBounds.X, self.MaxFontSize);
-
     for _, TextGroup in ipairs(OrderedGroups) do
 
         --// Calculate Best FontSize
         --\\ We can calculate our Best FontSize by using a "dummy" TextLabel that uses it's "TextFits" property to return feedback in terms of FontSize
 
-        local GroupFontSize : number = self.MaxFontSize
-        self.__sizeObj.Font = TextGroup.Metadata.Font
-
-        for _ = 1, (self.MaxFontSize - self.MinFontSize) do
-            self.__sizeObj.TextSize = GroupFontSize
-            local isBestSize = (self.__sizeObj.TextFits == true);
-
-            if (not isBestSize) then
-                GroupFontSize -= 1
-            else
-                break;
-            end
-        end
+        local GroupFontSize : number = SmartText:GetBestFontSize(
+            MaxBounds,
+            TextGroup.Metadata.Font,
+            self.MinFontSize,
+            self.MaxFontSize
+        );
 
         TextGroup.Metadata.FontSize = GroupFontSize
 
@@ -223,9 +234,9 @@ function SmartStringObject:Update()
 
         local LineYSpacing = (SmartText:GetTextSize(
             " ",
-            self.Container,
             GroupFontSize,
-            Enum.Font.SourceSans -- SourceSans is our best benchmark font ^^
+            Enum.Font.SourceSans, -- SourceSans is our best benchmark font ^^
+            self.Container.AbsoluteSize
         ).Y);
 
         if (TextGroup.Index == 1) then -- We only need to do this at the start of our calculations
@@ -243,7 +254,14 @@ function SmartStringObject:Update()
             local ContentSize : number
 
             if (WordGroup.Content) then
-                local WordSize = SmartText:GetTextSize(WordGroup.Content, self.Container, GroupFontSize, TextGroup.Metadata.Font, true);
+                local WordSize = SmartText:GetTextSize(
+                    WordGroup.Content,
+                    GroupFontSize,
+                    TextGroup.Metadata.Font,
+                    self.Container.AbsoluteSize,
+                    true
+                );
+
                 ContentSize = WordSize.X
             else
                 ContentSize = GroupFontSize
@@ -268,9 +286,9 @@ function SmartStringObject:Update()
 
                 local GraphemeSize = SmartText:GetTextSize(
                     GraphemeObject.Text:gsub("(\\?)<[^<>]->", ""), -- Gets rid of any richText formatting that may interfere with calculations
-                    self.Container,
                     GroupFontSize,
-                    GraphemeObject.Font
+                    GraphemeObject.Font,
+                    self.Container.AbsoluteSize
                 );
                 
                 GraphemeObject.Size = UDim2.fromOffset(GraphemeSize.X, GraphemeSize.Y);
@@ -310,5 +328,32 @@ function SmartStringObject:Destroy(callback : Callback?)
     self.__sizeObj:Destroy();
     self = nil
 end
+
+--// Functions
+
+--- Creates a new programmatic sizing label that can be used to perform arbitrary methods
+function NewSizeCheckLabel()
+    local Label = Instance.new("TextLabel");
+
+    Label.Text = "This is one standard sentence."
+    Label.Name = "SIZE_CHECK_LABEL_DO_NOT_DELETE"
+
+    Label.BackgroundTransparency = 1
+    Label.TextStrokeTransparency = 1
+    Label.TextTransparency = 1
+
+    -- Label.Size = UDim2.new(1, 0, 0, StringObject.MaxFontSize);
+    Label.Parent = SizeCheckUI -- NOTE: Parenting this object to our container can lead to UIListLayout issues that we dont want!
+    return Label
+end
+
+--// Instance Setup
+
+API_LABEL = NewSizeCheckLabel();
+API_LABEL.Name = "API_LABEL"
+
+SizeCheckUI.Enabled = false
+SizeCheckUI.Name = "SMRTXT_VISUAL_UI"
+SizeCheckUI.Parent = game.Players.LocalPlayer.PlayerGui
 
 return SmartText
