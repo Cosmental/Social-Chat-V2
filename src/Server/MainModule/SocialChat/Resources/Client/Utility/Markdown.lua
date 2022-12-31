@@ -54,24 +54,30 @@ function Markdown:GetMarkdownData(content : string) : table?
     local Result = {}; -- The occurence result array
     local Closed = {}; -- A list of closed character subpositions that are already in use!
 
+    local utf8Codes = {};
+
+    for starts, ends in utf8.graphemes(content) do
+        table.insert(utf8Codes, {
+            ["starts"] = starts,
+            ["ends"] = ends
+        });
+    end
+
     for _, data in ipairs(syntaxes) do
-        local utf8Codes = {};
-
-        for _, codePoint in utf8.codes(content) do
-            table.insert(utf8Codes, utf8.char(codePoint));
-        end
-
         local syntax = data.syntax
         local occurences = {};
 
         --// Register occurences first
         --\\ This way we can see where all of our syntax occurences happen
         
-        for i = 1, #utf8Codes do
-            if (table.find(Closed, i)) then continue; end -- This character is within the CLOSED array and is not available for re-evaluation
-            if (utf8Codes[i] ~= syntax:sub(1, 1)) then continue; end -- This character is not our syntax (SKIP)
+        for i, utf8Group in ipairs(utf8Codes) do
+            local ThisChar = GetUTF8Character(content, utf8Group);
 
-            local isEscaped = (utf8Codes[i - 1] == "\\");
+            if (table.find(Closed, i)) then continue; end -- This character is within the CLOSED array and is not available for re-evaluation
+            if (ThisChar ~= syntax:sub(1, 1)) then continue; end -- This character is not our syntax (SKIP)
+
+            local PreviousChar = GetUTF8Character(content, utf8Codes[i - 1]);
+            local isEscaped = (PreviousChar == "\\");
             if (isEscaped) then continue; end -- If our syntax is escaped by a backslash, we can just leave it alone
 
             --// Syntax Matching
@@ -81,7 +87,7 @@ function Markdown:GetMarkdownData(content : string) : table?
                 local isStartOfSyntax = true
 
                 for ii = 1, #syntax - 1 do -- Make sure our syntax and our search query is EXACTLY the same as our actual syntax!
-                    if (utf8Codes[i + ii] ~= syntax:sub(1 + ii, 1 + ii)) then
+                    if (GetUTF8Character(content, utf8Codes[i + ii]) ~= syntax:sub(1 + ii, 1 + ii)) then
                         isStartOfSyntax = false
                         break;
                     end
@@ -93,14 +99,16 @@ function Markdown:GetMarkdownData(content : string) : table?
             --// Occurence Matching
             --\\ Make sure our occurences meet our greedy search expectations!
 
-            local IsFollowedBySyntax = (utf8Codes[i - 1] == syntax:sub(1, 1));
-            local IsPrecededBySyntax = (utf8Codes[i + #syntax] == syntax:sub(1, 1));
+            local PrecedingChar = GetUTF8Character(content, utf8Codes[i + #syntax]);
+
+            local IsFollowedBySyntax = (PreviousChar == syntax:sub(1, 1));
+            local IsPrecededBySyntax = (PrecedingChar == syntax:sub(1, 1));
 
             local IsInvalidMatch : boolean
 
             if (#syntax >= 2) then
                 local LastOccurence = (occurences[#occurences]);
-                local WasLastOccurencePreceded = (LastOccurence and utf8Codes[LastOccurence + #syntax] == syntax:sub(1, 1));
+                local WasLastOccurencePreceded = (LastOccurence and GetUTF8Character(utf8Codes[LastOccurence + #syntax]) == syntax:sub(1, 1));
 
                 IsInvalidMatch = (
                     (IsFollowedBySyntax and IsPrecededBySyntax) or
@@ -116,7 +124,7 @@ function Markdown:GetMarkdownData(content : string) : table?
                 table.insert(Closed, i + ii - 1); -- We need to make sure this occurence sequence doesn't happen again for another syntax!
             end
 
-            table.insert(occurences, i);
+            table.insert(occurences, utf8Group.starts);
         end
 
         --// Compile Results
@@ -208,6 +216,14 @@ function GetOrderedMarkdown(data : table)
     end);
 
     return OrderedMarkdown
+end
+
+--// Function
+
+--- Returns a singular utf8 character based on the provided data! (this is purely for readability)
+function GetUTF8Character(content : string, fromUTF8Group : table) : string
+    if (not fromUTF8Group) then return "" end
+    return content:sub(fromUTF8Group.starts, fromUTF8Group.ends);
 end
 
 return Markdown
