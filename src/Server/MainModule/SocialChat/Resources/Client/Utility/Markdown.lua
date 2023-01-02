@@ -8,12 +8,9 @@
 
     ===========================================================================================================================================
 
-    [Update Log] - v1.1.0
+    [Update Log] - v1.2
 
-    - Change the previous splitting method into a string.gmatch iterator for increased performance and minimized operations
-    - Updated the ":GetMarkdownData()" function which now only returns markdown data and nothing else
-    - Updated the ":Markdown()" function with a new "keepSyntaxes" parameter
-    - Performance updates and tweaks
+    + Added support for non-standard utf8 characters!
 
 ]]--
 
@@ -50,7 +47,7 @@ local syntaxes = { -- These are valid syntaxes that we can use to determine mark
 --// Main Methods
 
 --- Returns an array of markdown occurences found within the provided string!
-function Markdown:GetMarkdownData(content : string) : table?
+function Markdown:GetMarkdownData(content : string, order : boolean?) : table?
     local Result = {}; -- The occurence result array
     local Closed = {}; -- A list of closed character subpositions that are already in use!
 
@@ -148,16 +145,40 @@ function Markdown:GetMarkdownData(content : string) : table?
         end
     end
 
+    --// Ordering our data (opt.)
+    --\\ Sometimes, we will need to make operations that require our data to be in order from left to right
+
+    if (order) then -- The API call requested our data in order from left to right!
+        local Dump = {};
+
+        for syntax, data in pairs(Result) do
+            for _, scope in pairs(data.results) do
+                table.insert(Dump, {
+                    ["syntax"] = syntax,
+                    ["format"] = data.format,
+                    ["starts"] = scope.starts,
+                    ["ends"] = scope.ends
+                });
+            end
+        end
+
+        table.sort(Dump, function(a, b)
+            return a.starts < b.starts
+        end);
+
+        Result = Dump
+    end
+
     return Result
 end
 
---- Converts the provided content string into a new string using the provided markdown data array
-function Markdown:Markup(content : string, keepSyntaxes : boolean?) : string
+--- Converts the provided content string into a new string using markdown langauge and syntaxing!
+function Markdown:Markup(content : string, keepSyntaxes : boolean?) : string & table
     local OrderedMarkdown = GetOrderedMarkdown(Markdown:GetMarkdownData(content));
     local offset = 0
 
     for _, result in pairs(OrderedMarkdown) do
-        local syntaxOffset = ((keepSyntaxes and #result.syntax) or 0);
+        local syntaxOffset = ((not keepSyntaxes and #result.syntax) or 0);
 
         if (result.atStart) then
             local after = content:sub(result.at + offset + syntaxOffset);
@@ -176,7 +197,7 @@ function Markdown:Markup(content : string, keepSyntaxes : boolean?) : string
         offset += (result.rich:len() - syntaxOffset); -- We need an offset to account for all the new characters we're adding into our string
     end
     
-    return content
+    return content, OrderedMarkdown
 end
 
 --// Function

@@ -7,9 +7,6 @@
 
 ]]--
 
---// Module
-local SocialChatClient = {};
-
 --// Imports
 local TopbarPlus
 
@@ -17,16 +14,39 @@ local TopbarPlus
 local Player = game.Players.LocalPlayer
 local ChatUI
 
-local DataModules
+local Handlers
 local UIComponents
 
 local ChatToggleButton
 local Library
 local Settings
 
+--// States
+local isClientReady : boolean?
+
+--// Functions
+
+--- Extracts modules from a container
+local function extract(container) : table
+    local Modules = {};
+
+    for _, SubModule in pairs(container:GetChildren()) do
+        if (not SubModule:IsA("ModuleScript")) then continue; end
+
+        local Success, Response = pcall(function()
+            return require(SubModule);
+        end);
+
+        if (not Success) then continue; end
+        Modules[SubModule.Name] = Response
+    end
+
+    return Modules
+end
+
 --// Initialization
 
-function SocialChatClient:Init(Setup : table)
+local function Initialize(Setup : table)
     TopbarPlus = Setup.Library.TopbarPlus
     ChatUI = script.Chat
 
@@ -38,7 +58,7 @@ function SocialChatClient:Init(Setup : table)
 
     ChatToggleButton = TopbarPlus.new();
     ChatToggleButton:setImage("rbxasset://textures/ui/TopBar/chatOn.png")
-        :setCaption("SocialChat "..(Setup.Library.VERSION))
+        :setCaption("SocialChat "..(Setup.VERSION))
         :select()
         :bindToggleItem(ChatUI)
         :setProperty("deselectWhenOtherIconSelected", false)
@@ -56,7 +76,7 @@ function SocialChatClient:Init(Setup : table)
     --\\ We need to prepare our UI components. This helps with control, readability, and overall cleanlyness!
 
     UIComponents = extract(script.Components);
-    DataModules = extract(script.Data);
+    Handlers = extract(script.Handlers);
 
     for Name, Component in pairs(UIComponents) do
         local Success, Response = pcall(function()
@@ -67,7 +87,7 @@ function SocialChatClient:Init(Setup : table)
                 ["Remotes"] = game.ReplicatedStorage:WaitForChild("SocialChatEvents"),
                 ["Presets"] = script.Presets,
 
-                ["Data"] = DataModules,
+                ["Handlers"] = Handlers,
                 ["Src"] = UIComponents,
 
                 ["ChatButton"] = ChatToggleButton,
@@ -89,39 +109,26 @@ function SocialChatClient:Init(Setup : table)
     ChatUI.Parent = Player.PlayerGui -- Our ChatGUI needs to be parented BEFORE we initialize our Service!
 
     game.ReplicatedStorage.SocialChatEvents.EventClientReady:FireServer(); -- This tells our server that our client is ready to recieve networking calls!
+    isClientReady = true
 end
 
---// Functions
-function extract(container)
-    local Modules = {};
+--// Module Request Handling
 
-    for _, SubModule in pairs(container:GetChildren()) do
-        if (not SubModule:IsA("ModuleScript")) then continue; end
-
-        local Success, Response = pcall(function()
-            return require(SubModule);
-        end);
-
-        if (not Success) then continue; end
-        Modules[SubModule.Name] = Response
+local function OnRequest()
+    if (not isClientReady) then
+        return Initialize
+    else
+        return {
+            ["Settings"] = Settings,
+            ["Library"] = Library,
+    
+            ["Handlers"] = Handlers,
+            ["Src"] = UIComponents,
+    
+            ["ChatButton"] = ChatToggleButton,
+            ["ChatUI"] = ChatUI
+        };
     end
-
-    return Modules
 end
 
---// Methods
-
-function SocialChatClient:Get()
-    return {
-        ["Settings"] = Settings,
-        ["Library"] = Library,
-
-        ["Data"] = DataModules,
-        ["Src"] = UIComponents,
-
-        ["ChatButton"] = ChatToggleButton,
-        ["ChatUI"] = ChatUI
-    };
-end
-
-return SocialChatClient
+return OnRequest

@@ -325,7 +325,6 @@ function SmartStringObject:Destroy(callback : Callback?)
         end
     end
 
-    self.__sizeObj:Destroy();
     self = nil
 end
 

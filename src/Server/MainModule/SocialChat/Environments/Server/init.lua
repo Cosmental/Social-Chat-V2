@@ -7,9 +7,6 @@
 
 ]]--
 
---// Module
-local SocialChatServer = {};
-
 --// Imports
 local Library
 local Settings
@@ -17,9 +14,12 @@ local Settings
 --// Constants
 local ServerComponents = {};
 
+--// States
+local isServerReady : boolean?
+
 --// Initialization
 
-function SocialChatServer:Init(Setup : table)
+local function Initialize(Setup : table)
     Library = Setup.Library
     Settings = Setup.Settings
 
@@ -56,16 +56,22 @@ function SocialChatServer:Init(Setup : table)
             end
         end)();
     end
+
+    isServerReady = true
 end
 
---// Methods
+--// Module Request Handling
 
-function SocialChatServer:Get()
-    return {
-        ["Settings"] = Settings,
-        ["Library"] = Library,
-        ["Src"] = ServerComponents
-    };
+local function OnRequest()
+    if (not isServerReady) then
+        return Initialize
+    else
+        return {
+            ["Settings"] = Settings,
+            ["Library"] = Library,
+            ["Src"] = ServerComponents
+        };
+    end
 end
 
-return SocialChatServer
+return OnRequest

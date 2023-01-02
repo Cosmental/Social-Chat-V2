@@ -64,18 +64,27 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
 
     local NewSpeaker = setmetatable({
         ["TagData"] = {
+            
+            ["UserId"] = ((typeof(agent) == "Instance" and agent.UserId) or nil), -- UserId is useful for security cases!
+
+            --// VISUALS \\--
+
+            ["Font"] = (tagData and tagData.Font) or nil,
             ["Name"] = (
                 ((typeof(agent) == "Instance") and ((Settings.UseDisplayNames and agent.DisplayName) or agent.Name)) -- "agent" is a Player!
                 or agent -- "agent" is a string!
             ),
 
-            ["Font"] = (tagData and tagData.Font) or nil,
+            --// NAME METADATA \\--
 
             ["NameColor"] = (tagData and tagData.SpeakerColor) or getRandomSpeakerColor(),
             ["MessageColor"] = (tagData and tagData.MessageColor) or Color3.fromRGB(255, 255, 255),
 
+            --// TAGNAME METADATA \\--
+
             ["TagName"] = ((tagData and tagData.TagName) or nil), -- opt.
             ["TagColor"] = ((tagData and tagData.TagColor) or nil) -- opt.
+
         };
 
         ["Channels"] = {} -- a table of channels that this speaker is in

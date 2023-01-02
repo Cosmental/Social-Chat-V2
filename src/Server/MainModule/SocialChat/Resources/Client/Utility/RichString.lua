@@ -73,7 +73,7 @@ function stringObject:Replace(keyWord : string, replacement : callback | string)
 end
 
 --- Creates a new set of TextLabels using previously assigned property metadata. [ THIS WILL NOT FORMAT YOUR LABELS! You must use the SmartText module for further functuality! ]
-function stringObject:Generate(Text : string, callback : callback?) : table
+function stringObject:Generate(Text : string, callback : callback?, isButton : boolean?) : table
     assert((not callback) or (type(callback) == "function"), "The provided callback function was not of type \"function\". Received \""..(type(callback)).."\"");
 
     local PureText, MarkdownInfo : string | table? = Markdown:GetMarkdownData(Text);
@@ -120,7 +120,7 @@ function stringObject:Generate(Text : string, callback : callback?) : table
                 local NewTextObject = CreateTextObject(
                     self.Font,
                     utf8.char(utf8Code),
-                    (hyperText and "TextButton") or "TextLabel"
+                    ((hyperText or isButton) and "TextButton") or "TextLabel"
                 );
                 
                 if (self.MarkdownEnabled) then -- We only need to markdown our string IF "MarkdownEnabled" is true
@@ -146,7 +146,12 @@ function stringObject:Generate(Text : string, callback : callback?) : table
         end
 
         if (Index ~= #PureText:split(" ")) then -- No spacing is needed for our last word
-            local SpaceLabel = CreateTextObject(self.Font, " ");
+            local SpaceLabel = CreateTextObject(
+                self.Font,
+                " ",
+                (isButton and "TextButton") or "TextLabel"
+            );
+
             SpaceLabel.Name = "RichString_WHITESPACE"
             table.insert(Graphemes, SpaceLabel); -- We still need to account for actual word spacings!
         end

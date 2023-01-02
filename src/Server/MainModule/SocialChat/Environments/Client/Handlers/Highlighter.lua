@@ -8,8 +8,8 @@
 ]]--
 
 --// Imports
-local SocialChat = require(script.Parent.Parent):Get();
-local Settings = SocialChat.Settings.ClientHighlights
+local ConfigurationFolder = game.ReplicatedStorage.SocialChatConfigurations
+local Settings = require(ConfigurationFolder.Client.ClientHighlights);
 
 --// Functions
 

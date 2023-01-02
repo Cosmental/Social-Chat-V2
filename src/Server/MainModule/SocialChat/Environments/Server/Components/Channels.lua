@@ -114,7 +114,7 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
     local Speaker = Speakers:GetSpeaker(Author);
     if (not Speaker) then return; end
 
-    if (Message:len() > Settings.MaxMessageLength) then -- This message is ABOVE our message string limit!
+    if (utf8.len(Message) > Settings.MaxMessageLength) then -- This message is ABOVE our message string limit!
         Network.EventSendMessage:FireClient(
             Author,
             "Messages are not allowed to be over "..(Settings.MaxMessageLength).." characters long!",

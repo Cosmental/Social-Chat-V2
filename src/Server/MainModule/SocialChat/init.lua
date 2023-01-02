@@ -20,10 +20,14 @@ local IsServer = game:GetService("RunService"):IsServer();
 local Environments = script.Environments
 local Resources = script.Resources
 
-local ChatServer = ((IsServer) and (require(Environments.Server)));
-local ChatClient = ((not IsServer) and (require(Environments.Client)));
+local Server = ((IsServer) and (require(Environments.Server)));
+local Client = ((not IsServer) and (require(Environments.Client)));
+local VERSION = require(script.VERSION);
 
 --// States
+local ChatServer : table?
+local ChatClient : table?
+
 local wasInitialized : boolean
 
 --// Initializer
@@ -67,9 +71,10 @@ function getSocialChat()
         if (IsServer) then
             local Remotes = script.Remotes
 
-            ChatServer:Init({
+            Server()({
                 ["Library"] = Library,
-                ["Settings"] = Configurations
+                ["Settings"] = Configurations,
+                ["VERSION"] = VERSION
             });
 
             Remotes.Name = "SocialChatEvents"
@@ -78,7 +83,9 @@ function getSocialChat()
             Remotes.EventClientReady.OnServerEvent:Connect(function(Player : Player)
                 if (CollectionService:HasTag(Player, "SocialChatClientReady")) then return; end
                 CollectionService:AddTag(Player, "SocialChatClientReady");
-            end)
+            end);
+
+            ChatServer = Server();
         else
 
             --// Temporary Fixes
@@ -97,11 +104,13 @@ function getSocialChat()
                 game.Loaded:Wait(); -- Wait for our game to load on our client
             end
             
-            ChatClient:Init({
+            Client()({
                 ["Library"] = Library,
-                ["Settings"] = Configurations
+                ["Settings"] = Configurations,
+                ["VERSION"] = VERSION
             });
 
+            ChatClient = Client(); -- We need to update this value because its state returns a new value
         end
 
         wasInitialized = true

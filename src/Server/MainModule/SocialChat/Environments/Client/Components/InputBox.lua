@@ -16,8 +16,10 @@ local UserInputService = game:GetService("UserInputService");
 
 --// Imports
 local Highlighter
+local SmartText
 local Markdown
 
+local Settings
 local Channels
 
 --// Constants
@@ -35,8 +37,11 @@ local systemWasTyping : boolean
 function InputBox:Initialize(Info : table) : metatable
     local self = setmetatable(Info, InputBox);
 
-    Highlighter = self.Data.Highlighter
+    Highlighter = self.Handlers.Highlighter
+    SmartText = self.Library.SmartText
     Markdown = self.Library.Markdown
+
+    Settings = self.Settings.ClientChannels
     Channels = self.Src.Channels
 
     InputFrame = self.ChatUI.Chat.Input
@@ -77,6 +82,8 @@ function InputBox:Initialize(Info : table) : metatable
     end);
 
     ChatBox.Focused:Connect(function()
+        ChatBox.PlaceholderText = ""
+
         if (#ChatBox.Text > 0) then
             self:Set(self._oldText);
         end
@@ -94,6 +101,8 @@ function InputBox:Initialize(Info : table) : metatable
     end);
 
     ChatBox.FocusLost:Connect(function(enterPressed : boolean)
+        ChatBox.PlaceholderText = "Type '/' to begin chatting"
+
         if (not enterPressed) then -- Message was interrupted. Proceed with visuals
             self._oldText = ChatBox.Text
             self:Set(Highlighter(Markdown:Markup(ChatBox.Text)));
@@ -106,6 +115,12 @@ function InputBox:Initialize(Info : table) : metatable
         end
     end);
 
+    --// Textbox Control
+    ChatBox:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+        ChatBox.TextSize = SmartText:GetBestFontSize(ChatBox.AbsoluteSize, Settings.MessageFont, 0, Settings.MaxTextboxFontSize);
+    end);
+
+    ChatBox.Font = Settings.MessageFont
     return self
 end
 

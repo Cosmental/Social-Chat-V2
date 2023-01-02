@@ -10,9 +10,11 @@ return {
 
     --// DISPLAY \\--
 
+    ["MaxTextboxFontSize"] = 20, -- The desired fontSize for our InputBox. (this does NOT change message fontsize!)
+
     ["MessageFontSize"] = 18, -- The desired fontSize for our messages
 
-    ["MessageFont"] = Enum.Font.SourceSans, -- The desired font for our messages
+    ["MessageFont"] = Enum.Font.SourceSans, -- The desired default font for our messages
 
     --// MISC \\--
 

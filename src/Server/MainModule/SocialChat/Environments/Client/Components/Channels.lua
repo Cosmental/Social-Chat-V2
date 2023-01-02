@@ -21,9 +21,12 @@ local TweenService = game:GetService("TweenService");
 local RichString
 local SmartText
 
+local InputBox
 local Settings
 
 --// Constants
+local Player = game.Players.LocalPlayer
+
 local ChatFrame
 local MessageContainer
 
@@ -51,6 +54,8 @@ function ChannelMaster:Initialize(Setup : table)
     ChannelFrame = ChannelBar.Channels
     
     Settings = self.Settings.ClientChannels
+    InputBox = self.Src.InputBox
+
     RichString = self.Library.RichString
     SmartText = self.Library.SmartText
 
@@ -193,15 +198,19 @@ function Channel:Render(Message : string, TagData : table?) : table
     };
 
     --// Dynamic Rendering
-    local function Render(TextGroupName : string, Text : string, Color : Color3)
+    local function Render(TextGroupName : string, Text : string, Color : Color3, ButtonCallback : callback?)
         local TextObjects = LabelRenderer:Generate(Text, function(TextObject)
             TextObject.TextColor3 = Color
-        end);
+        end, ButtonCallback ~= nil);
 
         StringRenderer:AddGroup(TextGroupName, TextObjects, LabelRenderer.Font);
 
         for _, TextGroup in pairs(TextObjects) do
             for _, TextObject in pairs(TextGroup.Graphemes) do
+                if (ButtonCallback) then
+                    TextObject.MouseButton1Click:Connect(ButtonCallback);
+                end
+
                 TextObject.Parent = MainFrame
             end
         end
@@ -214,7 +223,10 @@ function Channel:Render(Message : string, TagData : table?) : table
 
     --// Name Rendering
     if (TagData and TagData.Name) then
-        Render("Name", "**["..(TagData.Name).."]:** ", (TagData.NameColor or Color3.fromRGB(255, 255, 255)));
+        Render("Name", "**["..(TagData.Name).."]:** ", (TagData.NameColor or Color3.fromRGB(255, 255, 255)), function()
+            if (TagData.UserId == Player.UserId) then return; end -- We cant whisper to ourselves!!
+            print(TagData.Name);
+        end);
     end
 
     --// Message Rendering
