@@ -187,10 +187,6 @@ function Channel:Render(Message : string, TagData : table?) : table
         Font = (TagData and TagData.Font) or Settings.MessageFont,
         MarkdownEnabled = Settings.AllowMarkdown
     });
-
-    LabelRenderer:Replace(":test:", function()
-        return Instance.new("ImageButton");
-    end);
     
     local Content = {
         ["Render"] = MainFrame,
