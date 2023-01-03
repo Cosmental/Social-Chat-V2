@@ -89,7 +89,7 @@ function InputBox:Initialize(Info : table) : metatable
         --// Escaping
         --\\ We need to escape any problematic richtext identifiers like "<" to prevent our richtext from breaking!
     
-        local CleanText = ChatBox.Text:gsub("%s+", "");
+        local CleanText = ChatBox.Text
         local Point = 0
     
         for _ in ChatBox.Text:gmatch(">-<") do
@@ -394,7 +394,6 @@ function InputBox:Initialize(Info : table) : metatable
     end);
 
     ChatBox.FocusLost:Connect(function(enterPressed : boolean)
-        PlaceholderLabel.Visible = (#ChatBox.Text == 0);
         CursorFrame.Visible = false
 
         if (not enterPressed) then -- Message was interrupted. Proceed with visuals
@@ -407,6 +406,9 @@ function InputBox:Initialize(Info : table) : metatable
             self._oldText = nil
             ChatBox.Text = ""
         end
+
+        RunService.RenderStepped:Wait();
+        PlaceholderLabel.Visible = (#ChatBox.Text == 0);
     end);
 
     --// Cursor Frame Flicker

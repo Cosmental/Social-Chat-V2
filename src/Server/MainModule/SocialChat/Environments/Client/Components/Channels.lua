@@ -20,8 +20,6 @@ local TweenService = game:GetService("TweenService");
 --// Imports
 local RichString
 local SmartText
-
-local InputBox
 local Settings
 
 --// Constants
@@ -52,10 +50,8 @@ function ChannelMaster:Initialize(Setup : table)
 
     ChannelBar = ChatFrame.ChannelBar
     ChannelFrame = ChannelBar.Channels
-    
-    Settings = self.Settings.ClientChannels
-    InputBox = self.Src.InputBox
 
+    Settings = self.Settings.ClientChannels
     RichString = self.Library.RichString
     SmartText = self.Library.SmartText
 
@@ -191,6 +187,10 @@ function Channel:Render(Message : string, TagData : table?) : table
         Font = (TagData and TagData.Font) or Settings.MessageFont,
         MarkdownEnabled = Settings.AllowMarkdown
     });
+
+    LabelRenderer:Replace(":test:", function()
+        return Instance.new("ImageButton");
+    end);
     
     local Content = {
         ["Render"] = MainFrame,
@@ -205,14 +205,12 @@ function Channel:Render(Message : string, TagData : table?) : table
 
         StringRenderer:AddGroup(TextGroupName, TextObjects, LabelRenderer.Font);
 
-        for _, TextGroup in pairs(TextObjects) do
-            for _, TextObject in pairs(TextGroup.Graphemes) do
-                if (ButtonCallback) then
-                    TextObject.MouseButton1Click:Connect(ButtonCallback);
-                end
-
-                TextObject.Parent = MainFrame
+        for _, TextObject in pairs(TextObjects) do
+            if (ButtonCallback) then
+                TextObject.MouseButton1Click:Connect(ButtonCallback);
             end
+
+            TextObject.Parent = MainFrame
         end
     end
 

@@ -160,9 +160,9 @@ function SmartStringObject:AddGroup(key : string, TextObjects : table, TextFont 
 
     local GroupTextContent : string = ""
 
-    for i, WordGroup in pairs(TextObjects) do
-        if (not WordGroup.Content) then continue; end
-        GroupTextContent = (GroupTextContent..WordGroup.Content..((i ~= #TextObjects and " ") or ""));
+    for _, TextObject in pairs(TextObjects) do
+        if (not TextObject:IsA("TextLabel") or not TextObject:IsA("TextButton")) then continue; end
+        GroupTextContent = (GroupTextContent..TextObject.Text);
     end
 
     self.TotalTextGroups += 1
@@ -172,7 +172,7 @@ function SmartStringObject:AddGroup(key : string, TextObjects : table, TextFont 
             ["Content"] = GroupTextContent
         };
 
-        ["WordGroups"] = TextObjects,
+        ["TextObjects"] = TextObjects,
         ["Index"] = self.TotalTextGroups
     };
 
@@ -246,26 +246,13 @@ function SmartStringObject:Update()
         --// Word Group Calculations
         --\\ We need to calculate the best size and position for our Grapheme word groups!
 
-        for _, WordGroup in pairs(TextGroup.WordGroups) do
+        for _, TextObject in pairs(TextGroup.TextObjects) do
             
             --// Content Sizing Check
             --\\ This is where we check to see if we need to create a newline or not!
 
             local ContentSize : number
-
-            if (WordGroup.Content) then
-                local WordSize = SmartText:GetTextSize(
-                    WordGroup.Content,
-                    GroupFontSize,
-                    TextGroup.Metadata.Font,
-                    self.Container.AbsoluteSize,
-                    true
-                );
-
-                ContentSize = WordSize.X
-            else
-                ContentSize = GroupFontSize
-            end
+            ContentSize = GroupFontSize
 
             if ((TotalSizeX + ContentSize) > MaxBounds.X) then
                 TotalSizeY += LineYSpacing -- New Line indentation for cases where our WordGroup becomes too big
@@ -275,28 +262,26 @@ function SmartStringObject:Update()
             --// Individual Grapheme Sizing & Positioning
             --\\ Since our WordGroup's have different Font needs, we can scale things according to their desired inputs!
 
-            for _, GraphemeObject in pairs(WordGroup.Graphemes) do
-                if ((not GraphemeObject:IsA("TextLabel")) and (not GraphemeObject:IsA("TextButton")) and (not GraphemeObject:IsA("TextBox"))) then
-                    GraphemeObject.Size = UDim2.fromOffset(GroupFontSize, GroupFontSize);
-                    GraphemeObject.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
-                    TotalSizeX += GroupFontSize
+            if ((not TextObject:IsA("TextLabel")) and (not TextObject:IsA("TextButton")) and (not TextObject:IsA("TextBox"))) then
+                TextObject.Size = UDim2.fromOffset(GroupFontSize - 2, GroupFontSize - 2);
+                TextObject.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
+                TotalSizeX += GroupFontSize
 
-                    continue;
-                end
-
-                local GraphemeSize = SmartText:GetTextSize(
-                    GraphemeObject.Text:gsub("(\\?)<[^<>]->", ""), -- Gets rid of any richText formatting that may interfere with calculations
-                    GroupFontSize,
-                    GraphemeObject.Font,
-                    self.Container.AbsoluteSize
-                );
-                
-                GraphemeObject.Size = UDim2.fromOffset(GraphemeSize.X, GraphemeSize.Y);
-                GraphemeObject.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
-
-                GraphemeObject.TextSize = GroupFontSize
-                TotalSizeX += GraphemeSize.X
+                continue;
             end
+
+            local GraphemeSize = SmartText:GetTextSize(
+                TextObject.Text:gsub("(\\?)<[^<>]->", ""), -- Gets rid of any richText formatting that may interfere with calculations
+                GroupFontSize,
+                TextObject.Font,
+                self.Container.AbsoluteSize
+            );
+            
+            TextObject.Size = UDim2.fromOffset(GraphemeSize.X, GraphemeSize.Y);
+            TextObject.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
+
+            TextObject.TextSize = GroupFontSize
+            TotalSizeX += GraphemeSize.X
         end
     end
 

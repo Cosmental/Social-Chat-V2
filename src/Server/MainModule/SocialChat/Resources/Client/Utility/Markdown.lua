@@ -47,7 +47,7 @@ local syntaxes = { -- These are valid syntaxes that we can use to determine mark
 --// Main Methods
 
 --- Returns an array of markdown occurences found within the provided string!
-function Markdown:GetMarkdownData(content : string, order : boolean?) : table?
+function Markdown:GetMarkdownData(content : string, order : boolean?) : table
     local Result = {}; -- The occurence result array
     local Closed = {}; -- A list of closed character subpositions that are already in use!
 
