@@ -5,29 +5,32 @@
     
     Description: Handles individual text highlighting based on configurations
 
+    ==================================================================================================================
+
+    TODO: Fix Highlighting syntaxing because it breaks if you type "/w Cosmental Cosmental" etc. u get the idea!!
+
 ]]--
 
 --// Imports
 local ConfigurationFolder = game.ReplicatedStorage.SocialChatConfigurations
 local Settings = require(ConfigurationFolder.Client.ClientHighlights);
 
+--// Constants
+local HighlightFormat = "<font color=\"rgb(%s, %s, %s)\">%s</font>"
+
 --// Functions
 
 --- Returns the precise substring index number where the requested word index resides
-local function getWordIndex(text : string, wordIndex : number)
-    local words = text:split(" ");
-    local characterIndex : number = 0
+local function getWordIndex(Content : string, WordIndex : number)
+    local Index = 1
 
-    if (wordIndex > 1) then
-        for i, word in pairs(words) do
-            if (i == wordIndex) then break; end
-            characterIndex += (word:len() + 1);
+    for i, Word in pairs(Content:split(" ")) do
+        if (i == WordIndex) then
+            return Index
         end
-    
-        characterIndex += 1
-    end
 
-    return characterIndex
+        Index += (#Word + 1);
+    end
 end
 
 --- Returns a boolean value based on whether or the queried player is in this server
@@ -40,18 +43,29 @@ local function doesPlayerExist(query : string) : boolean
 end
 
 --- Inserts richText formatting
-local function InsertColorPhrase(text : string, phrase : string, atIndex : number, Color : Color3)
-    return (
-        text:sub(0, math.max(0, atIndex - 1))
+local function InsertColorPhrase(text : string, phrase : string, atIndex : number, Color : Color3, Offset : number) : number
+    local R, G, B = math.floor(Color.R * 255), math.floor(Color.G * 255), math.floor(Color.B * 255);
+    local NewText = (
+        text:sub(0, math.max(0, atIndex + Offset - 1))
         ..string.format(
-            "<font color=\"rgb(%s, %s, %s)\">%s</font>",
-            math.floor(Color.R * 255),
-            math.floor(Color.G * 255),
-            math.floor(Color.B * 255),
+            HighlightFormat,
+            R,
+            G,
+            B,
             phrase
         )
-        ..text:sub(atIndex + #phrase + ((atIndex == 0 and 1) or 0))
+        ..text:sub(atIndex + Offset + #phrase + ((atIndex == 0 and 1) or 0))
     );
+
+    local Appendence = (#HighlightFormat - 2 + (#tostring(R..G..B) - 6));
+
+    warn("----------------------------");
+    print("ORIGINAL INDEX: "..atIndex, " |  OFFSET: "..Offset);
+    print("OFFSET SUBINDEX:", text:sub(atIndex + Offset));
+    print("PHRASE:", phrase);
+    print("OFFSET CHANGE:", Appendence);
+
+    return NewText, Appendence
 end
 
 --// Module
@@ -60,7 +74,10 @@ return function (content : string) : string
 
     local Words = content:split(" ");
 
-    for i, Word in pairs(Words) do
+    local NewContent : string = content
+    local Offset = 0
+
+    for i, Word in ipairs(Words) do
         
         --// Username Highlighting \\--
 
@@ -68,7 +85,10 @@ return function (content : string) : string
             local Index = getWordIndex(content, i);
             local UsernameColor = Settings.UserHighlightColor
 
-            content = InsertColorPhrase(content, Word, Index, UsernameColor);
+            local NewText, Appendence = InsertColorPhrase(NewContent, Word, Index, UsernameColor, Offset);
+
+            NewContent = NewText
+            Offset += Appendence;
         end
 
         --// System Keyword Highlights \\--
@@ -82,7 +102,11 @@ return function (content : string) : string
                     and (not ((#PhraseSplit == 1) and (Word == SystemPhrase))) -- For singular cases
                 ) then continue; end
 
-                content = InsertColorPhrase(content, SystemPhrase, 0, Settings.KeyPhrases._SYSTEM.color);
+                local NewText, Appendence = InsertColorPhrase(NewContent, SystemPhrase, 0, Settings.KeyPhrases._SYSTEM.color, Offset);
+
+                NewContent = NewText
+                Offset += Appendence
+
                 break;
             end
         end
@@ -99,7 +123,11 @@ return function (content : string) : string
                 for _, CustomPhrase in pairs(Info.phrases) do
                     if (Word ~= CustomPhrase) then continue; end
     
-                    content = InsertColorPhrase(content, Word, Index, Info.color);
+                    local NewText, Appendence = InsertColorPhrase(NewContent, Word, Index, Info.color, Offset);
+
+                    NewContent = NewText
+                    Offset += Appendence
+
                     break;
                 end
             end
@@ -107,5 +135,5 @@ return function (content : string) : string
 
     end
 
-    return content
+    return NewContent
 end
