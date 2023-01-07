@@ -5,10 +5,6 @@
     
     Description: Handles individual text highlighting based on configurations
 
-    ==================================================================================================================
-
-    TODO: Fix Highlighting syntaxing because it breaks if you type "/w Cosmental Cosmental" etc. u get the idea!!
-
 ]]--
 
 --// Imports
@@ -57,15 +53,7 @@ local function InsertColorPhrase(text : string, phrase : string, atIndex : numbe
         ..text:sub(atIndex + Offset + #phrase + ((atIndex == 0 and 1) or 0))
     );
 
-    local Appendence = (#HighlightFormat - 2 + (#tostring(R..G..B) - 6));
-
-    warn("----------------------------");
-    print("ORIGINAL INDEX: "..atIndex, " |  OFFSET: "..Offset);
-    print("OFFSET SUBINDEX:", text:sub(atIndex + Offset));
-    print("PHRASE:", phrase);
-    print("OFFSET CHANGE:", Appendence);
-
-    return NewText, Appendence
+    return NewText, (#HighlightFormat - 2 + (#tostring(R..G..B) - 6));
 end
 
 --// Module

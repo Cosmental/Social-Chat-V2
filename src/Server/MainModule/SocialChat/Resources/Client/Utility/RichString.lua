@@ -71,10 +71,10 @@ function stringObject:Replace(keyWord : string, replacement : callback | string)
 end
 
 --- Creates a new set of TextLabels using previously assigned property metadata. [ THIS WILL NOT FORMAT YOUR LABELS! You must use the SmartText module for further functuality! ]
-function stringObject:Generate(Text : string, callback : callback?, isButton : boolean?) : table
+function stringObject:Generate(Text : string, callback : callback?, isButton : boolean?, allowMarkdown : boolean?) : table
     assert((not callback) or (type(callback) == "function"), "The provided callback function was not of type \"function\". Received \""..(type(callback)).."\"");
 
-    local MarkdownInfo : table = Markdown:GetMarkdownData(Text, true);
+    local MarkdownInfo : table = ((allowMarkdown and Markdown:GetMarkdownData(Text, true)) or {});
     local HyperCases : table = GetHyperCases(Text);
 
     local Labels = {};

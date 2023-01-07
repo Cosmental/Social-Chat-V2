@@ -32,11 +32,15 @@ local SubmitButton
 local ChatBox
 
 local DisplayLabel = Instance.new("TextLabel");
-local PlaceholderLabel : Instance?
 local CursorFrame = Instance.new("Frame");
 local SelectionBox = Instance.new("Frame");
+local PlaceholderLabel : Instance?
 
 local IsMobile = (UserInputService.TouchEnabled and not UserInputService.MouseEnabled);
+
+local SyntaxFormatting = "<font color=\"rgb(190,190,190)\">%s</font>"
+local Syntaxes = {"*", "_", "~"};
+
 local SyntaxEmbeds = {
     [Enum.KeyCode.I] = "*",
     [Enum.KeyCode.B] = "**",
@@ -78,13 +82,6 @@ function InputBox:Initialize(Info : table) : metatable
 
     local function updateDisplayText()
         if (IsMobile) then return; end
-
-        --[[
-    
-            TODO: Add color highlighting for syntaxes like "*", "~", and "_"!
-            [FORMAT]: "<font color=\"rgb(190,190,190)\">%s</font>"
-    
-        ]]--
     
         --// Escaping
         --\\ We need to escape any problematic richtext identifiers like "<" to prevent our richtext from breaking!
@@ -101,8 +98,51 @@ function InputBox:Initialize(Info : table) : metatable
     
             Point += (ends - Point);
         end
+
+        --// Syntax Coloring & Formatting
+        --\\ We need to color our syntaxes for UX purposes!
+
+        local MarkedText = (
+            (Settings.AllowMarkdown and Markdown:Markup(Highlighter(CleanText), true)) or
+            Highlighter(CleanText)
+        );
+
+        local NewText = MarkedText
+
+        local Occurences = Markdown:GetMarkdownData(NewText);
+        local Offset = 0
+        
+        for starts, ends in utf8.graphemes(MarkedText) do
+            local Character = MarkedText:sub(starts, ends);
+            if (not table.find(Syntaxes, Character)) then print("n", Character) continue; end
+
+            local IsFromMarkdown : boolean?
+
+            for syntax, data in pairs(Occurences) do
+                if (syntax:sub(1, 1) ~= Character) then continue; end
+
+                for _, scope in ipairs(data.results) do
+                    if (starts >= scope.starts and ends <= scope.ends) then
+                        IsFromMarkdown = true
+                        break;
+                    end
+                end
+            end
+
+            warn(Character, starts, IsFromMarkdown)
+
+            if (not IsFromMarkdown) then continue; end
+
+            local Formatting = SyntaxFormatting:format(Character);
+
+            NewText = NewText:sub(0, starts + Offset - 1)
+                ..Formatting
+                ..NewText:sub(ends + Offset + 1)
+
+            Offset += (#SyntaxFormatting - 2);
+        end
     
-        DisplayLabel.Text = Markdown:Markup(Highlighter(CleanText), true);
+        DisplayLabel.Text = NewText
     end
     
     --- Updates our textbox's cursor frame position
@@ -114,63 +154,63 @@ function InputBox:Initialize(Info : table) : metatable
         if (ChatBox:IsFocused()) then
             CursorFrame.Visible = true
             CursorTick = os.clock();
-            LastCursorPosition = Position
+            
+            task.defer(function() -- task.defer is used here because our task needs to update our LastCursorPosition AFTER the preceding calculations are done
+                LastCursorPosition = Position
+            end, RunService.RenderStepped);
         end
     
         if (Position ~= -1) then
-            local CursorTextSize = GetBoundX(ChatBox.Text:sub(0, Position - 1), ChatBox.TextSize, ChatBox.Font);
-            CursorFrame.Position = UDim2.new(0, CursorTextSize, 0.5, 0);
+            local RealBounds = DisplayLabel.TextBounds.X
+            local TotalBounds = GetBoundX(ChatBox.Text, 0);
+            local BoundOffset = (TotalBounds - RealBounds);
+
+            local CursorText = ChatBox.Text:sub(0, Position - 1);
+            local CursorTextSize = GetBoundX(CursorText, 0);
+
+            CursorFrame.Position = UDim2.new(0, CursorTextSize - BoundOffset, 0.5, 0);
         end
     end
     
     --- Updates our display label's position in a way that follows our cursor position
     local function updateDisplayPosition()
         local CursorPosition = ChatBox.CursorPosition
+        if (CursorPosition == -1) then return; end -- Make sure we have a valid cursor position
     
         local RelativeSizeX = math.floor(ChatBox.AbsoluteSize.X);
-        if (CursorPosition == -1) then return; end -- Make sure we have a valid cursor position
-        
-        local TotalWidth = GetBoundX(ChatBox.Text, ChatBox.TextSize, ChatBox.Font);
-        local CursorWidth = GetBoundX(ChatBox.Text:sub(0, CursorPosition - 1), ChatBox.TextSize, ChatBox.Font);
-    
-        local WidthOffset = (((FocusPoint + RelativeSizeX) + 2) - CursorWidth);
-    
-        local IsOffScreenOnLeft = (RelativeSizeX < WidthOffset);
-        local IsOffScreenOnRight = ((CursorWidth + 1) > FocusPoint + RelativeSizeX);
-        local IsOffScreen = (IsOffScreenOnLeft or IsOffScreenOnRight);
-    
+        local CursorTextSize = GetBoundX(ChatBox.Text:sub(0, CursorPosition - 1), 0); -- This is the TextSize of the text BEFORE our cursorpos
+
+        local IsOffScreenOnLeft = (CursorFrame.AbsolutePosition.X <= ChatBox.AbsolutePosition.X);
+        local IsOffScreenOnRight = (CursorTextSize > FocusPoint + RelativeSizeX);
+
         --[[
     
             warn("-------------------------------------------------------------");
-            print("IS OFFSCREEN:", IsOffScreen);
-            print("OFFSCREEN ON RIGHT:", IsOffScreenOnRight);
-            print("OFFSCREEN ON LEFT:", IsOffScreenOnLeft);
-            print("WIDTH OFFSET:", WidthOffset);
+            print("RIGHT OFF SCRN:", IsOffScreenOnRight);
+            print("LEFT OFF SCRN:", IsOffScreenOnLeft);
             print("FOCUS POINT:", FocusPoint);
-            print("CURSOR WIDTH:", CursorWidth);
+            print("CURSOR #TXT:", CursorTextSize);
             
         ]]--
         
-        if ((CursorWidth < #ChatBox.Text == 0) and (not IsOffScreen)) then
+        if (#ChatBox.Text == 0) then -- No text! (reset everything)
             DisplayLabel.Position = UDim2.new(0, 0, 0.5, 0);
             DisplayLabel.Size = UDim2.new(0.98, 0, 1, 0);
-            
+
             FocusPoint = 0
-        elseif (IsOffScreen) then
-            if (IsOffScreenOnLeft) then
-                local CursorStart = math.min(CursorPosition, LastCursorPosition);
-                local CursorEnd = math.max(CursorPosition, LastCursorPosition);
-    
-                local ChangeWidth = GetBoundX(ChatBox.Text:sub(CursorStart, CursorEnd), ChatBox.TextSize, ChatBox.Font);
-    
-                FocusPoint = math.max(FocusPoint - ChangeWidth,  0)
-                DisplayLabel.Position = UDim2.new(0, -CursorWidth, 0.5, 0);
-            elseif (IsOffScreenOnRight) then
-                FocusPoint = math.max(CursorWidth - RelativeSizeX, 0);
-    
-                DisplayLabel.Size = UDim2.new(0, ChatBox.AbsoluteSize.X + math.max(TotalWidth - RelativeSizeX, 0), 1, 0); -- We need to constantly grow our DisplayLabel in order to keep the system functional
-                DisplayLabel.Position = UDim2.new(0, RelativeSizeX - CursorWidth - 2, 0.5, 0);
-            end
+        elseif (IsOffScreenOnLeft) then -- We're on the LEFT edge of our TextBox!
+            local CursorStart = math.min(CursorPosition, LastCursorPosition);
+            local CursorEnd = math.max(CursorPosition, LastCursorPosition);
+
+            local ChangeWidth = GetBoundX(ChatBox.Text:sub(CursorStart, CursorEnd), CursorStart);
+
+            FocusPoint = math.max(FocusPoint - ChangeWidth, 0);
+            DisplayLabel.Position = UDim2.new(0, -CursorTextSize + ((FocusPoint > 25 and 5) or 0), 0.5, 0);
+        elseif (IsOffScreenOnRight) then -- We're on the RIGHT edge of our TextBox!
+            FocusPoint = math.max(CursorTextSize - RelativeSizeX, 0);
+
+            DisplayLabel.Size = UDim2.new(0, RelativeSizeX + math.max(DisplayLabel.TextBounds.X - RelativeSizeX, 0), 1, 0);
+            DisplayLabel.Position = UDim2.new(0, RelativeSizeX - CursorTextSize, 0.5, 0);
         end
     end
     
@@ -286,7 +326,7 @@ function InputBox:Initialize(Info : table) : metatable
             end
     
             task.defer(ChatBox.CaptureFocus, ChatBox);
-        elseif (IsControlHeld and SyntaxEmbed and ChatBox:IsFocused() and SelectedText) then -- Special Markdown syntaxing!
+        elseif (IsControlHeld and SyntaxEmbed and ChatBox:IsFocused() and SelectedText and Settings.AllowMarkdown) then -- Special Markdown syntaxing!
             local SelectionA, SelectionB = ChatBox.CursorPosition, ChatBox.SelectionStart
             local Text = SelectedText.Text
 
@@ -391,14 +431,23 @@ function InputBox:Initialize(Info : table) : metatable
 
         self._oldText = nil
         ChatBox.Text = ""
+        FocusPoint = 0
     end);
 
     ChatBox.FocusLost:Connect(function(enterPressed : boolean)
         CursorFrame.Visible = false
+        FocusPoint = 0
+
+        task.defer(function()
+            PlaceholderLabel.Visible = (#ChatBox.Text == 0);
+        end, RunService.RenderStepped);
 
         if (not enterPressed) then -- Message was interrupted. Proceed with visuals
             self._oldText = ChatBox.Text
-            self:Set(Highlighter(Markdown:Markup(ChatBox.Text)));
+            self:Set(Highlighter(
+                (Settings.AllowMarkdown and Markdown:Markup(ChatBox.Text)) or
+                ChatBox.Text
+            ));
         else -- Submit our message
             if (ChatBox.Text:gsub(" ", ""):len() == 0) then return; end -- Empty string cancelation
             Channels:SendMessage(ChatBox.Text);
@@ -406,9 +455,6 @@ function InputBox:Initialize(Info : table) : metatable
             self._oldText = nil
             ChatBox.Text = ""
         end
-
-        RunService.RenderStepped:Wait();
-        PlaceholderLabel.Visible = (#ChatBox.Text == 0);
     end);
 
     --// Cursor Frame Flicker
@@ -452,65 +498,56 @@ end
 --// Functions
 
 --- Returns RichText bounds based on the provided content string!
-function GetBoundX(content : string, TextSize : number, TextFont : Enum.Font) : number
-	local Occurences = Markdown:GetMarkdownData(content);
+function GetBoundX(content : string, atIndex : number) : number
+	local Occurences = Markdown:GetMarkdownData(ChatBox.Text);
 
-	if (not Occurences) then
-		return TextService:GetTextSize(content, TextSize, TextFont, Vector2.new(math.huge, math.huge)).X -- Default Return
+	if (not Occurences or not Settings.AllowMarkdown) then
+		return TextService:GetTextSize(
+            content,
+            ChatBox.TextSize,
+            ChatBox.Font,
+            Vector2.new(math.huge, math.huge)
+        ).X -- Default Return
 	end
 
-	--// Font Setup
-	local NormalFont = Font.fromEnum(TextFont);
-	local BoldFont = Font.fromEnum(TextFont);
-	local ItalicFont = Font.fromEnum(TextFont);
-
-	BoldFont.Bold = true
-	ItalicFont.Style = Enum.FontStyle.Italic
-
-	--// TextParams Setup
-	local NormalParams = Instance.new("GetTextBoundsParams");
-	NormalParams.Font = NormalFont
-	NormalParams.Size = TextSize
-
-	local BoldParams = Instance.new("GetTextBoundsParams");
-	BoldParams.Font = BoldFont
-	BoldParams.Size = TextSize
-
-	local ItalicParams = Instance.new("GetTextBoundsParams");
-	ItalicParams.Font = ItalicFont
-	ItalicParams.Size = TextSize
-
 	--// TextBound analysis
+	local Params = Instance.new("GetTextBoundsParams");
+	Params.Size = ChatBox.TextSize
+    
+	local ThisFont = Font.fromEnum(ChatBox.Font);
 	local BoundX = 0
 
 	for starts, ends in utf8.graphemes(content) do
 		local Character = content:sub(starts, ends);
-		local ThisMarkdown : string?
+
+        local IsItalic : boolean?
+        local IsBold : boolean?
 
 		for syntax, data in pairs(Occurences) do
-            if (ThisMarkdown) then break; end
+            if (syntax ~= "**" and syntax ~= "*") then continue; end
 
             for _, scope in ipairs(data.results) do
-                if (starts >= scope.starts and ends <= scope.ends) then
-                    ThisMarkdown = syntax
-                    break; -- No need to continue our iteration!
+                if (atIndex + starts >= scope.starts and atIndex + starts <= scope.ends) then
+                    IsItalic = (syntax == "*");
+                    IsBold = (syntax == "**");
+
+                    break;
                 end
             end
         end
 
-		local Bounds
-
-		if (ThisMarkdown ~= "**" and ThisMarkdown ~= "*") then -- RichText unique bounds are NOT active here.
-			NormalParams.Text = Character
-			Bounds = TextService:GetTextBoundsAsync(NormalParams);
+		if (not IsItalic and not IsBold) then -- RichText unique bounds are NOT active here.
+            ThisFont.Bold = false
+            ThisFont.Style = Enum.FontStyle.Normal
 		else -- RichText bounds are active here!
-			local Params = ((ThisMarkdown == "**" and BoldParams) or (ItalicParams));
-			Params.Text = Character
-			
-			Bounds = TextService:GetTextBoundsAsync(Params);
+            ThisFont.Bold = IsBold
+            ThisFont.Style = ((IsItalic and Enum.FontStyle.Italic) or Enum.FontStyle.Normal);
 		end
 
-		BoundX += Bounds.X
+        Params.Font = ThisFont
+        Params.Text = Character
+
+		BoundX += (TextService:GetTextBoundsAsync(Params).X);
 	end
 
 	return BoundX
@@ -519,27 +556,26 @@ end
 --- Returns an array of data based on the currently selected text within our InputBox (if any)
 function GetSelectedContent() : table
     if ((ChatBox.CursorPosition == -1) or (ChatBox.SelectionStart == -1)) then return; end
-    
-    local selectionStart : number = math.min(ChatBox.CursorPosition, ChatBox.SelectionStart);
-    local selectionEnd : number = math.max(ChatBox.CursorPosition, ChatBox.SelectionStart) - 1;
 
-    local TotalTextSize = GetBoundX(ChatBox.Text, ChatBox.TextSize, ChatBox.Font);
-    local priorTextSize = GetBoundX(ChatBox.Text:sub(0, selectionStart - 1), ChatBox.TextSize, ChatBox.Font);
-    local afterTextSize = GetBoundX(ChatBox.Text:sub(selectionEnd + 1), ChatBox.TextSize, ChatBox.Font);
+    local RealBounds = DisplayLabel.TextBounds.X
+    local TotalBounds = GetBoundX(ChatBox.Text, 0);
+    local BoundOffset = (TotalBounds - RealBounds);
 
-    local absSelectionSize = ((TotalTextSize - afterTextSize) - priorTextSize);
-    local selectedText = string.sub(
-        ChatBox.Text,
-        selectionStart,
-        selectionEnd
-    );
+    local Starts : number = math.min(ChatBox.CursorPosition, ChatBox.SelectionStart);
+    local Ends : number = math.max(ChatBox.CursorPosition, ChatBox.SelectionStart) - 1;
+
+    local PriorTextSize = GetBoundX(ChatBox.Text:sub(0, Starts - 1), 0);
+    local AfterTextSize = GetBoundX(ChatBox.Text:sub(Ends + 1), Ends + 1);
+
+    local SelectedText = ChatBox.Text:sub(Starts, Ends);
+    local SelectionSize = GetBoundX(SelectedText, Starts);
 
     return {
-        ["StartPos"] = priorTextSize,
-        ["EndPos"] = TotalTextSize - afterTextSize,
+        ["StartPos"] = PriorTextSize - BoundOffset,
+        ["EndPos"] = RealBounds - AfterTextSize,
 
-        ["SelectionSize"] = absSelectionSize,
-        ["Text"] = selectedText
+        ["SelectionSize"] = SelectionSize,
+        ["Text"] = SelectedText
     };
 end
 

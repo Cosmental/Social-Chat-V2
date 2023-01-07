@@ -17,7 +17,7 @@ return {
             ["phrases"] = {
                 "/e dance", "/e dance1", "/e dance2", "/e dance3",
                 "/e point", "/e cheer", "/e wave",
-                "/help"
+                "/help", "/w"
             },
 
             ["color"] = Color3.fromRGB(233, 75, 75),
