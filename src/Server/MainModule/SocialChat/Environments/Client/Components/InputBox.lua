@@ -67,7 +67,7 @@ function InputBox:Initialize(Info : table) : metatable
     SmartText = self.Library.SmartText
     Markdown = self.Library.Markdown
 
-    Settings = self.Settings.ClientChannels
+    Settings = self.Settings.LocalChannels
     Channels = self.Src.Channels
 
     InputFrame = self.ChatUI.Chat.Input

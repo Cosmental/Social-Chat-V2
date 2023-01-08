@@ -55,7 +55,7 @@ function ChannelMaster:Initialize(Setup : table)
     ChannelBar = ChatFrame.ChannelBar
     ChannelFrame = ChannelBar.Channels
 
-    Settings = self.Settings.ClientChannels
+    Settings = self.Settings.LocalChannels
     RichString = self.Library.RichString
     SmartText = self.Library.SmartText
     InputBox = self.Src.InputBox
@@ -205,7 +205,7 @@ function Channel:Render(Message : string, TagData : table?, IsPrivateMessage : b
     MainFrame.Name = "MESSAGE_RENDER_FRAME"
     
     local StringRenderer : SmartStringObject = SmartText.new(MessageContainer, {
-        MaxFontSize = Settings.MessageFontSize
+        MaxFontSize = Settings.MaxFontSize
     });
 
     local LabelRenderer : StringObject = RichString.new({
@@ -251,6 +251,7 @@ function Channel:Render(Message : string, TagData : table?, IsPrivateMessage : b
         --// Name Rendering
         if (TagData and TagData.Name) then
             Render("Name", "**["..(TagData.Name).."]:** ", (TagData.NameColor or Color3.fromRGB(255, 255, 255)), function()
+                if (not TagData.UserId) then return; end
                 if (TagData.UserId == Player.UserId) then return; end -- We cant whisper to ourselves!!
 
                 local Client = game.Players:GetPlayerByUserId(TagData.UserId);

@@ -18,11 +18,15 @@ Speaker.__index = Speaker
 local CollectionService = game:GetService("CollectionService");
 
 --// Imports
-local ChatTagData
 local Settings
+local ChatTag
+
+local Channels
 
 --// Constants
 local SpeakerAdded = Instance.new("BindableEvent");
+local Network
+
 local ChatSpeakers = {};
 
 --// Initialization
@@ -30,8 +34,11 @@ local ChatSpeakers = {};
 function SpeakerMaster:Initialize(Setup : table)
     local self = setmetatable(Setup, SpeakerMaster);
 
-    ChatTagData = self.Settings.ChatSystemTagData
-    Settings = self.Settings.ChatSystemChannels
+    Settings = self.Settings.SystemChannelSettings
+    ChatTag = self.Settings.ChatTags
+
+    Network = self.Remotes.Channels
+    Channels = self.Src.Channels
 
     --// Setup
 
@@ -63,6 +70,8 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
     end
 
     local NewSpeaker = setmetatable({
+
+        --// RESOURCE DATA \\--
         ["TagData"] = {
             
             ["UserId"] = ((typeof(agent) == "Instance" and agent.UserId) or nil), -- UserId is useful for security cases!
@@ -87,11 +96,36 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
 
         };
 
-        ["Channels"] = {} -- a table of channels that this speaker is in
+        --// PROGRAMMABLE \\--
+
+        ["Channels"] = {}, -- a table of channels that this speaker is in
+        ["__previousNameColor"] = nil, -- a Color3 value that recalls the speaker's previous TagColor
+
     }, Speaker);
 
     ChatSpeakers[agent] = NewSpeaker
     SpeakerAdded:Fire(agent, NewSpeaker);
+
+    --// Team Color Appliance \\--
+    if (Settings.UserTeamColorsAsUsernameColor and typeof(agent) == "Instance") then
+        agent:GetPropertyChangedSignal("Team"):Connect(function()
+            if (agent.Team ~= nil) then -- This Player is now in a team
+                NewSpeaker.__previousNameColor = NewSpeaker.TagData.NameColor
+                NewSpeaker.TagData.NameColor = agent.Team.TeamColor.Color
+
+                Network.EventSendMessage:FireClient(
+                    agent,
+                    "**{Team}** You are now on the \'*"..(agent.Team.Name).."*\' team.",
+                    Channels:Get("General"),
+                    {
+                        ["MessageColor"] = Color3.fromRGB(255, 255, 255);
+                    }
+                );
+            else -- This player is no longer in a team
+                NewSpeaker.TagData.NameColor = NewSpeaker.__previousNameColor
+            end
+        end);
+    end
 
     return NewSpeaker
 end
@@ -108,6 +142,8 @@ end
 
 --- Returns a random Speaker color
 function getRandomSpeakerColor() : Color3
+    if (not Settings.AssignRandomUsernameColorOnJoin) then return Color3.fromRGB(255, 255, 255); end
+
     if (next(Settings.UsernameColors)) then
         return Settings.UsernameColors[math.random(#Settings.UsernameColors)];
     else
@@ -120,7 +156,7 @@ function GetTag(Player : Player)
     local OwnedTag, Priority = nil, math.huge
 
 	--// Find our Players tag
-	for _, Tag in pairs(ChatTagData) do
+	for _, Tag in pairs(ChatTag) do
 		if (Tag.PriorityOrder >= Priority) then continue; end --// Skips this tag if its equal to/over our priority
 		local Requirements = Tag.Requirements
 

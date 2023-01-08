@@ -9,7 +9,7 @@
 
 --// Imports
 local ConfigurationFolder = game.ReplicatedStorage.SocialChatConfigurations
-local Settings = require(ConfigurationFolder.Client.ClientHighlights);
+local Settings = require(ConfigurationFolder.Client.LocalHighlights);
 
 --// Constants
 local HighlightFormat = "<font color=\"rgb(%s, %s, %s)\">%s</font>"

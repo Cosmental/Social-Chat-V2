@@ -36,7 +36,7 @@ function ChannelManager:Initialize(Setup : table)
     local self = setmetatable(Setup, ChannelManager);
 
     Speakers = self.Src.Speakers
-    Settings = self.Settings.ChatSystemChannels
+    Settings = self.Settings.SystemChannelSettings
     Network = self.Remotes.Channels
 
     --// Setup

@@ -1,16 +1,12 @@
 return {
     
     --// BEHAVIOR \\--
-
-    ["DisplayNamesAreUsed"] = true, -- Determines if display names are used rather than the REAL username for each player
-
+    
     ["AllowMarkdown"] = true, -- Determines if players can use Markdown syntaxing in their messages. ( this behaves similar to how discord messaging )
 
     --// DISPLAY \\--
 
-    ["MaxTextboxFontSize"] = 20, -- The desired fontSize for our InputBox. (this does NOT change message fontsize!)
-
-    ["MessageFontSize"] = 18, -- The desired fontSize for our messages
+    ["MaxFontSize"] = 18, -- The default desired fontSize for our messages
 
     ["MessageFont"] = Enum.Font.SourceSans, -- The desired default font for our messages
 

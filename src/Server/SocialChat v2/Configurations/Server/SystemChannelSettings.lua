@@ -1,9 +1,5 @@
 return {
 
-    --// CHANNEL PERMISSIONS \\--
-
-    ["ClientsCanCreateChannels"] = false, -- Determines if client's are allowed to make new channels using the "/channel" command
-
     --// CHAT SYSTEM SETTINGS \\--
     
     ["MaxMessagesPerChannel"] = 50, -- Determines the max amount of messages that can be cached in each channel
