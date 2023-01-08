@@ -72,7 +72,7 @@ function ChannelManager:Initialize(Setup : table)
         if ((type(Recipient) == "string") and (not ChannelManager:Get(Recipient))) then return; end -- The client requested a Channel recipient that doesnt exist!
         if ((typeof(Recipient) == "Instance") and (not Player:IsA("Player"))) then return; end -- The client requested a non-player object
 
-        local RecievingChannel = ChannelManager:Get(Recipient);
+        local RecievingChannel = ((type(Recipient) == "string") and (ChannelManager:Get(Recipient)));
         ChannelManager:Message(Player, Message, RecievingChannel or Recipient);
     end);
 
@@ -159,7 +159,8 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
 
     if (Success) then -- We successfully filtered our message!
         if (typeof(Recipient) == "Instance") then -- This message is for a PRIVATE client
-            Network.EventSendMessage:FireClient(Recipient, GetFilteredMessageForClient(Response, Recipient), Recipient, Speaker.TagData);
+            Network.EventSendMessage:FireClient(Recipient, GetFilteredMessageForClient(Response, Recipient), Author, Speaker.TagData);
+            Network.EventSendMessage:FireClient(Author, GetFilteredMessageForClient(Response, Author), Recipient, Speaker.TagData, true);
         else -- This message is for a specific channel
             for Member, _ in pairs(Recipient.Members) do
                 local FilterSuccess, FilterResponse = pcall(function()
