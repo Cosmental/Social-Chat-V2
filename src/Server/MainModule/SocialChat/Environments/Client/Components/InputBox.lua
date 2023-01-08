@@ -37,6 +37,7 @@ local SelectionBox = Instance.new("Frame");
 local PlaceholderLabel : Instance?
 
 local IsMobile = (UserInputService.TouchEnabled and not UserInputService.MouseEnabled);
+local Player = game.Players.LocalPlayer
 
 local SyntaxFormatting = "<font color=\"rgb(190,190,190)\">%s</font>"
 local Syntaxes = {"*", "_", "~"};
@@ -114,7 +115,7 @@ function InputBox:Initialize(Info : table) : metatable
         
         for starts, ends in utf8.graphemes(MarkedText) do
             local Character = MarkedText:sub(starts, ends);
-            if (not table.find(Syntaxes, Character)) then print("n", Character) continue; end
+            if (not table.find(Syntaxes, Character)) then continue; end
 
             local IsFromMarkdown : boolean?
 
@@ -128,8 +129,6 @@ function InputBox:Initialize(Info : table) : metatable
                     end
                 end
             end
-
-            warn(Character, starts, IsFromMarkdown)
 
             if (not IsFromMarkdown) then continue; end
 
@@ -218,11 +217,11 @@ function InputBox:Initialize(Info : table) : metatable
     local function updateSelectionBox()
         if (IsMobile) then return; end
 
-        local selectionInfo = GetSelectedContent();
+        local SelectionInfo = GetSelectedContent();
         
-        if (selectionInfo) then
-            SelectionBox.Size = UDim2.fromOffset(selectionInfo.SelectionSize, DisplayLabel.AbsoluteSize.Y + 4);
-            SelectionBox.Position = UDim2.fromOffset(selectionInfo.StartPos, 0);
+        if (SelectionInfo) then
+            SelectionBox.Size = UDim2.fromOffset(SelectionInfo.SelectionSize, DisplayLabel.AbsoluteSize.Y + 4);
+            SelectionBox.Position = UDim2.fromOffset(SelectionInfo.StartPos, 0);
             SelectionBox.Visible = true
         else
             SelectionBox.Visible = false
@@ -327,7 +326,7 @@ function InputBox:Initialize(Info : table) : metatable
     
             task.defer(ChatBox.CaptureFocus, ChatBox);
         elseif (IsControlHeld and SyntaxEmbed and ChatBox:IsFocused() and SelectedText and Settings.AllowMarkdown) then -- Special Markdown syntaxing!
-            local SelectionA, SelectionB = ChatBox.CursorPosition, ChatBox.SelectionStart
+            local SelectionA, SelectionB = SelectedText.Cursor.Starts, SelectedText.Cursor.Ends
             local Text = SelectedText.Text
 
             --// Markdown determination
@@ -350,37 +349,25 @@ function InputBox:Initialize(Info : table) : metatable
 
             RunService.RenderStepped:Wait(); -- For cases such as "CTRL + I" keyboard actions have to process before we continue
 
-            if (SelectionA > SelectionB) then
-                ChatBox.Text = string.format(
-                    "%s%s%s",
-                    ChatBox.Text:sub(1, SelectionB - 1),
-                    ReplacementText,
-                    ChatBox.Text:sub(SelectionA)
-                );
-            else
-                ChatBox.Text = string.format(
-                    "%s%s%s",
-                    ChatBox.Text:sub(1, SelectionA - 1),
-                    ReplacementText,
-                    ChatBox.Text:sub(SelectionB)
-                );
-            end
+            ChatBox.Text = string.format(
+                "%s%s%s",
+                ChatBox.Text:sub(0, SelectionA - 1),
+                ReplacementText,
+                ChatBox.Text:sub(SelectionB + 1)
+            );
 
             --// Cursor Position Handling
             --\\ Sometimes our CursorPosition will be ahead of our Selection position and sometimes it wont...so we need to deal with it!
             
             local PositionOffset = (
-                (IsMarkedDown) and (-SyntaxEmbed:len() * 2)
+                (IsMarkedDown) and (-SyntaxEmbed:len())
                 or (SyntaxEmbed:len() * 2)
             );
 
-            if (SelectedText.StartPos > SelectedText.EndPos) then -- Backwards selection (left <-- right)
-                ChatBox.CursorPosition = (SelectedText.StartPos + PositionOffset);
-                ChatBox.SelectionStart = SelectedText.EndPos
-            else -- Normal selection (left --> right)
-                ChatBox.CursorPosition = SelectedText.StartPos
-                ChatBox.SelectionStart = (SelectedText.EndPos + PositionOffset);
-            end
+            ChatBox.CursorPosition = SelectionA
+            ChatBox.SelectionStart = (SelectionB + 1 + PositionOffset);
+
+            updateSelectionBox(); -- Sometimes our SelectionBox won't update on the same frame that our CursorPosition does!
         elseif (input.KeyCode == Enum.KeyCode.LeftControl) then
             IsControlHeld = true
         end
@@ -426,12 +413,11 @@ function InputBox:Initialize(Info : table) : metatable
     --\\ Here we finalize our textbox string before sending it out!
 
     SubmitButton.MouseButton1Click:Connect(function()
-        if ((self._oldText or ChatBox.Text):gsub(" ", ""):len() == 0) then return; end -- Empty strings cant be sent!
-        Channels:SendMessage(self._oldText or ChatBox.Text);
+        self:Submit();
 
-        self._oldText = nil
-        ChatBox.Text = ""
-        FocusPoint = 0
+        task.defer(function()
+            PlaceholderLabel.Visible = (#ChatBox.Text == 0);
+        end, RunService.RenderStepped);
     end);
 
     ChatBox.FocusLost:Connect(function(enterPressed : boolean)
@@ -449,11 +435,7 @@ function InputBox:Initialize(Info : table) : metatable
                 ChatBox.Text
             ));
         else -- Submit our message
-            if (ChatBox.Text:gsub(" ", ""):len() == 0) then return; end -- Empty string cancelation
-            Channels:SendMessage(ChatBox.Text);
-            
-            self._oldText = nil
-            ChatBox.Text = ""
+            self:Submit();
         end
     end);
 
@@ -478,6 +460,7 @@ function InputBox:Initialize(Info : table) : metatable
     end
 
     updateFontSize();
+
     ChatBox:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateFontSize);
     ChatBox.Font = Settings.MessageFont
 
@@ -487,12 +470,46 @@ end
 --// Methods
 
 --- Sets the TextBox's text content to the provided string
-function InputBox:Set(content : string)
+function InputBox:Set(content : string, captureClient : boolean?)
     if ((type(content) ~= "string") or (#content == 0)) then return; end -- Silent cancelation is required for arbitrary functuality
 
-    systemWasTyping = true
+    if (captureClient) then
+        ChatBox:CaptureFocus();
+
+        task.defer(function()
+            ChatBox.CursorPosition = #content + 1
+        end, ChatBox:GetPropertyChangedSignal("Text"));
+    end
+
+    systemWasTyping = not captureClient
     ChatBox.Text = content
     systemWasTyping = false
+end
+
+--- Sends the currently typed message to the server (if any)
+function InputBox:Submit()
+    if ((self._oldText or ChatBox.Text):gsub(" ", ""):len() == 0) then return; end -- Empty strings cant be sent!
+    
+    local Words = ChatBox.Text:split(" ");
+    local Focus = Channels:GetFocus();
+
+    local WhisperClient = (
+        ((#Words >= 3) and (Words[1] == "/w") and (FindPlayer(Words[2]))) or -- Whispering using the "/w {player}" command
+        (Focus.IsPrivate and Focus.Members[1]) -- Whispering via a private channel
+    );
+
+    local IsValidClient = (WhisperClient and WhisperClient ~= Player);
+
+    Channels:SendMessage(
+        ((IsValidClient and not Focus.IsPrivate) and table.concat(Words, " ", 3))
+        or ChatBox.Text, (IsValidClient and WhisperClient)
+    );
+
+    CursorFrame.Visible = false
+    self._oldText = nil
+
+    ChatBox.Text = ""
+    FocusPoint = 0
 end
 
 --// Functions
@@ -571,12 +588,26 @@ function GetSelectedContent() : table
     local SelectionSize = GetBoundX(SelectedText, Starts);
 
     return {
-        ["StartPos"] = PriorTextSize - BoundOffset,
-        ["EndPos"] = RealBounds - AfterTextSize,
+        ["StartPos"] = PriorTextSize - BoundOffset, -- Position < UDim2 >
+        ["EndPos"] = RealBounds - AfterTextSize, -- Position < UDim2 >
 
-        ["SelectionSize"] = SelectionSize,
-        ["Text"] = SelectedText
+        ["Cursor"] = { -- Cursor Position data < table :: numbers >
+            ["Starts"] = Starts,
+            ["Ends"] = Ends
+        },
+
+        ["SelectionSize"] = SelectionSize, -- Size < UDim2 >
+        ["Text"] = SelectedText -- Selected Text < string >
     };
+end
+
+--- Searches for a player using the provided string
+function FindPlayer(query : string) : Player
+    for _, Player in pairs(game.Players:GetPlayers()) do
+        if (Player.Name:lower() == query:lower()) then
+            return Player
+        end
+    end
 end
 
 return InputBox

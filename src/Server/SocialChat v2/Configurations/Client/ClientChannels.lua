@@ -2,8 +2,6 @@ return {
     
     --// BEHAVIOR \\--
 
-    ["DirectMessagesCreateNewChannels"] = true, -- Determines if new chat channels will be created when a private message is sent to someone else
-
     ["DisplayNamesAreUsed"] = true, -- Determines if display names are used rather than the REAL username for each player
 
     ["AllowMarkdown"] = true, -- Determines if players can use Markdown syntaxing in their messages. ( this behaves similar to how discord messaging )
