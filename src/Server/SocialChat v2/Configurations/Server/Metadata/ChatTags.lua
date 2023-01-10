@@ -16,10 +16,28 @@ return {
 			["AcceptedRanks"] = {255},
 		};
 
-		["TagData"] = {
-			["TagName"] = "Creator",
-			["TagColor"] = Color3.fromRGB(255, 35, 35),
-			["BubbleTextColor"] = "Rainbow",
+		["Metadata"] = {
+			["Classic"] = {
+				["Tag"] = {
+					["Name"] = "Creator",
+					["Color"] = Color3.fromRGB(255, 35, 35),
+					["Font"] = Enum.Font.DenkOne
+				},
+
+				["Content"] = {
+					["Color"] = Color3.fromRGB(255, 150, 210),
+					["Font"] = Enum.Font.Oswald
+				},
+	
+				["Username"] = {
+					["Font"] = Enum.Font.Code
+				}
+			};
+
+			["ChatBubble"] = {
+				["Style"] = "Rainbow",
+				["Font"] = Enum.Font.SourceSans
+			},
 		};
 
 		["PriorityOrder"] = 0,

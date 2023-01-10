@@ -69,7 +69,7 @@ function ChannelMaster:Initialize(Setup : table)
     ChatCacheContainer.Parent = script
 
     --// Events
-    Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, TagData : table, IsFromUs : boolean?)
+    Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, Metadata : table, IsFromUs : boolean?)
         if (typeof(Destination) == "Instance" and Destination:IsA("Player")) then -- Private Message
             if (TotalChannels >= 2) then -- Create the message in a new PRIVATE channel!
                 local PrivateChannel = self:Get(Destination.Name);
@@ -82,10 +82,10 @@ function ChannelMaster:Initialize(Setup : table)
                     end
                 end
 
-                PrivateChannel:Render(Message, TagData);
+                PrivateChannel:Render(Message, Metadata.Classic);
             else -- Create the message in our current channel!
                 local CurrentChannel = self:GetFocus();
-                CurrentChannel:Render(Message, TagData, true, IsFromUs);
+                CurrentChannel:Render(Message, Metadata.Classic, true, IsFromUs);
             end
         else -- Channel Mesage
             local DirectedChannel = self:Get(Destination.Name);
@@ -95,7 +95,7 @@ function ChannelMaster:Initialize(Setup : table)
                 return;
             end
 
-            DirectedChannel:Render(Message, TagData);
+            DirectedChannel:Render(Message, Metadata.Classic);
         end
     end);
 
@@ -165,7 +165,7 @@ function ChannelMaster.new(name : string, members : table?, chatHistory : table?
     --// Instance registration
     if (SystemChannel.History) then
         for _, Info in ipairs(SystemChannel.History) do
-            SystemChannel:Render(Info.Message, SystemChannel.Members[Info.Author].TagData);
+            SystemChannel:Render(Info.Message, SystemChannel.Members[Info.Author].Metadata.Classic);
         end
     end
 
@@ -198,7 +198,7 @@ end
 --// Metamethods
 
 --- Renders a message based on the specified parameters
-function Channel:Render(Message : string, TagData : table?, IsPrivateMessage : boolean?, MessageIsFromUs : boolean?) : table
+function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : boolean?, MessageIsFromUs : boolean?) : table
     local MainFrame = Instance.new("Frame");
 
     MainFrame.BackgroundTransparency = 1
@@ -208,8 +208,7 @@ function Channel:Render(Message : string, TagData : table?, IsPrivateMessage : b
         MaxFontSize = Settings.MaxFontSize
     });
 
-    local LabelRenderer : StringObject = RichString.new({
-        Font = (TagData and TagData.Font) or Settings.MessageFont,
+    local ContentRenderer : StringObject = RichString.new({
         MarkdownEnabled = Settings.AllowMarkdown
     });
     
@@ -219,12 +218,12 @@ function Channel:Render(Message : string, TagData : table?, IsPrivateMessage : b
     };
 
     --// Dynamic Rendering
-    local function Render(TextGroupName : string, Text : string, Color : Color3, ButtonCallback : callback?, IsTag : boolean?)
-        local TextObjects = LabelRenderer:Generate(Text, function(TextObject)
-            TextObject.TextColor3 = Color
+    local function Generate(TextGroupName : string, Text : string, Properties : table, ButtonCallback : callback?, IsTag : boolean?)
+        local TextObjects = ContentRenderer:Generate(Text, Properties.Font, function(TextObject)
+            TextObject.TextColor3 = Properties.Color
         end, ButtonCallback ~= nil, (IsTag or Settings.AllowMarkdown));
 
-        StringRenderer:AddGroup(TextGroupName, TextObjects, LabelRenderer.Font);
+        StringRenderer:AddGroup(TextGroupName, TextObjects, Properties.Font);
 
         for _, TextObject in pairs(TextObjects) do
             if (ButtonCallback) then
@@ -236,38 +235,59 @@ function Channel:Render(Message : string, TagData : table?, IsPrivateMessage : b
     end
 
     if (IsPrivateMessage) then -- Private Message!
-        Render("FromWho", "*{"
+        Generate("FromWho",
+            "{"
             ..((MessageIsFromUs and "to") or "from").." "
-            ..(TagData.Name).."}: *",
-            Color3.fromRGB(255, 255, 255), nil, true
+            ..(Metadata.Name).."}: ",
+            {Color = Color3.fromRGB(255, 255, 255), Font = Settings.MessageFont},
+            nil, true
         );
     else -- Normal Message!
         
         --// Tag Rendering
-        if (TagData and TagData.TagName) then
-            Render("Tag", "**["..(TagData.TagName).."]** ", (TagData.TagColor or Color3.fromRGB(255, 255, 255)), nil, true);
+        if (Metadata and Metadata.Tag) then
+            Generate(
+                "Tag",
+                "**["..(Metadata.Tag.Name).."]** ",
+                {
+                    ["Color"] = (Metadata.Tag.Color or Color3.fromRGB(255, 255, 255)),
+                    ["Font"] = Metadata.Tag.Font or Settings.MessageFont
+                },
+                nil, true
+            );
         end
 
         --// Name Rendering
-        if (TagData and TagData.Name) then
-            Render("Name", "**["..(TagData.Name).."]:** ", (TagData.NameColor or Color3.fromRGB(255, 255, 255)), function()
-                if (not TagData.UserId) then return; end
-                if (TagData.UserId == Player.UserId) then return; end -- We cant whisper to ourselves!!
+        if (Metadata and Metadata.Username) then
+            Generate(
+                "Name",
+                "**["..(Metadata.Username.Name).."]:** ",
+                {
+                    ["Color"] = Metadata.Username.Color,
+                    ["Font"] = Metadata.Username.Font or Settings.MessageFont
+                },
+                function()
+                    if (not Metadata.UserId) then return; end
+                    if (Metadata.UserId == Player.UserId) then return; end -- We cant whisper to ourselves!!
 
-                local Client = game.Players:GetPlayerByUserId(TagData.UserId);
-                if (not Client) then return; end -- The client either left or isnt in the server anymore :(
+                    local Client = game.Players:GetPlayerByUserId(Metadata.UserId);
+                    if (not Client) then return; end -- The client either left or isnt in the server anymore :(
 
-                InputBox:Set("/w "..Client.Name.." ", true);
-            end, true);
+                    InputBox:Set("/w "..Client.Name.." ", true);
+                end, true
+            );
         end
 
     end
 
     --// Message Rendering
-    Render(
+    Generate(
         "Message",
         Message,
-        (TagData and TagData.MessageColor) or Color3.fromRGB(255, 255, 255)
+        {
+            Color = (Metadata and Metadata.Content and Metadata.Content.Color) or Color3.fromRGB(255, 255, 255),
+            Font = (Metadata and Metadata.Content and Metadata.Content.Font) or Settings.MessageFont
+        }
     );
 
     --// Finalization

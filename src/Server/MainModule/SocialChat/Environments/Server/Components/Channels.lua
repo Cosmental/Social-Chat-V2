@@ -159,8 +159,8 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
 
     if (Success) then -- We successfully filtered our message!
         if (typeof(Recipient) == "Instance") then -- This message is for a PRIVATE client
-            Network.EventSendMessage:FireClient(Recipient, GetFilteredMessageForClient(Response, Recipient), Author, Speaker.TagData);
-            Network.EventSendMessage:FireClient(Author, GetFilteredMessageForClient(Response, Author), Recipient, Speaker.TagData, true);
+            Network.EventSendMessage:FireClient(Recipient, GetFilteredMessageForClient(Response, Recipient), Author, Speaker.Metadata);
+            Network.EventSendMessage:FireClient(Author, GetFilteredMessageForClient(Response, Author), Recipient, Speaker.Metadata, true);
         else -- This message is for a specific channel
             for Member, _ in pairs(Recipient.Members) do
                 local FilterSuccess, FilterResponse = pcall(function()
@@ -168,7 +168,7 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
                 end); -- Sometimes filtering can error in some cases. Due to this fact, we want to stop errors from breaking the loop
 
                 if (not FilterSuccess) then continue; end
-                Network.EventSendMessage:FireClient(Member, FilterResponse, Recipient, Speaker.TagData);
+                Network.EventSendMessage:FireClient(Member, FilterResponse, Recipient, Speaker.Metadata);
             end
     
             if (#Recipient._cache >= Settings.MaxMessagesPerChannel) then

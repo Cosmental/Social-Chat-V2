@@ -27,10 +27,21 @@ return {
     };
 
     ["ServerTagData"] = { -- This will be the TagData used for our Server whenever we need to make a server message!
-        ["SpeakerColor"] = Color3.fromRGB(255, 100, 100),
-        ["MessageColor"] = Color3.fromRGB(200, 200, 200)
+        ["Classic"] = {
+            ["Username"] = {
+                ["Color"] = Color3.fromRGB(255, 100, 100)
+            },
+
+            ["Content"] = {
+                ["Color"] = Color3.fromRGB(200, 200, 200)
+            }
+        };
     };
 
-    ["ServerErrorColor"] = Color3.fromRGB(255, 80, 80) -- This will be the color used to send server error messages to clients
+    ["ServerErrorColor"] = Color3.fromRGB(255, 80, 80), -- This will be the color used to send server error messages to clients
+
+    --// MISC \\--
+
+    ["TeamJoinMessage"] = "{Team} You are now in the \'%s\' team." -- This message will be sent to our client whenever they join/change teams!
 
 };

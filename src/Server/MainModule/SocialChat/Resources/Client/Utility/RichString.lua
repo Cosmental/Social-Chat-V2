@@ -31,10 +31,6 @@ local Markdown = require(script.Parent.Markdown);
 function RichString.new(properties : table?) : stringObject
     return setmetatable({
 
-        --// Properties \\--
-
-        ["Font"] = (properties and properties.Font) or Enum.Font.SourceSans,
-
         --// Configurations \\--
 
         ["MarkdownEnabled"] = (properties and properties.MarkdownEnabled) or true, -- Will text automatically be MarkedDown? ( boolean )
@@ -71,10 +67,13 @@ function stringObject:Replace(keyWord : string, replacement : callback | string)
 end
 
 --- Creates a new set of TextLabels using previously assigned property metadata. [ THIS WILL NOT FORMAT YOUR LABELS! You must use the SmartText module for further functuality! ]
-function stringObject:Generate(Text : string, callback : callback?, isButton : boolean?, allowMarkdown : boolean?) : table
+function stringObject:Generate(Text : string, TextFont : Enum.Font, callback : callback?, isButton : boolean?) : table
+    assert(type(Text) == "string", "The provided Text parameter was not of type \"string\". (received \""..(type(Text)).."\" instead.)");
+    assert(typeof(TextFont) == "EnumItem", "The provided TextFont parameter was not of type \"EnumItem\". (received \""..(type(TextFont)).."\" instead.)")
+    assert(table.find(Enum.Font:GetEnumItems(), TextFont), "The provided TextFont EnumItem was not a valid Font EnumItem!");
     assert((not callback) or (type(callback) == "function"), "The provided callback function was not of type \"function\". Received \""..(type(callback)).."\"");
 
-    local MarkdownInfo : table = ((allowMarkdown and Markdown:GetMarkdownData(Text, true)) or {});
+    local MarkdownInfo : table = ((self.MarkdownEnabled and Markdown:GetMarkdownData(Text, true)) or {});
     local HyperCases : table = GetHyperCases(Text);
 
     local Labels = {};
@@ -120,7 +119,7 @@ function stringObject:Generate(Text : string, callback : callback?, isButton : b
             table.insert(Labels, ReplacementObject);
         else
             local NewTextObject = CreateTextObject(
-                self.Font,
+                TextFont,
                 Character,
                 ((HyperData or isButton) and "TextButton") or "TextLabel"
             );

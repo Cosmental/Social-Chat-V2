@@ -71,29 +71,28 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
 
     local NewSpeaker = setmetatable({
 
-        --// RESOURCE DATA \\--
-        ["TagData"] = {
-            
-            ["UserId"] = ((typeof(agent) == "Instance" and agent.UserId) or nil), -- UserId is useful for security cases!
+        --// PROPERTIES \\--
 
-            --// VISUALS \\--
+        ["UserId"] = ((typeof(agent) == "Instance" and agent.UserId) or nil), -- UserId is useful for security cases!
 
-            ["Font"] = (tagData and tagData.Font) or nil,
-            ["Name"] = (
-                ((typeof(agent) == "Instance") and ((Settings.UseDisplayNames and agent.DisplayName) or agent.Name)) -- "agent" is a Player!
-                or agent -- "agent" is a string!
-            ),
+        --// METADATA \\--
 
-            --// NAME METADATA \\--
+        ["Metadata"] = {
+            ["Classic"] = {
+                ["Tag"] = (tagData and tagData.Classic.Tag) or nil,
+                ["Content"] = (tagData and tagData.Classic.Content) or nil,
 
-            ["NameColor"] = (tagData and tagData.SpeakerColor) or getRandomSpeakerColor(),
-            ["MessageColor"] = (tagData and tagData.MessageColor) or Color3.fromRGB(255, 255, 255),
+                ["Username"] = { -- We only go in depth with our username data because the username color is a required dataset
+                    ["Name"] = (
+                        ((typeof(agent) == "Instance") and ((Settings.UseDisplayNames and agent.DisplayName) or agent.Name)) -- "agent" is a Player!
+                        or agent -- "agent" is a string!
+                    ),
+                    ["Font"] = (tagData and tagData.Classic.Username and tagData.Classic.Username.Font) or nil,
+                    ["Color"] = (tagData and tagData.Classic.Username and tagData.Classic.Username.Color) or getRandomSpeakerColor()
+                };
+            },
 
-            --// TAGNAME METADATA \\--
-
-            ["TagName"] = ((tagData and tagData.TagName) or nil), -- opt.
-            ["TagColor"] = ((tagData and tagData.TagColor) or nil) -- opt.
-
+            ["Bubble"] = (tagData and tagData.ChatBubble) or nil
         };
 
         --// PROGRAMMABLE \\--
@@ -115,8 +114,8 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
 
                 Network.EventSendMessage:FireClient(
                     agent,
-                    "**{Team}** You are now on the \'*"..(agent.Team.Name).."*\' team.",
-                    Channels:Get("General"),
+                    Settings.TeamJoinMessage:format(agent.Team.Name),
+                    GetMainChannel(NewSpeaker),
                     {
                         ["MessageColor"] = Color3.fromRGB(255, 255, 255);
                     }
@@ -186,11 +185,23 @@ function GetTag(Player : Player)
 		end
 
 		--// Updating our Data
-		OwnedTag = Tag.TagData
+		OwnedTag = Tag.Metadata
 		Priority = Tag.PriorityOrder
 	end
 
     return OwnedTag
+end
+
+--- Returns the main channel for the specified speaker
+function GetMainChannel(FromSpeaker : Speaker) : Channel
+    for _, Name in pairs(FromSpeaker.Channels) do
+        local Channel = Channels:Get(Name);
+
+        if (not Channel) then continue; end
+        if (not Channel.IsMainChannel) then continue; end
+
+        return Channel
+    end
 end
 
 SpeakerMaster.OnSpeakerAdded = SpeakerAdded.Event
