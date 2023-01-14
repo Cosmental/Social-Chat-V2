@@ -299,14 +299,12 @@ end
 --- Destroys all inherited Instances and terminates the OOP process
 function SmartStringObject:Destroy(callback : Callback?)
     for _, TextGroup in pairs(self.TextGroups) do
-        for _, WordGroup in pairs(TextGroup.WordGroups) do
-            for _, Grapheme in pairs(WordGroup.Graphemes) do
-                if (callback and (Grapheme:IsA("TextLabel") or Grapheme:IsA("TextButton"))) then
-                    callback(Grapheme); -- Can be used as a standalone garbage collection function
-                end
-    
-                Grapheme:Destroy();
+        for _, Object in pairs(TextGroup.TextObjects) do
+            if (callback and (Object:IsA("TextLabel") or Object:IsA("TextButton"))) then
+                callback(Object); -- Can be used as a standalone garbage collection function
             end
+
+            Object:Destroy();
         end
     end
 

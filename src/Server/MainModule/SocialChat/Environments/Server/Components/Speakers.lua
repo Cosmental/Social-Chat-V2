@@ -21,6 +21,7 @@ local CollectionService = game:GetService("CollectionService");
 local Settings
 local ChatTag
 
+local TextStyles
 local Channels
 
 --// Constants
@@ -35,6 +36,7 @@ function SpeakerMaster:Initialize(Setup : table)
     local self = setmetatable(Setup, SpeakerMaster);
 
     Settings = self.Settings.SystemChannelSettings
+    TextStyles = self.Settings.Styles
     ChatTag = self.Settings.ChatTags
 
     Network = self.Remotes.Channels
@@ -62,7 +64,7 @@ end
 function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
     assert(type(agent) == "string" or typeof(agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(agent)).."\" )");
     assert(type(agent) == "string" or agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"!");
-    assert(not tagData or type(tagData) == "table", "The provided tagData parameter was not of type \"table\". ( received \""..(type(tagData)).."\" instead ) ");
+    VerifyMetadata(agent, tagData);
 
     if (ChatSpeakers[agent]) then
         warn("Attempt to recreate a pre-existing chat speaker! ( \""..(tostring(agent)).."\" is already registed. ) ");
@@ -87,8 +89,9 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
                         ((typeof(agent) == "Instance") and ((Settings.UseDisplayNames and agent.DisplayName) or agent.Name)) -- "agent" is a Player!
                         or agent -- "agent" is a string!
                     ),
+
                     ["Font"] = (tagData and tagData.Classic.Username and tagData.Classic.Username.Font) or nil,
-                    ["Color"] = (tagData and tagData.Classic.Username and tagData.Classic.Username.Color) or getRandomSpeakerColor()
+                    ["Color"] = (tagData and tagData.Classic.Username and tagData.Classic.Username.Color) or getRandomSpeakerColor(),
                 };
             },
 
@@ -201,6 +204,40 @@ function GetMainChannel(FromSpeaker : Speaker) : Channel
         if (not Channel.IsMainChannel) then continue; end
 
         return Channel
+    end
+end
+
+--- Verifies the provided metadata (this is purely for debugging)
+function VerifyMetadata(agent : string | Player, metadata : table) : boolean?
+    assert(type(metadata) == "table", "The provided metadata was not of type \"table\", but as type \""..(type(metadata)).."\". Metadata can only be read as a table.");
+    assert(next(metadata), "The provided metadata is an empty array. Metadata needs to hold at least one value.");
+    assert(type(metadata.Classic) == "table" or type(metadata.ChatBubble) == "table", "The provided metadata does not hold any readable information! You must provide at least a \"Classic\" array OR a \"ChatBubble\" array with your data!");
+    
+    local function AnalyzeStructure(structureSet : string, fromTable : table, isForPlayer : boolean?)
+        if (not fromTable) then return; end
+
+        assert(not fromTable.Color or (typeof(fromTable.Color) == "Color3" or type(fromTable.Color) == "string"),
+        "The provided \"Color\" Value for \""..(structureSet).."\" was not a \"string\" or \"Color3\"! (received "..(typeof(fromTable.Color))..")");
+        
+        assert(not fromTable.Color or typeof(fromTable.Color) == "Color3" or (type(fromTable.Color) == "string" and TextStyles[fromTable.Color]),
+        "The requested color TextStyle \""..(tostring(fromTable.Color)).."\" does not exist! (are you sure you typed the name correctly? This is CASE-SENSITIVE!)");
+
+        assert(typeof(fromTable.Font) ~= "EnumItem" or table.find(Enum.Font:GetEnumItems(), fromTable.Font),
+        "The provided EnumItem was not a valid item of \"Font\"! Please set this value as a valid \"Enum.Font\" value!");
+
+        if (isForPlayer and fromTable.Name) then
+            warn("The provided username metadata for "..(agent.Name).." will be used, however, it's \"Name\" value will be ignored for all Player's who use the same metadata. (requested name: \""..(fromTable.Name).."\")");
+        end
+    end
+
+    if (metadata.Classic) then
+        AnalyzeStructure("Tag", metadata.Classic.Tag);
+        AnalyzeStructure("Content", metadata.Classic.Content);
+        AnalyzeStructure("Username", metadata.Classic.Username, type(agent) ~= "string");
+    end
+
+    if (metadata.ChatBubble) then
+        AnalyzeStructure("ChatBubble", metadata.ChatBubble);
     end
 end
 

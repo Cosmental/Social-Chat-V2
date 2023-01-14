@@ -20,22 +20,12 @@ return {
 			["Classic"] = {
 				["Tag"] = {
 					["Name"] = "Creator",
-					["Color"] = Color3.fromRGB(255, 35, 35),
-					["Font"] = Enum.Font.DenkOne
-				},
-
-				["Content"] = {
-					["Color"] = Color3.fromRGB(255, 150, 210),
-					["Font"] = Enum.Font.Oswald
-				},
-	
-				["Username"] = {
-					["Font"] = Enum.Font.Code
+					["Color"] = Color3.fromRGB(255, 35, 35)
 				}
 			};
 
 			["ChatBubble"] = {
-				["Style"] = "Rainbow",
+				["Color"] = "Example",
 				["Font"] = Enum.Font.SourceSans
 			},
 		};

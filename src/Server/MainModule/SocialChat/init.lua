@@ -37,7 +37,7 @@ function getSocialChat()
         --// Module Collection
         local Library = {};
 
-        local function GatherModules(container : Folder) : table
+        local function AddToLibrary(container : Folder) : table
             for _, Module in pairs(container:GetDescendants()) do
                 if (not Module:IsA("ModuleScript")) then continue; end
                 if (Module.Parent:IsA("ModuleScript")) then continue; end
@@ -52,20 +52,33 @@ function getSocialChat()
             end
         end
 
-        GatherModules((IsServer and Resources.Server) or Resources.Client);
-        GatherModules(Resources.Shared);
+        AddToLibrary((IsServer and Resources.Server) or Resources.Client);
+        AddToLibrary(Resources.Shared);
 
         --// Configurations
-        local Directory = game.ReplicatedStorage:WaitForChild("SocialChatConfigurations");
-        local EnvironmentConfiguration = ((IsServer and Directory.Server) or Directory.Client);
-
         local Configurations = {};
+        local Directory = (
+            (IsServer and game.ServerStorage:WaitForChild("ServerChatSettings")) or
+            (game.ReplicatedFirst:WaitForChild("ClientChatSettings"))
+        );
 
-        for _, Module in pairs(EnvironmentConfiguration:GetDescendants()) do
-            if (Module:IsA("ModuleScript") and not Module.Parent:IsA("ModuleScript")) then
-                Configurations[Module.Name] = require(Module);
+        local function AddToConfiguration(container : Folder)
+            for _, Module in pairs(container:GetDescendants()) do
+                if (not Module:IsA("ModuleScript")) then continue; end
+                if (Module.Parent:IsA("ModuleScript")) then continue; end
+
+                local Success, Response = pcall(function()
+                    return require(Module);
+                end);
+
+                if (Success) then
+                    Configurations[Module.Name] = Response
+                end
             end
         end
+
+        AddToConfiguration(Directory);
+        AddToConfiguration(game.ReplicatedStorage:WaitForChild("SharedChatSettings"));
 
         --// Initialization
         if (IsServer) then

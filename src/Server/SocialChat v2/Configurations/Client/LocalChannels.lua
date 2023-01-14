@@ -19,4 +19,12 @@ return {
         Enum.EasingStyle.Exponential
     ), -- This will be the TweenInfo for the button effect used to switch between channels!
 
+    ["OnLabelRendered"] = function(Label : TextLabel)
+        Label.Position -= UDim2.fromOffset(25, -25);
+        Label.Size -= UDim2.fromOffset(2, 2);
+
+        Label.TextStrokeTransparency = 1
+        Label.TextTransparency = 1
+    end -- This function will be used to render a unique message animation! (Tweening to it's original state is handled by the "Channels" module)
+
 };

@@ -16,12 +16,14 @@ Channel.__index = Channel
 
 --// Services
 local TweenService = game:GetService("TweenService");
+local RunService = game:GetService("RunService");
 
 --// Imports
 local RichString
 local SmartText
 local Settings
 
+local TextStyles
 local InputBox
 
 --// Constants
@@ -43,6 +45,7 @@ local SystemChannels : table = {};
 local TotalChannels = 0
 
 local FocusedChannel : string?
+local GradientLabels = {};
 
 --// Initialization
 
@@ -60,6 +63,7 @@ function ChannelMaster:Initialize(Setup : table)
     SmartText = self.Library.SmartText
     InputBox = self.Src.InputBox
 
+    TextStyles = self.Settings.Styles
     Network = self.Remotes.Channels
     Presets = self.Presets
 
@@ -67,6 +71,33 @@ function ChannelMaster:Initialize(Setup : table)
     ChatCacheContainer = Instance.new("Folder");
     ChatCacheContainer.Name = "CLIENT_CHAT_CACHE"
     ChatCacheContainer.Parent = script
+
+    --// Gradient Control
+    for _, Info in pairs(TextStyles) do
+        Info.Color = ExtractKeypointData(Info.Gradient, math.abs(Info.Keypoints));
+        Info.Duration = math.max(Info.Duration, 0.01); -- Durations are limited to 0.1 seconds! (anything less would be weird/un-needed)
+    end
+
+    local LastTick = os.clock(); -- We need to use operating UNIX timestamps to rate-limit our gradient stepper!
+
+    RunService.Heartbeat:Connect(function()
+        if (not next(GradientLabels)) then return; end
+        if ((os.clock() - LastTick) <= 1 / 60) then return; end -- 60 FPS Limit
+
+        LastTick = os.clock();
+
+        for _, GradientGroup in pairs(GradientLabels) do
+            local FrameBuffer = (os.clock() - GradientGroup.LastTick);
+            if (FrameBuffer < GradientGroup.Style.Duration / GradientGroup.Style.Keypoints) then continue; end
+
+            GradientGroup.LastTick = os.clock();
+            GradientGroup.Index += 1
+
+            for Index, Object in pairs(GradientGroup.Objects) do
+                Object.TextColor3 = GradientGroup.Style.Color[((Index + GradientGroup.Index) % GradientGroup.Style.Keypoints) + 1]
+            end
+        end
+    end);
 
     --// Events
     Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, Metadata : table, IsFromUs : boolean?)
@@ -214,14 +245,32 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
     
     local Content = {
         ["Render"] = MainFrame,
-        ["SmartStringObject"] = StringRenderer
+        ["SmartStringObject"] = StringRenderer,
+        ["Gradients"] = {},
     };
 
     --// Dynamic Rendering
     local function Generate(TextGroupName : string, Text : string, Properties : table, ButtonCallback : callback?, IsTag : boolean?)
-        local TextObjects = ContentRenderer:Generate(Text, Properties.Font, function(TextObject)
+        local TextObjects : table = ContentRenderer:Generate(Text, Properties.Font, function(TextObject)
+            if (typeof(Properties.Color) ~= "Color3") then return; end
             TextObject.TextColor3 = Properties.Color
         end, ButtonCallback ~= nil, (IsTag or Settings.AllowMarkdown));
+
+        local GradientData : table?
+
+        if (type(Properties.Color) == "string") then
+            GradientData = {
+                ["Style"] = TextStyles[Properties.Color],
+
+                ["LastTick"] = 0,
+                ["Index"] = 0,
+
+                ["Objects"] = TextObjects
+            };
+
+            table.insert(GradientLabels, GradientData);
+            table.insert(Content.Gradients, GradientData);
+        end
 
         StringRenderer:AddGroup(TextGroupName, TextObjects, Properties.Font);
 
@@ -290,7 +339,7 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
         }
     );
 
-    --// Finalization
+    --// Handling
     StringRenderer.Container = MainFrame
     StringRenderer.BindSizeToContent = true
     StringRenderer:Update(); -- We need to update our renderer for setting updates
@@ -299,15 +348,46 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
         MainFrame.Parent = MessageContainer
     end
 
+    --// Trash Collection & Finalization
     if (#self._cache >= Settings.MaxRenderableMessages) then
         self._cache[1].SmartStringObject:Destroy();
         self._cache[1].Render:Destroy();
+
+        for _, GradientArray in pairs(Content.Gradients) do
+            table.remove(GradientLabels, table.find(GradientLabels, GradientArray));
+        end
 
         table.remove(self._cache, 1); -- Our oldest rendered content will always be our 1st index!
     end
 
     table.insert(self._cache, Content);
     StringRenderer:Update(); -- We need to AGAIN update our renderer to match up with its parent container
+
+    --// Visual Tweening
+    --\\ This has to occur after our LAST manual StringRenderer update! (otherwise the rendered will just deny certain tweens!)
+    for _, Label in pairs(MainFrame:GetChildren()) do
+        if (not Label:IsA("TextLabel") and not Label:IsA("TextButton")) then continue; end -- Just in case...
+
+        local RelativePosition = Label.Position
+        local RelativeSize = Label.Size
+
+        local BaseStrokeTransparency = Label.TextStrokeTransparency
+        local BaseStrokeColor = Label.TextStrokeColor3
+        local BaseColor = Label.TextColor3
+
+        Settings.OnLabelRendered(Label); -- This should adjust our label visually
+
+        TweenService:Create(Label, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {
+            Position = RelativePosition,
+            Size = RelativeSize,
+
+            TextStrokeColor3 = BaseStrokeColor,
+            TextColor3 = BaseColor,
+
+            TextStrokeTransparency = BaseStrokeTransparency,
+            TextTransparency = 0
+        }):Play();
+    end
 
     return Content
 end
@@ -352,11 +432,57 @@ end
 
 --- Removes this channel from our client's channel list and prevents our client from receiving further message events for this channel
 function Channel:Destroy()
-    for _, ContentFrame in pairs(self._cache) do
-        ContentFrame:Destroy();
+    for _, Content in pairs(self._cache) do
+        for _, GradientArray in pairs(Content.Gradients) do
+            table.remove(GradientLabels, table.find(GradientLabels, GradientArray));
+        end
+
+        Content.SmartStringObject:Destroy();
+        Content.Render:Destroy();
     end
 
     self = nil
+end
+
+--// Functions
+
+--- Returns a set of color keypoints related to the provided ColorGraident!
+function ExtractKeypointData(Gradient : UIGradient, Numerations : number) : table
+    local Points = Gradient.Color.Keypoints
+    local Data = {};
+
+    for i = 1, Numerations do
+        local Alpha = i / Numerations
+        
+        local ClosestKeypoint, Index : ColorSequenceKeypoint?, number
+        local BestOffset : number?
+        
+        for i, Keypoint in pairs(Points) do
+            local Offset = math.abs(Alpha - Keypoint.Time);
+            if (BestOffset and Offset > BestOffset) then continue; end
+            
+            ClosestKeypoint = Keypoint
+            Index = i
+            
+            BestOffset = Offset
+        end
+        
+        local LerpedColor : Color3?
+        
+        if ((i == 1 or i == #Points) or (BestOffset == 0)) then
+            LerpedColor = ClosestKeypoint.Value
+        else
+            if (Index >= #Points) then
+                LerpedColor = Points[Index - 1].Value:Lerp(ClosestKeypoint.Value, Alpha);
+            else
+                LerpedColor = ClosestKeypoint.Value:Lerp(Points[Index + 1].Value, Alpha);
+            end
+        end
+
+        table.insert(Data, LerpedColor);
+    end
+
+    return Data
 end
 
 ChannelMaster.Channels = SystemChannels

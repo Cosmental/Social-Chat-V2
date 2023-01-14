@@ -177,6 +177,7 @@ function GetHyperCases(Content : string) : table
 		local ParenthesisAt, _ = Content:find("%(.*%)", Point);
 		local BracketsAt, BracketsEnd = Content:find("%[.*%]", Point);
 		
+        if (not BracketsAt) then return; end
 		Point += (BracketsEnd - Point);
 
 		local HasBothSyntaxes = (ParenthesisAt ~= nil and BracketsAt ~= nil);
