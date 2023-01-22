@@ -1,6 +1,8 @@
 return {
 
     --// CHAT SYSTEM SETTINGS \\--
+
+    ["DefaultChannel"] = "General", -- This will be the DEFAULT chat system channel that processes player messages! (this is REQUIRED)
     
     ["MaxMessagesPerChannel"] = 50, -- Determines the max amount of messages that can be cached in each channel
     ["MaxMessageLength"] = 200, -- Determines the maximum string length for a single message

@@ -15,6 +15,7 @@ local Channel = {};
 Channel.__index = Channel
 
 --// Services
+local StarterPack = game:GetService("StarterPack")
 local TextService = game:GetService("TextService");
 
 --// Imports
@@ -27,10 +28,12 @@ local ClientCooldowns = {};
 local SystemChannels = {};
 
 local BubbleChatEvent
-local Network
-local General
+local DefaultChannel
 
 local MessageEvent = Instance.new("BindableEvent");
+local Network
+
+local ServerErrorMetadata : table?
 
 --// Initialization
 
@@ -46,15 +49,23 @@ function ChannelManager:Initialize(Setup : table)
 
     --// Setup
 
+    ServerErrorMetadata = {
+        ["Classic"] = {
+            ["Content"] = {
+                ["Color"] = Settings.ServerErrorColor
+            };
+        };
+    };
+
     local ChannelTest = ChannelManager:Create("TestChannel");
 
-    General = ChannelManager:Create("General"); -- We need at least ONE system channel for our main messages to go through
-    General.IsMainChannel = true -- You can't leave the main channel
+    DefaultChannel = ChannelManager:Create(Settings.DefaultChannel); -- We need at least ONE system channel for our main messages to go through
+    DefaultChannel.IsMainChannel = true -- You can't leave the main channel
 
     local function onSpeakerReady(Player : Player)
         ClientCooldowns[Player] = Settings.MessageRate
 
-        General:Subscribe(Player);
+        DefaultChannel:Subscribe(Player);
         ChannelTest:Subscribe(Player);
     end
 
@@ -126,9 +137,7 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
             Author,
             "Messages are not allowed to be over "..(Settings.MaxMessageLength).." characters long!",
             Recipient, -- Usually a channel but sometimes this will be a player. Either way, our client can handle the backend work for this
-            {
-                ["MessageColor"] = Settings.ServerErrorColor
-            }
+            ServerErrorMetadata
         );
 
         return;
@@ -139,9 +148,7 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
             Author,
             "You're sending messages too quickly!",
             Recipient,
-            {
-                ["MessageColor"] = Settings.ServerErrorColor
-            }
+            ServerErrorMetadata
         );
 
         return;
@@ -201,13 +208,12 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
     else -- Oh no! Filtering failed :(
         Network.EventSendMessage:FireClient(
             Author,
-            {
-                ["MessageColor"] = Settings.ServerErrorColor
-            },
-            "Your message failed to send due to a server error! ( ERROR: \""..(Response or "No feedback was given").."\" )"
+            Recipient,
+            "Your message failed to send due to a server error! (ERROR: \""..(Response or "No feedback was given").."\")",
+            ServerErrorMetadata
         );
 
-        error("Failed to filter message for \""..(Author.Name).."\"! ( Response: \""..(Response or "No response provided.").."\" )");
+        error("Failed to filter message for \""..(Author.Name).."\"! (Response: \""..(Response or "No response provided.").."\")");
     end
 
     MessageEvent:Fire(Author, Message, Recipient); -- API Event callback
@@ -217,7 +223,7 @@ end
 
 --- Adds the specified member into the channel
 function Channel:Subscribe(Player : Player)
-    assert(typeof(Player) == "Instance", "Expected an \"Instance\" as a valid member! ( received \""..(typeof(Player)).."\" )");
+    assert(typeof(Player) == "Instance", "Expected an \"Instance\" as a valid member! (received \""..(typeof(Player)).."\")");
     assert(Player:IsA("Player"), "The provided Instance was not of class \"Player\". Got \""..(Player.ClassName).."\" instead");
 
     local Speaker = Speakers:GetSpeaker(Player);
@@ -258,9 +264,20 @@ end
 
 --- Returns the filtered message for the specified client
 function GetFilteredMessageForClient(FilterObject : Instance, Client : Player) : string
+    local StartTick = os.clock();
     local FilterSuccess, FilterResponse = pcall(function()
         return FilterObject:GetChatForUserAsync(Client.UserId);
     end);
+
+    local ProcessingTime = (os.clock() - StartTick);
+
+    if (ProcessingTime >= 5) then -- It should NOT take our server 5 seconds to filter a singular message!
+        Network.EventSendMessage:FireAllClients(
+            "Roblox servers are currently experiencing issues when filtering messages!",
+            DefaultChannel,
+            ServerErrorMetadata
+        );
+    end
 
     if (FilterSuccess) then
         return FilterResponse
