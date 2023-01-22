@@ -163,7 +163,7 @@ function SmartStringObject:AddGroup(key : string, TextObjects : table, TextFont 
     local GroupTextContent : string = ""
 
     for _, TextObject in pairs(TextObjects) do
-        if (not TextObject:IsA("TextLabel") or not TextObject:IsA("TextButton")) then continue; end
+        if (not TextObject:IsA("TextLabel") and not TextObject:IsA("TextButton")) then continue; end
         GroupTextContent = (GroupTextContent..TextObject.Text);
     end
 
@@ -256,7 +256,9 @@ function SmartStringObject:Update()
             local ContentSize : number
             ContentSize = GroupFontSize
 
-            if ((TotalSizeX + ContentSize) > MaxBounds.X) then
+            local IsNewLine = TextObject.Text:find("\n");
+
+            if ((TotalSizeX + ContentSize) > MaxBounds.X or IsNewLine) then
                 TotalSizeY += LineYSpacing -- New Line indentation for cases where our WordGroup becomes too big
                 TotalSizeX = 0
             end

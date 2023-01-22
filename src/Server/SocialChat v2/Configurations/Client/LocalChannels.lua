@@ -4,6 +4,38 @@ return {
     
     ["AllowMarkdown"] = true, -- Determines if players can use Markdown syntaxing in their messages. ( this behaves similar to how discord messaging )
 
+    --// DANCE EMOTES \\--
+
+    ["EmotesAllowed"] = true, -- Determines if players are allowed to use ROBLOX dance emotes in game
+
+    ["DanceEmotes"] = {
+        [Enum.HumanoidRigType.R15] = {
+            ["dance"] = {
+                [1] = "http://www.roblox.com/asset/?id=507771019",
+                [2] = "http://www.roblox.com/asset/?id=507776043",
+                [3] = "http://www.roblox.com/asset/?id=507777268"
+            },
+
+            ["point"] = "http://www.roblox.com/asset/?id=507770453",
+            ["cheer"] = "http://www.roblox.com/asset/?id=507770677",
+            ["wave"] = "http://www.roblox.com/asset/?id=507770239",
+            ["laugh"] = "http://www.roblox.com/asset/?id=507770818"
+        },
+
+        [Enum.HumanoidRigType.R6] = {
+            ["dance"] = {
+                [1] = "http://www.roblox.com/asset/?id=182435998",
+                [2] = "http://www.roblox.com/asset/?id=182436842",
+                [3] = "http://www.roblox.com/asset/?id=182436935"
+            },
+
+            ["point"] = "http://www.roblox.com/asset/?id=128853357",
+            ["cheer"] = "http://www.roblox.com/asset/?id=129423030",
+            ["wave"] = "http://www.roblox.com/asset/?id=128777973",
+            ["laugh"] = "http://www.roblox.com/asset/?id=129423131",
+        }
+    },
+
     --// DISPLAY \\--
 
     ["MaxFontSize"] = 18, -- The default desired fontSize for our messages

@@ -232,7 +232,9 @@ function FindMarkdown(SubIndex : number, MarkdownInfo : table) : table?
 end
 
 --- Finds the hyper case for the provided subindex (if any)
-function FindHyperCase(SubIndex : number, HyperCases : table) : table?
+function FindHyperCase(SubIndex : number, HyperCases : table?) : table?
+    if (not HyperCases) then return; end
+    
     for _, CaseScope in pairs(HyperCases) do
         local IsWithinCase = ((SubIndex >= CaseScope.Starts) and (SubIndex <= CaseScope.Ends));
         
@@ -243,23 +245,27 @@ function FindHyperCase(SubIndex : number, HyperCases : table) : table?
 end
 
 --- Returns a boolean that determines if the provided sub-index is a part of any special syntaxing
-function IsSpecialSyntax(SubIndex : number, MarkdownInfo : table, HyperCases : table, a) : boolean?
-    for _, Scope in ipairs(MarkdownInfo) do
-        local HasThisMarkdown = ((SubIndex >= Scope.starts) and (SubIndex <= Scope.ends));
-        local IsPartOfSyntax = (HasThisMarkdown and ((SubIndex <= Scope.starts + #Scope.syntax - 1) or (SubIndex >= Scope.ends - #Scope.syntax + 1)));
-
-        if (not IsPartOfSyntax) then continue; end
-        return true;
+function IsSpecialSyntax(SubIndex : number, MarkdownInfo : table?, HyperCases : table?) : boolean?
+    if (MarkdownInfo) then
+        for _, Scope in ipairs(MarkdownInfo) do
+            local HasThisMarkdown = ((SubIndex >= Scope.starts) and (SubIndex <= Scope.ends));
+            local IsPartOfSyntax = (HasThisMarkdown and ((SubIndex <= Scope.starts + #Scope.syntax - 1) or (SubIndex >= Scope.ends - #Scope.syntax + 1)));
+    
+            if (not IsPartOfSyntax) then continue; end
+            return true;
+        end
     end
 
-    for _, CaseScope in pairs(HyperCases) do
-        local IsWithinCase = ((SubIndex >= CaseScope.Starts - 1) and (SubIndex <= CaseScope.FullEnd));
-        local IsPartOfEmbed = (IsWithinCase and (
-            (SubIndex == CaseScope.Starts - 1) or (SubIndex <= CaseScope.FullEnd and SubIndex > CaseScope.Ends)
-        ));
-        
-        if (not IsPartOfEmbed) then continue; end
-        return true;
+    if (HyperCases) then
+        for _, CaseScope in pairs(HyperCases) do
+            local IsWithinCase = ((SubIndex >= CaseScope.Starts - 1) and (SubIndex <= CaseScope.FullEnd));
+            local IsPartOfEmbed = (IsWithinCase and (
+                (SubIndex == CaseScope.Starts - 1) or (SubIndex <= CaseScope.FullEnd and SubIndex > CaseScope.Ends)
+            ));
+            
+            if (not IsPartOfEmbed) then continue; end
+            return true;
+        end 
     end
 end
 

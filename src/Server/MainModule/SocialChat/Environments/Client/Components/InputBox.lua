@@ -57,6 +57,7 @@ local LastCursorPosition : number
 local FocusPoint : number = 0
 
 local CursorTick : number = os.clock();
+local CurrentEmoteTrack : AnimationTrack?
 
 --// Initialization
 
@@ -77,6 +78,37 @@ function InputBox:Initialize(Info : table) : metatable
     ChatBox = InteractionBar.InputBox
 
     LastCursorPosition = ChatBox.CursorPosition
+
+    --// Animation Setup
+    --\\ This setups up animations that can be used via our Chat System later!
+
+    if (Settings.EmotesAllowed) then
+        local EmoteContainer = Instance.new("Folder");
+        EmoteContainer.Name = "ClientDanceEmotes"
+        EmoteContainer.Parent = self.Cache
+
+        for RigType, Emotes in pairs(Settings.DanceEmotes) do
+            for Name, Emote in pairs(Emotes) do
+                if (type(Emote) == "table") then
+                    for Index, Id in pairs(Emote) do
+                        local Animation = Instance.new("Animation");
+                        Animation.Name = (Name..Index);
+                        Animation.AnimationId = Id
+                        Animation.Parent = EmoteContainer
+
+                        Settings.DanceEmotes[RigType][Name][Index] = Animation
+                    end
+                else
+                    local Animation = Instance.new("Animation");
+                    Animation.Name = Name
+                    Animation.AnimationId = Emote
+                    Animation.Parent = EmoteContainer
+
+                    Settings.DanceEmotes[RigType][Name] = Animation
+                end
+            end
+        end
+    end
 
     --// Control Functions
     --\\ This is where all of our local control functions exist!
@@ -507,20 +539,22 @@ function InputBox:Submit()
     if (ChatBox.Text:gsub(" ", ""):len() == 0) then return; end -- Empty strings cant be sent!
     if (not self.Metadata) then return; end -- Metadata signifies that our chat has connected to the SERVER! If this is not present, our client is NOT ready
     
-    local Words = ChatBox.Text:split(" ");
-    local Focus = Channels:GetFocus();
+    if (not HandleMessage(ChatBox.Text)) then
+        local Words = ChatBox.Text:split(" ");
+        local Focus = Channels:GetFocus();
 
-    local WhisperClient = (
-        ((#Words >= 3) and (Words[1] == "/w") and (FindPlayer(Words[2]))) or -- Whispering using the "/w {player}" command
-        (Focus.IsPrivate and Focus.Members[1]) -- Whispering via a private channel
-    );
+        local WhisperClient = (
+            ((#Words >= 3) and (Words[1] == "/w") and (FindPlayer(Words[2]))) or -- Whispering using the "/w {player}" command
+            (Focus.IsPrivate and Focus.Members[1]) -- Whispering via a private channel
+        );
 
-    local IsValidClient = (WhisperClient and WhisperClient ~= Player);
+        local IsValidClient = (WhisperClient and WhisperClient ~= Player);
 
-    Channels:SendMessage(
-        ((IsValidClient and not Focus.IsPrivate) and table.concat(Words, " ", 3))
-        or ChatBox.Text, (IsValidClient and WhisperClient)
-    );
+        Channels:SendMessage(
+            ((IsValidClient and not Focus.IsPrivate) and table.concat(Words, " ", 3))
+            or ChatBox.Text, (IsValidClient and WhisperClient)
+        );
+    end
 
     CursorFrame.Visible = false
     self._oldText = nil
@@ -624,6 +658,77 @@ function FindPlayer(query : string) : Player
         if (Player.Name:lower() == query:lower()) then
             return Player
         end
+    end
+end
+
+--- A special function that handle's SPECIAL submittion cases such as "/e dance" etc.
+function HandleMessage(Message : string) : boolean
+    local Humanoid = (Player.Character and Player.Character:FindFirstChild("Humanoid"));
+    
+    if (not Humanoid or Humanoid.Health <= 0) then return; end
+    if (not Humanoid:WaitForChild("Animator", 3)) then return; end
+
+    local Words = Message:split(" ");
+
+    if ((#Words == 2) and (Words[1] == "/e") and (Settings.EmotesAllowed)) then
+        local Dance : Animation?
+
+        for Name, Emote in pairs(Settings.DanceEmotes[Humanoid.RigType]) do
+            if ((Words[2] ~= Name) and (Words[2]:sub(1, #Words[2] - 1) ~= Name)) then continue; end
+
+            if (type(Emote) == "table") then
+                local Index = tonumber(Words[2]:sub(#Words[2], #Words[2]));
+                
+                if (Index) then
+                    Dance = Emote[Index];
+                else
+                    Dance = Emote[math.random(#Emote)];
+                end
+            else
+                Dance = Emote
+            end
+        end
+
+        if (not Dance) then
+            local Channel = Channels:GetFocus();
+            if (not Channel) then return true; end
+
+            Channel:Render("The emote \'"..(Words[2]).."\' does not exist!");
+            return true;
+        end
+
+        if (Humanoid.FloorMaterial == Enum.Material.Air) then return true; end -- Cant play emotes while airborn!
+
+        if (CurrentEmoteTrack) then
+            CurrentEmoteTrack:Stop();
+        end
+
+        local Track = Humanoid.Animator:LoadAnimation(Dance);
+
+        Track.Priority = Enum.AnimationPriority.Action4
+        CurrentEmoteTrack = Track
+
+        Track:Play();
+
+        Humanoid.Died:Connect(function()
+            Track:Stop();
+            CurrentEmoteTrack = nil
+        end);
+
+        Humanoid.Running:Connect(function()
+            Track:Stop();
+            CurrentEmoteTrack = nil
+        end);
+
+        return true;
+    elseif ((#Words == 1) and (Words[1] == "/help")) then
+        local Channel = Channels:GetFocus();
+        if (not Channel) then return true; end
+
+        Channel:Render("Here's a list of chat commands: \n\n **/help** - Provides a list of chat commands \n **/e {emote}** - Plays the provided emote (must be valid) \n **/w {player}** - Allows you to send a private message to the request player. (must use their FULL username)", {
+            ["BypassMarkdownSetting"] = true
+        });
+        return true;
     end
 end
 

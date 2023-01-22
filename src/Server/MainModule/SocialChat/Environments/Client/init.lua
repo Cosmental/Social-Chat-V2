@@ -53,6 +53,13 @@ local function Initialize(Setup : table)
     Library = Setup.Library
     Settings = Setup.Settings
 
+    --// Cache
+    --\\ This serves as our client's cache for any SAVED instances create by the chat system
+
+    local CacheFolder = Instance.new("Folder");
+    CacheFolder.Name = "ClientCache"
+    CacheFolder.Parent = script.Parent
+
     --// TopbarPlus Button
     --\\ This is going to be our main chatFrame button (special thanks to TopbarPlus!)
 
@@ -83,6 +90,7 @@ local function Initialize(Setup : table)
             return Component:Initialize({
                 ["Settings"] = Settings,
                 ["Library"] = Library,
+                ["Cache"] = CacheFolder,
 
                 ["Remotes"] = game.ReplicatedStorage:WaitForChild("SocialChatEvents"),
                 ["Presets"] = script.Presets,

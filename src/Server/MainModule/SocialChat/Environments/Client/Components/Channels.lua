@@ -240,7 +240,7 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
     });
 
     local ContentRenderer : StringObject = RichString.new({
-        MarkdownEnabled = Settings.AllowMarkdown
+        MarkdownEnabled = (Metadata and Metadata.BypassMarkdownSetting) or Settings.AllowMarkdown
     });
     
     local Content = {
