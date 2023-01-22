@@ -34,6 +34,7 @@ local MessageEvent = Instance.new("BindableEvent");
 local Network
 
 local ServerErrorMetadata : table?
+local LastServerDownError = 0
 
 --// Initialization
 
@@ -271,12 +272,14 @@ function GetFilteredMessageForClient(FilterObject : Instance, Client : Player) :
 
     local ProcessingTime = (os.clock() - StartTick);
 
-    if (ProcessingTime >= 5) then -- It should NOT take our server 5 seconds to filter a singular message!
+    if ((ProcessingTime >= 5) and (os.clock() - LastServerDownError) >= 60) then -- It should NOT take our server 5 seconds to filter a singular message!
         Network.EventSendMessage:FireAllClients(
             "Roblox servers are currently experiencing issues when filtering messages!",
             DefaultChannel,
             ServerErrorMetadata
         );
+
+        LastServerDownError = os.clock();
     end
 
     if (FilterSuccess) then
