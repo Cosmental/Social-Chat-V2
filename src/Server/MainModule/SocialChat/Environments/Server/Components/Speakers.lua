@@ -39,10 +39,19 @@ function SpeakerMaster:Initialize(Setup : table)
     TextStyles = self.Settings.Styles
     ChatTag = self.Settings.ChatTags
 
-    Network = self.Remotes.Channels
+    Network = self.Remotes.Speakers
     Channels = self.Src.Channels
 
     --// Setup
+    Network.GetSpeakers.OnServerInvoke = function()
+        local Speakers = {};
+
+        for Agent, Speaker in pairs(ChatSpeakers) do
+            Speakers[Agent] = Speaker.Metadata
+        end
+
+        return Speakers
+    end
 
     local function onSocialChatReady(Player : Player)
         SpeakerMaster.new(Player, GetTag(Player));
@@ -115,7 +124,7 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
                 NewSpeaker.__previousNameColor = NewSpeaker.TagData.NameColor
                 NewSpeaker.TagData.NameColor = agent.Team.TeamColor.Color
 
-                Network.EventSendMessage:FireClient(
+                Network.Parent.Channels.EventSendMessage:FireClient(
                     agent,
                     Settings.TeamJoinMessage:format(agent.Team.Name),
                     GetMainChannel(NewSpeaker),
@@ -129,6 +138,7 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
         end);
     end
 
+    Network.EventSpeakerAdded:FireAllClients(agent, NewSpeaker.Metadata);
     return NewSpeaker
 end
 
@@ -209,6 +219,8 @@ end
 
 --- Verifies the provided metadata (this is purely for debugging)
 function VerifyMetadata(agent : string | Player, metadata : table) : boolean?
+    if (not metadata) then return; end
+
     assert(type(metadata) == "table", "The provided metadata was not of type \"table\", but as type \""..(type(metadata)).."\". Metadata can only be read as a table.");
     assert(next(metadata), "The provided metadata is an empty array. Metadata needs to hold at least one value.");
     assert(type(metadata.Classic) == "table" or type(metadata.ChatBubble) == "table", "The provided metadata does not hold any readable information! You must provide at least a \"Classic\" array OR a \"ChatBubble\" array with your data!");

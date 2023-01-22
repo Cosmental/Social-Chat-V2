@@ -21,12 +21,17 @@ return {
 				["Tag"] = {
 					["Name"] = "Creator",
 					["Color"] = Color3.fromRGB(255, 35, 35)
-				}
+				},
+
+				["Content"] = {
+					["Font"] = Enum.Font.Cartoon
+				};
 			};
 
 			["ChatBubble"] = {
-				["Color"] = "Example",
-				["Font"] = Enum.Font.SourceSans
+				["TextColor"] = "Example",
+				["BubbleColor"] = Color3.fromRGB(40, 40, 40),
+				["Font"] = Enum.Font.Bodoni
 			},
 		};
 

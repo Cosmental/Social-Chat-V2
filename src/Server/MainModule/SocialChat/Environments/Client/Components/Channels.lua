@@ -353,7 +353,7 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
         self._cache[1].SmartStringObject:Destroy();
         self._cache[1].Render:Destroy();
 
-        for _, GradientArray in pairs(Content.Gradients) do
+        for _, GradientArray in pairs(self._cache[1].Gradients) do
             table.remove(GradientLabels, table.find(GradientLabels, GradientArray));
         end
 

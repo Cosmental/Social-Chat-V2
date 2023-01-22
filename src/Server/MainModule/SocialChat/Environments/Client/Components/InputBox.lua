@@ -312,6 +312,22 @@ function InputBox:Initialize(Info : table) : metatable
         CursorFrame:Destroy();
     end
 
+    --// Events
+    self.Remotes.Speakers.EventSpeakerAdded.OnClientEvent:Connect(function(Agent : Player | Instance, Metadata : table)
+        if (Agent ~= Player) then return; end
+        self.Metadata = Metadata
+
+        if (not (Metadata.Classic and Metadata.Classic.Content and Metadata.Classic.Content.Font)) then return; end
+        
+        local DesiredFont = Metadata.Classic.Content.Font
+        ChatBox.Font = DesiredFont
+
+        if (not IsMobile) then
+            DisplayLabel.Font = DesiredFont
+            PlaceholderLabel.Font = DesiredFont
+        end
+    end);
+
     --// Input Detection
     --\\ Here we detect when inputs are made
 
@@ -488,7 +504,8 @@ end
 
 --- Sends the currently typed message to the server (if any)
 function InputBox:Submit()
-    if ((self._oldText or ChatBox.Text):gsub(" ", ""):len() == 0) then return; end -- Empty strings cant be sent!
+    if (ChatBox.Text:gsub(" ", ""):len() == 0) then return; end -- Empty strings cant be sent!
+    if (not self.Metadata) then return; end -- Metadata signifies that our chat has connected to the SERVER! If this is not present, our client is NOT ready
     
     local Words = ChatBox.Text:split(" ");
     local Focus = Channels:GetFocus();

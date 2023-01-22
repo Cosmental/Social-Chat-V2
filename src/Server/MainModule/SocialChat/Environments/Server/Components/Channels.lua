@@ -25,6 +25,7 @@ local Settings
 local ClientCooldowns = {};
 local SystemChannels = {};
 
+local BubbleChatEvent
 local Network
 local General
 
@@ -37,6 +38,8 @@ function ChannelManager:Initialize(Setup : table)
 
     Speakers = self.Src.Speakers
     Settings = self.Settings.SystemChannelSettings
+
+    BubbleChatEvent = self.Remotes.BubbleChat.EventRenderBubble
     Network = self.Remotes.Channels
 
     --// Setup
@@ -112,7 +115,9 @@ end
 --- Sends a new message to the specified recipient using the provided parameters
 function ChannelManager:Message(Author : Player, Message : string, Recipient : Player | Channel)
     local Speaker = Speakers:GetSpeaker(Author);
+
     if (not Speaker) then return; end
+    if (ChannelManager.ProcessMessage and not ChannelManager.ProcessMessage(Author, Message, Speaker)) then return; end
 
     if (utf8.len(Message) > Settings.MaxMessageLength) then -- This message is ABOVE our message string limit!
         Network.EventSendMessage:FireClient(
@@ -159,8 +164,16 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
 
     if (Success) then -- We successfully filtered our message!
         if (typeof(Recipient) == "Instance") then -- This message is for a PRIVATE client
-            Network.EventSendMessage:FireClient(Recipient, GetFilteredMessageForClient(Response, Recipient), Author, Speaker.Metadata);
-            Network.EventSendMessage:FireClient(Author, GetFilteredMessageForClient(Response, Author), Recipient, Speaker.Metadata, true);
+            local RecipientFilter = GetFilteredMessageForClient(Response, Recipient);
+            local AuthorFilter = GetFilteredMessageForClient(Response, Author);
+
+            Network.EventSendMessage:FireClient(Recipient, RecipientFilter, Author, Speaker.Metadata);
+            Network.EventSendMessage:FireClient(Author, AuthorFilter, Recipient, Speaker.Metadata, true);
+            
+            if (self.Settings.BubbleChatSettings.IsBubbleChatEnabled) then
+                BubbleChatEvent:FireClient(Author, Author, AuthorFilter, Speaker.Metadata);
+                BubbleChatEvent:FireClient(Recipient, Author, RecipientFilter, Speaker.Metadata);
+            end
         else -- This message is for a specific channel
             for Member, _ in pairs(Recipient.Members) do
                 local FilterSuccess, FilterResponse = pcall(function()
@@ -168,7 +181,9 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
                 end); -- Sometimes filtering can error in some cases. Due to this fact, we want to stop errors from breaking the loop
 
                 if (not FilterSuccess) then continue; end
+
                 Network.EventSendMessage:FireClient(Member, FilterResponse, Recipient, Speaker.Metadata);
+                BubbleChatEvent:FireClient(Member, Author, FilterResponse, Speaker.Metadata);
             end
     
             if (#Recipient._cache >= Settings.MaxMessagesPerChannel) then
@@ -253,4 +268,6 @@ function GetFilteredMessageForClient(FilterObject : Instance, Client : Player) :
 end
 
 ChannelManager.OnMessageSent = MessageEvent.Event -- function( Author : string | Player, Message : string, Recipient : Player | Channel ) [ NOTE: MESSAGE IS NOT FILTERED ]
+ChannelManager.ProcessMessage = nil -- This can be set as a function that handles message processing! (can only be used by one thread)
+
 return ChannelManager

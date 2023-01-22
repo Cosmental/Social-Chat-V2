@@ -16,6 +16,7 @@ local SmartStringObject = {};
 SmartStringObject.__index = SmartStringObject
 
 --// Services
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local TextService = game:GetService("TextService");
 
 --// Container
@@ -42,6 +43,7 @@ function SmartText.new(Container : GuiObject, properties : table?) : SmartString
         ["MinFontSize"] = (properties and properties.MinFontSize) or 0,
         ["MaxFontSize"] = (properties and properties.MaxFontSize) or 100,
 
+        ["Padding"] = (properties and properties.Padding) or nil, -- Padding will determine the bounding radius size (if any) [ Vector2 ]
         ["BindSizeToContent"] = (properties and properties.BindSizeToContent) or false, -- if true, our container will receive automatic sizing updates
 
         --// Programmable \\--
@@ -286,8 +288,8 @@ function SmartStringObject:Update()
     end
 
     self.FullSize = UDim2.fromOffset(
-        (TotalSizeY > 0 and MaxBounds.X) or TotalSizeX,
-        TotalSizeY + FillerYSpace
+        ((TotalSizeY > 0 and MaxBounds.X) or TotalSizeX) + ((self.Padding and self.Padding.X) or 0),
+        TotalSizeY + FillerYSpace + ((self.Padding and self.Padding.Y) or 0)
     );
 
     if (self.BindSizeToContent) then
