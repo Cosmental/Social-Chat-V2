@@ -4,8 +4,6 @@ return {
 
     ["IsBubbleChatEnabled"] = true, -- Determines if bubble chat is enabled or not
     
-    ["MaximumVisiblityDistance"] = 80, -- Determines the maximum distance in which you can view a ChatBubble from! (measurement in studs)
-    
     ["MaxDisplayableBubbles"] = 3, -- Determines the maximum amount of Chat Bubbles that appear over a player's head
 
     ["ChatBubbleLifespan"] = 10, -- Determines how long a chat bubble will appear over a player's head for

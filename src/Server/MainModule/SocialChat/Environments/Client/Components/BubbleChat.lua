@@ -20,6 +20,7 @@ local RunService = game:GetService("RunService");
 
 --// Imports
 local TextStyles
+local Channels
 local Settings
 
 local SmartText
@@ -47,6 +48,7 @@ function BubbleChat:Initialize(Info : table) : metatable
 
     Settings = self.Settings.BubbleChatSettings
     TextStyles = self.Settings.Styles
+    Channels = self.Src.Channels
 
     SpeakerEvents = self.Remotes.Speakers
     Network = self.Remotes.BubbleChat
@@ -167,6 +169,7 @@ function BubbleChat:Initialize(Info : table) : metatable
         end
     
         ChatInputBox.Focused:Connect(function()
+            if (Channels:GetFocus().IsPrivate) then return; end
             UpdateTypingState(true);
         end);
     
@@ -176,7 +179,7 @@ function BubbleChat:Initialize(Info : table) : metatable
     
         ChatInputBox:GetPropertyChangedSignal("Text"):Connect(function()
             task.defer(function()
-                if (ChatInputBox.Text:len() <= 0) then return; end
+                if (ChatInputBox.Text:len() <= 0 or Channels:GetFocus().IsPrivate) then return; end
                 UpdateTypingState(true);
             end, RunService.Heartbeat);
         end);
@@ -561,7 +564,7 @@ function GetBubbleHeight(Character : Model) : number
     
     for _, Child in pairs(Character:GetChildren()) do
         if (not Child:IsA("Accessory")) then continue; end -- Accessories are the only thing we really care about...
-        if (not Child.Handle:FindFirstChild("HatAttachment")) then continue; end -- We ONLY want to account for hat accessories!
+        if (not Child:WaitForChild("Handle"):FindFirstChild("HatAttachment")) then continue; end -- We ONLY want to account for hat accessories!
         
         local HeadOffset = (math.abs(((Child.Handle.Position - Child.Parent.Head.Position).Y * 1000)) / 1000); -- We round our value to the 1000'th
         

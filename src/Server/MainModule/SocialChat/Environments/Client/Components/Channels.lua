@@ -244,8 +244,8 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
     });
     
     local Content = {
-        ["Render"] = MainFrame,
         ["SmartStringObject"] = StringRenderer,
+        ["Render"] = MainFrame,
         ["Gradients"] = {},
     };
 
@@ -317,7 +317,7 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
                 },
                 function()
                     if (not Metadata.UserId) then return; end
-                    if (Metadata.UserId == Player.UserId) then return; end -- We cant whisper to ourselves!!
+                    if (Metadata.UserId == Player.UserId) then return; end -- We cant whisper to ourselves! (and... we're also using name strings because Metadata doesn't pass UserIds) [TEMP]
 
                     local Client = game.Players:GetPlayerByUserId(Metadata.UserId);
                     if (not Client) then return; end -- The client either left or isnt in the server anymore :(
@@ -326,7 +326,6 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
                 end, true
             );
         end
-
     end
 
     --// Message Rendering

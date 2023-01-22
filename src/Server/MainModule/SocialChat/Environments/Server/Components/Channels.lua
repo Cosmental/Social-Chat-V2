@@ -18,8 +18,9 @@ Channel.__index = Channel
 local TextService = game:GetService("TextService");
 
 --// Imports
-local Speakers
+local BubbleChatSettings
 local Settings
+local Speakers
 
 --// Constants
 local ClientCooldowns = {};
@@ -38,6 +39,7 @@ function ChannelManager:Initialize(Setup : table)
 
     Speakers = self.Src.Speakers
     Settings = self.Settings.SystemChannelSettings
+    BubbleChatSettings = self.Settings.BubbleChatSettings
 
     BubbleChatEvent = self.Remotes.BubbleChat.EventRenderBubble
     Network = self.Remotes.Channels
@@ -170,7 +172,7 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
             Network.EventSendMessage:FireClient(Recipient, RecipientFilter, Author, Speaker.Metadata);
             Network.EventSendMessage:FireClient(Author, AuthorFilter, Recipient, Speaker.Metadata, true);
             
-            if (self.Settings.BubbleChatSettings.IsBubbleChatEnabled) then
+            if (BubbleChatSettings.IsBubbleChatEnabled) then
                 BubbleChatEvent:FireClient(Author, Author, AuthorFilter, Speaker.Metadata);
                 BubbleChatEvent:FireClient(Recipient, Author, RecipientFilter, Speaker.Metadata);
             end

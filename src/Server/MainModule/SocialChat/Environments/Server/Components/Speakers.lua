@@ -82,10 +82,6 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
 
     local NewSpeaker = setmetatable({
 
-        --// PROPERTIES \\--
-
-        ["UserId"] = ((typeof(agent) == "Instance" and agent.UserId) or nil), -- UserId is useful for security cases!
-
         --// METADATA \\--
 
         ["Metadata"] = {
@@ -102,6 +98,8 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
                     ["Font"] = (tagData and tagData.Classic.Username and tagData.Classic.Username.Font) or nil,
                     ["Color"] = (tagData and tagData.Classic.Username and tagData.Classic.Username.Color) or getRandomSpeakerColor(),
                 };
+
+                ["UserId"] = ((typeof(agent) == "Instance" and agent.UserId) or nil), -- UserId is useful for security cases!
             },
 
             ["Bubble"] = (tagData and tagData.ChatBubble) or nil
