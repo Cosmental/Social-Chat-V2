@@ -180,7 +180,7 @@ function ChannelMaster.new(name : string, members : table?, chatHistory : table?
             ChannelPrefab.Parent = ChannelFrame
 
             ChannelPrefab.Channel.MouseButton1Click:Connect(function()
-                if (not ChatUIManager.Enabled) then print("not enabled") return; end -- Our ChatUI is not currently enabled! Channel switching is temporarily disabled
+                if (not ChatUIManager.Enabled) then return; end -- Our ChatUI is not currently enabled! Channel switching is temporarily disabled
                 forChannel:Focus();
             end);
         end

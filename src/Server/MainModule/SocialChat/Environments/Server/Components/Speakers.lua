@@ -227,14 +227,14 @@ function VerifyMetadata(agent : string | Player, metadata : table) : boolean?
     local function AnalyzeStructure(structureSet : string, fromTable : table, isForPlayer : boolean?)
         if (not fromTable) then return; end
 
-        assert(not fromTable.Color or (typeof(fromTable.Color) == "Color3" or type(fromTable.Color) == "string"),
-        "The provided \"Color\" Value for \""..(structureSet).."\" was not a \"string\" or \"Color3\"! (received "..(typeof(fromTable.Color))..")");
+        assert(not fromTable.Color or (typeof(fromTable.Color) == "Color3" or type(fromTable.Color) == "string")
+        , "The provided \"Color\" Value for \""..(structureSet).."\" was not a \"string\" or \"Color3\"! (received "..(typeof(fromTable.Color))..")");
         
-        assert(not fromTable.Color or typeof(fromTable.Color) == "Color3" or (type(fromTable.Color) == "string" and TextStyles[fromTable.Color]),
-        "The requested color TextStyle \""..(tostring(fromTable.Color)).."\" does not exist! (are you sure you typed the name correctly? This is CASE-SENSITIVE!)");
+        assert(not fromTable.Color or typeof(fromTable.Color) == "Color3" or (type(fromTable.Color) == "string" and TextStyles[fromTable.Color])
+        , "The requested color TextStyle \""..(tostring(fromTable.Color)).."\" does not exist! (are you sure you typed the name correctly? This is CASE-SENSITIVE!)");
 
-        assert(typeof(fromTable.Font) ~= "EnumItem" or table.find(Enum.Font:GetEnumItems(), fromTable.Font),
-        "The provided EnumItem was not a valid item of \"Font\"! Please set this value as a valid \"Enum.Font\" value!");
+        assert(typeof(fromTable.Font) ~= "EnumItem" or table.find(Enum.Font:GetEnumItems(), fromTable.Font)
+        , "The provided EnumItem was not a valid item of \"Font\"! Please set this value as a valid \"Enum.Font\" value!");
 
         if (isForPlayer and fromTable.Name) then
             warn("The provided username metadata for "..(agent.Name).." will be used, however, it's \"Name\" value will be ignored for all Player's who use the same metadata. (requested name: \""..(fromTable.Name).."\")");
@@ -244,8 +244,8 @@ function VerifyMetadata(agent : string | Player, metadata : table) : boolean?
     if (metadata.Classic) then
         if (metadata.Classic.Tag and metadata.Classic.Tag.Icon) then
             local Icon = metadata.Classic.Tag.Icon
-            assert(type(tonumber(Icon)) == "number",
-            "The requested Icon ImageId was not a number! Please provide the asset id of your requested Icon image! (received "..(type(Icon))..")");
+            assert(type(tonumber(Icon)) == "number"
+            , "The requested Icon ImageId was not a number! Please provide the asset id of your requested Icon image! (received "..(type(Icon))..")");
             
             local ProductInfo = MarketplaceService:GetProductInfo(Icon);
 
