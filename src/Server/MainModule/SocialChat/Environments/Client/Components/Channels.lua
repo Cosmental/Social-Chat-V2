@@ -23,11 +23,13 @@ local RichString
 local SmartText
 local Settings
 
+local ChatUIManager
 local TextStyles
 local InputBox
 
 --// Constants
 local Player = game.Players.LocalPlayer
+local OnMessageRendered = Instance.new("BindableEvent");
 
 local ChatFrame
 local MessageContainer
@@ -58,11 +60,12 @@ function ChannelMaster:Initialize(Setup : table)
     ChannelBar = ChatFrame.ChannelBar
     ChannelFrame = ChannelBar.Channels
 
-    Settings = self.Settings.LocalChannels
+    Settings = self.Settings.Channels
     RichString = self.Library.RichString
     SmartText = self.Library.SmartText
     InputBox = self.Src.InputBox
 
+    ChatUIManager = self.Src.ChatUIManager
     TextStyles = self.Settings.Styles
     Network = self.Remotes.Channels
     Presets = self.Presets
@@ -177,6 +180,7 @@ function ChannelMaster.new(name : string, members : table?, chatHistory : table?
             ChannelPrefab.Parent = ChannelFrame
 
             ChannelPrefab.Channel.MouseButton1Click:Connect(function()
+                if (not ChatUIManager.Enabled) then print("not enabled") return; end -- Our ChatUI is not currently enabled! Channel switching is temporarily disabled
                 forChannel:Focus();
             end);
         end
@@ -399,6 +403,7 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
         }):Play();
     end
 
+    OnMessageRendered:Fire(Message, Metadata, self, IsPrivateMessage);
     return Content
 end
 
@@ -495,5 +500,7 @@ function ExtractKeypointData(Gradient : UIGradient, Numerations : number) : tabl
     return Data
 end
 
-ChannelMaster.Channels = SystemChannels
+ChannelMaster.Registry = SystemChannels
+ChannelMaster.MessageRendered = OnMessageRendered.Event -- function(Message : string, Metadata : table, Channel : Channel, IsPrivate : boolean)
+
 return ChannelMaster

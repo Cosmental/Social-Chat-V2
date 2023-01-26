@@ -53,31 +53,14 @@ local function Initialize(Setup : table)
     Library = Setup.Library
     Settings = Setup.Settings
 
+    ChatToggleButton = TopbarPlus.new();
+
     --// Cache
     --\\ This serves as our client's cache for any SAVED instances create by the chat system
 
     local CacheFolder = Instance.new("Folder");
     CacheFolder.Name = "ClientCache"
     CacheFolder.Parent = script.Parent
-
-    --// TopbarPlus Button
-    --\\ This is going to be our main chatFrame button (special thanks to TopbarPlus!)
-
-    ChatToggleButton = TopbarPlus.new();
-    ChatToggleButton:setImage("rbxasset://textures/ui/TopBar/chatOn.png")
-        :setCaption("SocialChat "..(Setup.VERSION))
-        :select()
-        :bindToggleItem(ChatUI)
-        :setProperty("deselectWhenOtherIconSelected", false)
-        :setOrder(1)
-
-    ChatToggleButton:bindEvent("selected", function()
-        ChatToggleButton:clearNotices();
-    end);
-
-    ChatToggleButton:bindEvent("deselected", function()
-        
-    end);
 
     --// Component Setup
     --\\ We need to prepare our UI components. This helps with control, readability, and overall cleanlyness!
@@ -106,9 +89,33 @@ local function Initialize(Setup : table)
         if (Success) then
             UIComponents[Name] = Response
         elseif (not Success) then
-            error("Failed to initialize SocialChat component \""..(Name).."\". ( "..(Response or "No error response indicated!").." )");
+            error("Failed to initialize SocialChat component \""..(Name).."\". ("..(Response or "No error response indicated!").." )");
         end
     end
+
+    --// TopbarPlus Control
+    --\\ This is going to be our main chatFrame button (special thanks to TopbarPlus!)
+
+    ChatToggleButton:setImage("rbxasset://textures/ui/TopBar/chatOn.png")
+        :setCaption("SocialChat "..(Setup.VERSION))
+        :select()
+        :setProperty("deselectWhenOtherIconSelected", false)
+        :setOrder(1)
+        -- :bindToggleItem(ChatUI) [Disabled because we can handle this ourselves]
+
+    ChatToggleButton:bindEvent("selected", function()
+        ChatToggleButton:clearNotices();
+        UIComponents.ChatUIManager:Interact();
+    end);
+
+    ChatToggleButton:bindEvent("deselected", function()
+        UIComponents.ChatUIManager:SetEnabled(false);
+    end);
+
+    UIComponents.Channels.MessageRendered:Connect(function()
+        if (ChatToggleButton.isSelected) then return; end
+        ChatToggleButton:notify();
+    end);
 
     --// Client Setup
     --\\ These are extra tweaks used for SocialChat!

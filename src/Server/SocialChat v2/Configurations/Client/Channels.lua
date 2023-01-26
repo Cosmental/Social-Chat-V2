@@ -4,6 +4,8 @@ return {
     
     ["AllowMarkdown"] = true, -- Determines if players can use Markdown syntaxing in their messages. ( this behaves similar to how discord messaging )
 
+    ["IdleTime"] = 10, -- Determines how long the ChatUI can remain idle before automatically hiding itself
+
     --// DANCE EMOTES \\--
 
     ["EmotesAllowed"] = true, -- Determines if players are allowed to use ROBLOX dance emotes in game
