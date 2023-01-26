@@ -15,6 +15,7 @@ local Speaker = {};
 Speaker.__index = Speaker
 
 --// Services
+local MarketplaceService = game:GetService("MarketplaceService");
 local CollectionService = game:GetService("CollectionService");
 
 --// Imports
@@ -241,6 +242,18 @@ function VerifyMetadata(agent : string | Player, metadata : table) : boolean?
     end
 
     if (metadata.Classic) then
+        if (metadata.Classic.Tag and metadata.Classic.Tag.Icon) then
+            local Icon = metadata.Classic.Tag.Icon
+            assert(type(tonumber(Icon)) == "number",
+            "The requested Icon ImageId was not a number! Please provide the asset id of your requested Icon image! (received "..(type(Icon))..")");
+            
+            local ProductInfo = MarketplaceService:GetProductInfo(Icon);
+
+            if (ProductInfo.AssetTypeId ~= Enum.AssetType.Decal.Value) then
+                error("The provided Icon AssetId ("..(Icon)..") was not a valid Decal asset! Are you sure this Asset was uploaded as an image?");
+            end
+        end
+
         AnalyzeStructure("Tag", metadata.Classic.Tag);
         AnalyzeStructure("Content", metadata.Classic.Content);
         AnalyzeStructure("Username", metadata.Classic.Username, type(agent) ~= "string");

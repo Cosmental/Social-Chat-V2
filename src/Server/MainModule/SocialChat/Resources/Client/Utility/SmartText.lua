@@ -6,7 +6,14 @@
     Description: SmartText is an API-based utility module that is designed to be paired up with the RichString module! SmartText provides
     position and sizing-based TextLabel functuality by using responsive coding as a form of self-maintenance.
 
-    v1.00
+    =====================================================================================================================================
+
+    v1.2 UPDATE [1/25/2022]:
+
+    + Fixed logic for StringObjects that previously didn't accept TextGroups
+    + TextGroups now follow ZIndex behavior
+    + Camera ViewportSize is now used as a final option for ancestral sizing for calculations
+    + Added support for non-text objects
 
 ]]--
 
@@ -16,7 +23,6 @@ local SmartStringObject = {};
 SmartStringObject.__index = SmartStringObject
 
 --// Services
-local ProximityPromptService = game:GetService("ProximityPromptService")
 local TextService = game:GetService("TextService");
 
 --// Container
@@ -48,8 +54,8 @@ function SmartText.new(Container : GuiObject, properties : table?) : SmartString
 
         --// Programmable \\--
 
-        ["TotalTextGroups"] = 0,
-        ["TextGroups"] = {}
+        ["TotalRenderGroups"] = 0,
+        ["RenderGroups"] = {}
 
     }, SmartStringObject);
 
@@ -152,61 +158,61 @@ end
 
 --// Metamethods
 
---- Adds a new TextGroup using the provided TextObjects that originate from the RichString module
-function SmartStringObject:AddGroup(key : string, TextObjects : table, TextFont : Enum.Font)
+--- Adds a new RenderGroup using the provided TextObjects that originate from the RichString module
+function SmartStringObject:AddGroup(key : string, RenderGroup : table, TextFont : Enum.Font)
     assert(type(key) == "string", "Expected \"string\" as an identifier key. Got \""..(type(key)).."\" instead!");
-    assert(type(TextObjects) == "table", "Expected an array as a TextObject group. Got "..(type(TextObjects)).." instead!");
+    assert(type(RenderGroup) == "table", "Expected an array as an object group. Got "..(type(RenderGroup)).." instead!");
     assert(typeof(TextFont) == "EnumItem", "The provided Font Enum was not an EnumItem type! Got \""..(typeof(TextFont)).."\"");
     assert(table.find(Enum.Font:GetEnumItems(), TextFont), "The provided Font \""..(tostring(TextFont)).."\" was not a real Font EnumItem!");
-    assert(not self.TextGroups[key], "The provided identifier key has already been used! ( \""..(key).."\" is unavaliable. ) ");
+    assert(not self.RenderGroups[key], "The provided identifier key has already been used! ( \""..(key).."\" is unavaliable. ) ");
 
     local GroupTextContent : string = ""
 
-    for _, TextObject in pairs(TextObjects) do
+    for _, TextObject in pairs(RenderGroup) do
         if (not TextObject:IsA("TextLabel") and not TextObject:IsA("TextButton")) then continue; end
         GroupTextContent = (GroupTextContent..TextObject.Text);
     end
 
-    self.TotalTextGroups += 1
-    self.TextGroups[key] = {
+    self.TotalRenderGroups += 1
+    self.RenderGroups[key] = {
         ["Metadata"] = {
             ["Font"] = TextFont,
             ["Content"] = GroupTextContent
         };
 
-        ["TextObjects"] = TextObjects,
-        ["Index"] = self.TotalTextGroups
+        ["Objects"] = RenderGroup,
+        ["Index"] = self.TotalRenderGroups
     };
 
     self:Update();
 end
 
---- Removes a TextGroup using it's string identifier key ( NOTE: This does NOT destroy the Text group itself )
+--- Removes a RenderGroup using it's string identifier key ( NOTE: This does NOT destroy the Text group itself )
 function SmartStringObject:RemoveGroup(key : string)
     assert(type(key) == "string", "Expected \"string\" as an identifier key. Got \""..(type(key)).."\" instead!");
-    assert(self.TextGroups[key], "The provided key \""..(key).."\" was not registered under this SmartStringObject!");
+    assert(self.RenderGroups[key], "The provided key \""..(key).."\" was not registered under this SmartStringObject!");
 
-    self.TextGroups[key] = nil
+    self.RenderGroups[key] = nil
 end
 
 --- Updates positioning and sizing of our TextObjects within our Container
 function SmartStringObject:Update()
 
-    --// TextGroup Organization
-    --\\ We need to organize our TextGroups by their proper index orders!
+    --// RenderGroup Organization
+    --\\ We need to organize our RenderGroups by their proper index orders!
 
     local OrderedGroups = {};
 
-    for _, TextGroup in pairs(self.TextGroups) do
-        table.insert(OrderedGroups, TextGroup);
+    for _, RenderGroup in pairs(self.RenderGroups) do
+        table.insert(OrderedGroups, RenderGroup);
     end
 
     table.sort(OrderedGroups, function(a, b)
         return a.Index < b.Index
     end);
 
-    --// TextGroup Control
-    --\\ We need to iterate between all of our TextGroup's in order to scale and position them based on their Font needs!
+    --// RenderGroup Control
+    --\\ We need to iterate between all of our RenderGroup's in order to scale and position them based on their Font needs!
     
     local FillerYSpace : number?
     local MaxBounds = (
@@ -217,19 +223,19 @@ function SmartStringObject:Update()
     local TotalSizeY = 0
     local TotalSizeX = 0
 
-    for _, TextGroup in ipairs(OrderedGroups) do
+    for _, RenderGroup in ipairs(OrderedGroups) do
 
         --// Calculate Best FontSize
         --\\ We can calculate our Best FontSize by using a "dummy" TextLabel that uses it's "TextFits" property to return feedback in terms of FontSize
 
         local GroupFontSize : number = SmartText:GetBestFontSize(
             MaxBounds,
-            TextGroup.Metadata.Font,
+            RenderGroup.Metadata.Font,
             self.MinFontSize,
             self.MaxFontSize
         );
 
-        TextGroup.Metadata.FontSize = GroupFontSize
+        RenderGroup.Metadata.FontSize = GroupFontSize
 
         --// Line spacing initialization
         --\\ We need something to base our sentence lining calculations with
@@ -241,22 +247,33 @@ function SmartStringObject:Update()
             self.Container.AbsoluteSize
         ).Y);
 
-        if (TextGroup.Index == 1) then -- We only need to do this at the start of our calculations
+        if (RenderGroup.Index == 1) then -- We only need to do this at the start of our calculations
             FillerYSpace = LineYSpacing
         end
 
-        --// Word Group Calculations
-        --\\ We need to calculate the best size and position for our Grapheme word groups!
+        --// Render Group Calculations
+        --\\ We need to calculate the best size and position for our object groups!
 
-        for _, TextObject in pairs(TextGroup.TextObjects) do
-            
+        for _, Object in pairs(RenderGroup.Objects) do
+
+            --// Other Cases
+            --\\ In case of non-text instances being present, we should add some logic to handle it to the best of our ability!
+
+            if ((not Object:IsA("TextLabel")) and (not Object:IsA("TextButton")) and (not Object:IsA("TextBox"))) then
+                Object.Size = UDim2.fromOffset(GroupFontSize - 2, GroupFontSize - 2);
+                Object.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
+                TotalSizeX += GroupFontSize
+
+                continue;
+            end
+
             --// Content Sizing Check
             --\\ This is where we check to see if we need to create a newline or not!
 
             local ContentSize : number
             ContentSize = GroupFontSize
 
-            local IsNewLine = TextObject.Text:find("\n");
+            local IsNewLine = Object.Text:find("\n");
 
             if ((TotalSizeX + ContentSize) > MaxBounds.X or IsNewLine) then
                 TotalSizeY += LineYSpacing -- New Line indentation for cases where our WordGroup becomes too big
@@ -266,25 +283,17 @@ function SmartStringObject:Update()
             --// Individual Grapheme Sizing & Positioning
             --\\ Since our WordGroup's have different Font needs, we can scale things according to their desired inputs!
 
-            if ((not TextObject:IsA("TextLabel")) and (not TextObject:IsA("TextButton")) and (not TextObject:IsA("TextBox"))) then
-                TextObject.Size = UDim2.fromOffset(GroupFontSize - 2, GroupFontSize - 2);
-                TextObject.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
-                TotalSizeX += GroupFontSize
-
-                continue;
-            end
-
             local GraphemeSize = SmartText:GetTextSize(
-                TextObject.Text:gsub("(\\?)<[^<>]->", ""), -- Gets rid of any richText formatting that may interfere with calculations
+                Object.Text:gsub("(\\?)<[^<>]->", ""), -- Gets rid of any richText formatting that may interfere with calculations
                 GroupFontSize,
-                TextObject.Font,
+                Object.Font,
                 self.Container.AbsoluteSize
             );
             
-            TextObject.Size = UDim2.fromOffset(GraphemeSize.X, GraphemeSize.Y);
-            TextObject.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
+            Object.Size = UDim2.fromOffset(GraphemeSize.X, GraphemeSize.Y);
+            Object.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
 
-            TextObject.TextSize = GroupFontSize
+            Object.TextSize = GroupFontSize
             TotalSizeX += GraphemeSize.X
         end
     end
@@ -302,8 +311,8 @@ end
 
 --- Destroys all inherited Instances and terminates the OOP process
 function SmartStringObject:Destroy(callback : Callback?)
-    for _, TextGroup in pairs(self.TextGroups) do
-        for _, Object in pairs(TextGroup.TextObjects) do
+    for _, RenderGroup in pairs(self.RenderGroups) do
+        for _, Object in pairs(RenderGroup.Objects) do
             if (callback and (Object:IsA("TextLabel") or Object:IsA("TextButton"))) then
                 callback(Object); -- Can be used as a standalone garbage collection function
             end

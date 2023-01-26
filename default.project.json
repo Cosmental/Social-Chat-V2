@@ -8,11 +8,6 @@
       "$path": "src/Server"
     },
 
-    "ReplicatedStorage": {
-      "$className": "ReplicatedStorage",
-      "$path": "src/Shared"
-    },
-
     "StarterPlayer": {
       "$className": "StarterPlayer",
 

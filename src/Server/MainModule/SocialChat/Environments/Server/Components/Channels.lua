@@ -15,7 +15,6 @@ local Channel = {};
 Channel.__index = Channel
 
 --// Services
-local StarterPack = game:GetService("StarterPack")
 local TextService = game:GetService("TextService");
 
 --// Imports
@@ -274,7 +273,7 @@ function GetFilteredMessageForClient(FilterObject : Instance, Client : Player) :
 
     if ((ProcessingTime >= 5) and (os.clock() - LastServerDownError) >= 60) then -- It should NOT take our server 5 seconds to filter a singular message!
         Network.EventSendMessage:FireAllClients(
-            "Roblox servers are currently experiencing issues when filtering messages!",
+            "Roblox servers are currently experiencing issues when filtering messages.",
             DefaultChannel,
             ServerErrorMetadata
         );

@@ -295,6 +295,17 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
         
         --// Tag Rendering
         if (Metadata and Metadata.Tag) then
+            if (Metadata.Tag.Icon) then
+                local ImageLabel = Instance.new("ImageLabel");
+
+                ImageLabel.BackgroundTransparency = 1
+                ImageLabel.Image = "rbxthumb://type=Asset&id="..(Metadata.Tag.Icon).."&w=420&h=420"
+                ImageLabel.Name = "TAG_ICON"
+                
+                StringRenderer:AddGroup("TagIcon", {ImageLabel}, Settings.MessageFont);
+                ImageLabel.Parent = MainFrame
+            end
+
             Generate(
                 "Tag",
                 "**["..(Metadata.Tag.Name).."]** ",

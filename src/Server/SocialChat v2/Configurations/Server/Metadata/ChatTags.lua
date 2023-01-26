@@ -19,6 +19,7 @@ return {
 		["Metadata"] = {
 			["Classic"] = {
 				["Tag"] = {
+					["Icon"] = 5817511739,
 					["Name"] = "Creator",
 					["Color"] = Color3.fromRGB(255, 35, 35)
 				},
