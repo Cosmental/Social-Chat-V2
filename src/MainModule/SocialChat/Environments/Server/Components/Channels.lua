@@ -15,11 +15,14 @@ local Channel = {};
 Channel.__index = Channel
 
 --// Services
+local CollectionService = game:GetService("CollectionService");
 local TextService = game:GetService("TextService");
 
 --// Imports
 local BubbleChatSettings
 local Settings
+
+local ChatTags
 local Speakers
 
 --// Constants
@@ -41,6 +44,8 @@ function ChannelManager:Initialize(Setup : table)
     local self = setmetatable(Setup, ChannelManager);
 
     Speakers = self.Src.Speakers
+    ChatTags = self.Settings.ChatTags
+
     Settings = self.Settings.SystemChannelSettings
     BubbleChatSettings = self.Settings.BubbleChatSettings
 
@@ -91,6 +96,59 @@ function ChannelManager:Initialize(Setup : table)
         local RecievingChannel = ((type(Recipient) == "string") and (ChannelManager:Get(Recipient)));
         ChannelManager:Message(Player, Message, RecievingChannel or Recipient);
     end);
+
+    --// Hooking onto SystemAlert RBXScriptSignals
+
+    local AlertEvents = Settings.AlertEvents
+
+    for AlertType, Info in pairs(Settings.SystemAlerts) do
+        if (AlertType == "__example") then continue; end -- This event is the example event! (skip)
+        if (not Info.Enabled) then continue; end -- This event is not active! (skip)
+
+        assert(Info.Event, "SocialChat Channel Settings Misconfiguration: \'"..(AlertType).."\' is not connected to any Events! This message will never submit itself without an event!");
+
+        local Signal : callback? = ((Info.Event.Signal) or (AlertEvents[Info.Event.HookTo].Signal));
+        local TagData : table? = (ChatTags[Info.Tag] or {["Classic"] = {}});
+        TagData.BypassMarkdownSetting = true
+
+        assert(Signal, "SocialChat Channel Settings Misconfiguration: \'"..(AlertType).."\' does not have a signal to connect to!");
+        assert(Info.Event.Trigger, "SocialChat Channel Settings Misconfiguration: \'"..(AlertType).."\' does not have a 'trigger' to fire from!");
+        
+        local function SendMessage(Recipients : table, Parameters : table)
+            local Message = Info.Message
+
+            for _, Param in pairs(Parameters) do
+                local Starts, Ends = Message:find("%%s");
+                if (not Starts) then continue; end -- No more '%s' occurences!
+
+                Message = (
+                    Message:sub(0, Starts - 1)..
+                    tostring(Param)..
+                    Message:sub(Ends + 1)
+                );
+            end
+
+            for _, Player in pairs(Recipients) do
+                coroutine.wrap(function()
+                    if (not CollectionService:HasTag(Player, "SocialChatClientReady")) then
+                        repeat -- I heavily dislike this method of yielding, but due to its functuality in this case, I'll let it slide
+                            task.wait();
+                        until
+                        (CollectionService:HasTag(Player, "SocialChatClientReady")); -- Sometimes our client won't be loaded yet, so we should yield until then!
+                    end
+                
+                    Network.EventSendMessage:FireClient(
+                        Player,
+                        Message,
+                        DefaultChannel,
+                        TagData
+                    );
+                end)();
+            end
+        end
+
+        Signal(Info.Event.Trigger, SendMessage);
+    end
 
     return self
 end

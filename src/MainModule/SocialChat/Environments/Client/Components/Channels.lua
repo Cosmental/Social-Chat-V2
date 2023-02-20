@@ -103,7 +103,9 @@ function ChannelMaster:Initialize(Setup : table)
     end);
 
     --// Events
-    Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, Metadata : table, IsFromUs : boolean?)
+    Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, Metadata : table?, IsFromUs : boolean?)
+        local SpeakerData = ((Metadata and Metadata.Classic) or {});
+        
         if (typeof(Destination) == "Instance" and Destination:IsA("Player")) then -- Private Message
             if (TotalChannels >= 2) then -- Create the message in a new PRIVATE channel!
                 local PrivateChannel = self:Get(Destination.Name);
@@ -116,10 +118,10 @@ function ChannelMaster:Initialize(Setup : table)
                     end
                 end
 
-                PrivateChannel:Render(Message, Metadata.Classic);
+                PrivateChannel:Render(Message, SpeakerData);
             else -- Create the message in our current channel!
                 local CurrentChannel = self:GetFocus();
-                CurrentChannel:Render(Message, Metadata.Classic, true, IsFromUs);
+                CurrentChannel:Render(Message, SpeakerData, true, IsFromUs);
             end
         else -- Channel Mesage
             local DirectedChannel = self:Get(Destination.Name);
@@ -129,7 +131,7 @@ function ChannelMaster:Initialize(Setup : table)
                 return;
             end
 
-            DirectedChannel:Render(Message, Metadata.Classic);
+            DirectedChannel:Render(Message, SpeakerData);
         end
     end);
 

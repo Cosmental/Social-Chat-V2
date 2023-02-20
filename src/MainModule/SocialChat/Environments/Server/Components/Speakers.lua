@@ -20,7 +20,7 @@ local CollectionService = game:GetService("CollectionService");
 
 --// Imports
 local Settings
-local ChatTag
+local ChatTags
 
 local TextStyles
 local Channels
@@ -38,7 +38,7 @@ function SpeakerMaster:Initialize(Setup : table)
 
     Settings = self.Settings.SystemChannelSettings
     TextStyles = self.Settings.Styles
-    ChatTag = self.Settings.ChatTags
+    ChatTags = self.Settings.ChatTags
 
     Network = self.Remotes.Speakers
     Channels = self.Src.Channels
@@ -117,7 +117,7 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
     SpeakerAdded:Fire(agent, NewSpeaker);
 
     --// Team Color Appliance \\--
-    if (Settings.UserTeamColorsAsUsernameColor and typeof(agent) == "Instance") then
+    if (Settings.ApplyTeamColors and typeof(agent) == "Instance") then
         agent:GetPropertyChangedSignal("Team"):Connect(function()
             if (agent.Team ~= nil) then -- This Player is now in a team
                 NewSpeaker.__previousNameColor = NewSpeaker.TagData.NameColor
@@ -153,7 +153,7 @@ end
 
 --- Returns a random Speaker color
 function getRandomSpeakerColor() : Color3
-    if (not Settings.AssignRandomUsernameColorOnJoin) then return Color3.fromRGB(255, 255, 255); end
+    if (not Settings.ApplyRandomColorAsDefault) then return Color3.fromRGB(255, 255, 255); end
 
     if (next(Settings.UsernameColors)) then
         return Settings.UsernameColors[math.random(#Settings.UsernameColors)];
@@ -167,7 +167,7 @@ function GetTag(Player : Player)
     local OwnedTag, Priority = nil, math.huge
 
 	--// Find our Players tag
-	for _, Tag in pairs(ChatTag) do
+	for _, Tag in pairs(ChatTags) do
 		if (Tag.PriorityOrder >= Priority) then continue; end --// Skips this tag if its equal to/over our priority
 		local Requirements = Tag.Requirements
 
