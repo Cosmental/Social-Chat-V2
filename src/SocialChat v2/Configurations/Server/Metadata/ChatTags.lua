@@ -19,21 +19,14 @@ return {
 		["Metadata"] = {
 			["Classic"] = {
 				["Tag"] = {
-					["Icon"] = 5817511739,
-					["Name"] = "Creator",
-					["Color"] = Color3.fromRGB(255, 35, 35)
+					["Name"] = "Developer",
+					["Color"] = Color3.fromRGB(255, 91, 91)
 				},
 
-				["Content"] = {
-					["Font"] = Enum.Font.Cartoon
-				};
+				["Username"] = {
+					["Color"] = Color3.fromRGB(36, 33, 49)
+				}
 			};
-
-			["ChatBubble"] = {
-				["TextColor"] = "Example",
-				["BubbleColor"] = Color3.fromRGB(40, 40, 40),
-				["Font"] = Enum.Font.Bodoni
-			},
 		};
 
 		["PriorityOrder"] = 0,

@@ -1,10 +1,16 @@
 # Project place file
 /Obverse.rbxlx
 
+# Rojo files
+.gitattributes
+aftman.toml
+
 # Roblox Studio lock files
 /*.rbxlx.lock
 /*.rbxl.lock
 
 # Local files
 .history
+.vscode
+concepts
 assets
