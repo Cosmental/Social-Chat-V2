@@ -186,7 +186,7 @@ local SystemChannelSettings = {
             ["Tag"] = nil, -- Setting your tag to 'nil' will not give your alert message any tagdata and will send it as a plain message!
             ["Enabled"] = true,
 
-            ["Message"] = "**{System}** Your friend %s has joined the game", -- This message will be sent through SocialChat whenever the specified event fires. These messages will ALWAYS bypass Markdown settings regardless if theyre enabled or not!
+            ["Message"] = "**{System} Your friend %s has joined the game**", -- This message will be sent through SocialChat whenever the specified event fires. These messages will ALWAYS bypass Markdown settings regardless if theyre enabled or not!
             ["Event"] = AlertEvents.FriendJoined -- Events can either be RBXScriptSignals OR custom SocialChat events!
         },
 
@@ -194,7 +194,7 @@ local SystemChannelSettings = {
             ["Tag"] = nil,
             ["Enabled"] = false,
 
-            ["Message"] = "**{System}** Your friend %s has left the game",
+            ["Message"] = "**{System} Your friend %s has left the game**",
             ["Event"] = AlertEvents.FriendLeaving
         },
 
@@ -222,7 +222,7 @@ local SystemChannelSettings = {
             ["Tag"] = nil,
             ["Enabled"] = true,
 
-            ["Message"] = "**{Team}** You are now in the \'%s\' team",
+            ["Message"] = "**{Team}** You are now in the *\'%s\'* team",
             ["Event"] = AlertEvents.TeamChanged
         },
 
