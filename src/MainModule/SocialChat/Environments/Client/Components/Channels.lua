@@ -70,6 +70,17 @@ function ChannelMaster:Initialize(Setup : table)
     Network = self.Remotes.Channels
     Presets = self.Presets
 
+    --// BubbleChat-Only Mode Setup
+
+    if (Settings.HideChatFrame) then
+        ChatFrame.Input.Size = UDim2.fromScale(1, .127);
+
+        ChatFrame.Input.InteractionBar.Size = UDim2.fromScale(.98, .814);
+        ChatFrame.Input.InteractionBar.Position = UDim2.fromScale(.008, .075);
+
+        ChannelBar:Destroy();
+    end
+
     --// Cache Folder
     ChatCacheContainer = Instance.new("Folder");
     ChatCacheContainer.Name = "CLIENT_CHAT_CACHE"
@@ -107,7 +118,7 @@ function ChannelMaster:Initialize(Setup : table)
         local SpeakerData = ((Metadata and Metadata.Classic) or {});
         
         if (typeof(Destination) == "Instance" and Destination:IsA("Player")) then -- Private Message
-            if (TotalChannels >= 2) then -- Create the message in a new PRIVATE channel!
+            if ((TotalChannels >= 2) and (not Settings.HideChatFrame)) then -- Create the message in a new PRIVATE channel!
                 local PrivateChannel = self:Get(Destination.Name);
                 
                 if (not PrivateChannel) then
@@ -236,6 +247,8 @@ end
 
 --- Renders a message based on the specified parameters
 function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : boolean?, MessageIsFromUs : boolean?) : table
+    if (Settings.HideChatFrame) then return; end -- Rendering is disabled due to chat settings
+
     local MainFrame = Instance.new("Frame");
 
     MainFrame.BackgroundTransparency = 1
@@ -411,6 +424,11 @@ end
 
 --- Sets our client's channel focus on this channel
 function Channel:Focus()
+    if ((Settings.HideChatFrame) and (FocusedChannel ~= nil) and (FocusedChannel ~= self)) then
+        warn("Attempt to set Channel Focus to \'"..(self.Name).."\', but API request failed because configuration \"HideChatFrame\" is enabled!");
+        return;
+    end
+
     FocusedChannel = self
 
     for _, ContentFrame in pairs(MessageContainer:GetChildren()) do

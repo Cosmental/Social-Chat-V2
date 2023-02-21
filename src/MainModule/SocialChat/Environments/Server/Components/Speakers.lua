@@ -44,18 +44,13 @@ function SpeakerMaster:Initialize(Setup : table)
     Channels = self.Src.Channels
 
     --// Setup
-    Network.GetSpeakers.OnServerInvoke = function()
-        local Speakers = {};
-
-        for Agent, Speaker in pairs(ChatSpeakers) do
-            Speakers[Agent] = Speaker.Metadata
-        end
-
-        return Speakers
-    end
-
     local function onSocialChatReady(Player : Player)
         SpeakerMaster.new(Player, GetTag(Player));
+
+        for Agent, Speaker in pairs(ChatSpeakers) do -- Register all currently active speakers once our client is ready!
+            if (Agent == Player) then continue; end
+            Network.EventSpeakerAdded:FireClient(Player, Agent, Speaker.Metadata);
+        end
     end
 
     for _, Player in pairs(CollectionService:GetTagged("SocialChatClientReady")) do
@@ -122,15 +117,6 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
             if (agent.Team ~= nil) then -- This Player is now in a team
                 NewSpeaker.__previousNameColor = NewSpeaker.TagData.NameColor
                 NewSpeaker.TagData.NameColor = agent.Team.TeamColor.Color
-
-                Network.Parent.Channels.EventSendMessage:FireClient(
-                    agent,
-                    Settings.TeamJoinMessage:format(agent.Team.Name),
-                    GetMainChannel(NewSpeaker),
-                    {
-                        ["MessageColor"] = Color3.fromRGB(255, 255, 255);
-                    }
-                );
             else -- This player is no longer in a team
                 NewSpeaker.TagData.NameColor = NewSpeaker.__previousNameColor
             end

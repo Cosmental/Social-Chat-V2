@@ -97,13 +97,6 @@ function BubbleChat:Initialize(Info : table) : metatable
         end);
     end
 
-    coroutine.wrap(function()
-        for Agent, Metadata in pairs(SpeakerEvents.GetSpeakers:InvokeServer()) do
-            if ((typeof(Agent) ~= "Instance") or (not Agent:IsA("Player"))) then continue; end
-            coroutine.wrap(SetupClient)(Agent, Metadata);
-        end
-    end)();
-
     SpeakerEvents.EventSpeakerAdded.OnClientEvent:Connect(function(Agent : Instance, Metadata : table)
         if ((typeof(Agent) ~= "Instance") or (not Agent:IsA("Player"))) then return; end
         SetupClient(Agent, Metadata);
