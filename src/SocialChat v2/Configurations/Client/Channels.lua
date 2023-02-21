@@ -2,7 +2,7 @@ return {
     
     --// BEHAVIOR \\--
 
-    ["HideChatFrame"] = true, -- Determines if the ChatFrame will be hidden. If true, the only form of communication will be through BubbleChat!
+    ["HideChatFrame"] = false, -- Determines if the ChatFrame will be hidden. If true, the only form of communication will be through BubbleChat!
     
     ["AllowMarkdown"] = true, -- Determines if players can use Markdown syntaxing in their messages. ( this behaves similar to how discord messaging )
 

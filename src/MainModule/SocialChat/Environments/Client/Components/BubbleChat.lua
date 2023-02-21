@@ -64,6 +64,7 @@ function BubbleChat:Initialize(Info : table) : metatable
 
     BubbleChatContainer = Instance.new("ScreenGui");
     BubbleChatContainer.Name = "BubbleChat"
+    BubbleChatContainer.ResetOnSpawn = false -- This MUST be false, otherwise the controller would break on respawn!
     BubbleChatContainer.Parent = Player.PlayerGui
 
     --// Client Setup
@@ -87,12 +88,11 @@ function BubbleChat:Initialize(Info : table) : metatable
     end
 
     local function SetupClient(Player : Player, Metadata : table)
-        local Character = (Player.Character or Player.CharacterAdded:Wait());
         local Controller = BubbleChat.new(Player, Metadata.Bubble);
 
-        ManageCharacter(Character, Controller);
+        ManageCharacter(Player.Character or Player.CharacterAdded:Wait(), Controller);
 
-        Player.CharacterAdded:Connect(function()
+        Player.CharacterAdded:Connect(function(Character : Model)
             ManageCharacter(Character, Controller);
         end);
     end
@@ -553,6 +553,8 @@ end
 
 --- Returns a usable ChatBubble height for the provided character
 function GetBubbleHeight(Character : Model) : number
+    if ((not Character) or (not Character:FindFirstChild("Head"))) then return 0; end
+
     local BestHeight = 0
     
     for _, Child in pairs(Character:GetChildren()) do

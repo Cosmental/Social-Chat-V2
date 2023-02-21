@@ -102,6 +102,10 @@ function ChatUIManager:Initialize(Setup : table)
 		self:Interact();
 	end);
 
+	InputBox.Focused:Connect(function()
+		self:Interact();
+	end);
+
 	InputBox.FocusLost:Connect(function()
 		self:Interact();
 	end);
