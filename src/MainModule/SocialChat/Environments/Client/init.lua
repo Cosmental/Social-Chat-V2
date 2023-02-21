@@ -11,13 +11,16 @@
 local TopbarPlus
 
 --// Constants
+local Network = game.ReplicatedStorage:WaitForChild("SocialChatEvents");
 local Player = game.Players.LocalPlayer
-local ChatUI
 
 local Handlers
 local UIComponents
 
 local ChatToggleButton
+local CacheFolder
+local ChatUI
+
 local Library
 local Settings
 
@@ -27,10 +30,10 @@ local isClientReady : boolean?
 --// Functions
 
 --- Extracts modules from a container
-local function extract(container) : table
+local function Extract(Container : Instance) : table
     local Modules = {};
 
-    for _, SubModule in pairs(container:GetChildren()) do
+    for _, SubModule in pairs(Container:GetChildren()) do
         if (not SubModule:IsA("ModuleScript")) then continue; end
 
         local Success, Response = pcall(function()
@@ -42,6 +45,36 @@ local function extract(container) : table
     end
 
     return Modules
+end
+
+--- Initializes Modular APIs within the specified array
+local function Init(Components : table) : table
+    for Name, Component in pairs(Components) do
+        local Success, Response = pcall(function()
+            return Component:Initialize({
+                ["Settings"] = Settings,
+                ["Library"] = Library,
+                ["Cache"] = CacheFolder,
+
+                ["Presets"] = script.Presets,
+                ["Remotes"] = Network,
+
+                ["Handlers"] = Handlers,
+                ["Src"] = Components,
+
+                ["ChatButton"] = ChatToggleButton,
+                ["ChatUI"] = ChatUI
+            });
+        end);
+
+        if (Success) then
+            Components[Name] = Response
+        elseif (not Success) then
+            error("Failed to initialize SocialChat component \""..(Name).."\". ("..(Response or "No error response indicated!").." )");
+        end
+    end
+
+    return Components
 end
 
 --// Initialization
@@ -58,40 +91,15 @@ local function Initialize(Setup : table)
     --// Cache
     --\\ This serves as our client's cache for any SAVED instances create by the chat system
 
-    local CacheFolder = Instance.new("Folder");
+    CacheFolder = Instance.new("Folder");
     CacheFolder.Name = "ClientCache"
     CacheFolder.Parent = script.Parent
 
     --// Component Setup
     --\\ We need to prepare our UI components. This helps with control, readability, and overall cleanlyness!
 
-    UIComponents = extract(script.Components);
-    Handlers = extract(script.Handlers);
-
-    for Name, Component in pairs(UIComponents) do
-        local Success, Response = pcall(function()
-            return Component:Initialize({
-                ["Settings"] = Settings,
-                ["Library"] = Library,
-                ["Cache"] = CacheFolder,
-
-                ["Remotes"] = game.ReplicatedStorage:WaitForChild("SocialChatEvents"),
-                ["Presets"] = script.Presets,
-
-                ["Handlers"] = Handlers,
-                ["Src"] = UIComponents,
-
-                ["ChatButton"] = ChatToggleButton,
-                ["ChatUI"] = ChatUI
-            });
-        end);
-
-        if (Success) then
-            UIComponents[Name] = Response
-        elseif (not Success) then
-            error("Failed to initialize SocialChat component \""..(Name).."\". ("..(Response or "No error response indicated!").." )");
-        end
-    end
+    Handlers = Init(Extract(script.Handlers));
+    UIComponents = Init(Extract(script.Components));
 
     --// TopbarPlus Control
     --\\ This is going to be our main chatFrame button (special thanks to TopbarPlus!)

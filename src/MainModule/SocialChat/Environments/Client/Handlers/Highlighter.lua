@@ -7,70 +7,42 @@
 
 ]]--
 
+--// Module
+local Highlighter = {};
+Highlighter.__index = Highlighter
+
 --// Imports
-local ConfigurationFolder = game.ReplicatedFirst.ClientChatSettings
-local Settings = require(ConfigurationFolder.Highlights);
+local Settings
 
 --// Constants
 local HighlightFormat = "<font color=\"rgb(%s, %s, %s)\">%s</font>"
 
---// Functions
+--// Initialization
+function Highlighter:Initialize(Setup : table)
+    local self = setmetatable(Setup, Highlighter);
 
---- Returns the precise substring index number where the requested word index resides
-local function getWordIndex(Content : string, WordIndex : number)
-    local Index = 1
+    Settings = self.Settings.Highlights
 
-    for i, Word in pairs(Content:split(" ")) do
-        if (i == WordIndex) then
-            return Index
-        end
-
-        Index += (#Word + 1);
-    end
+    return self
 end
 
---- Returns a boolean value based on whether or the queried player is in this server
-local function doesPlayerExist(query : string) : boolean
-    for _, Player in pairs(game.Players:GetPlayers()) do
-        if (Player.Name:lower() == query:lower()) then
-            return true;
-        end
-    end
-end
+--// Methods
 
---- Inserts richText formatting
-local function InsertColorPhrase(text : string, phrase : string, atIndex : number, Color : Color3, Offset : number) : number
-    local R, G, B = math.floor(Color.R * 255), math.floor(Color.G * 255), math.floor(Color.B * 255);
-    local NewText = (
-        text:sub(0, math.max(0, atIndex + Offset - 1))
-        ..string.format(
-            HighlightFormat,
-            R,
-            G,
-            B,
-            phrase
-        )
-        ..text:sub(atIndex + Offset + #phrase + ((atIndex == 0 and 1) or 0))
-    );
+--- Returns a RichText embedded string based on the Highlighter's current highlighting protocols!
+function Highlighter:Highlight(Content : string) : string
+    assert(type(Content) == "string", "Expected type \"string\" as a highlight content parameter. Received \""..(type(Content)).."\"");
 
-    return NewText, (#HighlightFormat - 2 + (#tostring(R..G..B) - 6));
-end
+    local Words = Content:split(" ");
 
---// Module
-return function (content : string) : string
-    assert(type(content) == "string", "Expected type \"string\" as a highlight content parameter. Received \""..(type(content)).."\"");
-
-    local Words = content:split(" ");
-
-    local NewContent : string = content
+    local NewContent : string = Content
     local Offset = 0
 
     for i, Word in ipairs(Words) do
         
         --// Username Highlighting \\--
 
-        if (Settings.UsernameHighlightsEnabled and doesPlayerExist(Word)) then
-            local Index = getWordIndex(content, i);
+        if (Settings.UsernameHighlightsEnabled and DoesPlayerExist(Word)) then
+            local Index = GetWordIndex(Content, i);
             local UsernameColor = Settings.UserHighlightColor
 
             local NewText, Appendence = InsertColorPhrase(NewContent, Word, Index, UsernameColor, Offset);
@@ -102,7 +74,7 @@ return function (content : string) : string
         --// Custom Highlights \\--
 
         if (Settings.CustomHighlightsEnabled) then
-            local Index = getWordIndex(content, i);
+            local Index = GetWordIndex(Content, i);
 
             for PhraseGroup, Info in pairs(Settings.KeyPhrases) do
                 if (PhraseGroup == "_SYSTEM") then continue; end -- This is a CORE class. We can ignore it if anything
@@ -125,3 +97,47 @@ return function (content : string) : string
 
     return NewContent
 end
+
+--// Functions
+
+--- Returns the precise substring index number where the requested word index resides
+function GetWordIndex(Content : string, WordIndex : number)
+    local Index = 1
+
+    for i, Word in pairs(Content:split(" ")) do
+        if (i == WordIndex) then
+            return Index
+        end
+
+        Index += (#Word + 1);
+    end
+end
+
+--- Returns a boolean value based on whether or the queried player is in this server
+function DoesPlayerExist(Query : string) : boolean
+    for _, Player in pairs(game.Players:GetPlayers()) do
+        if (Player.Name:lower() == Query:lower()) then
+            return true;
+        end
+    end
+end
+
+--- Inserts richText formatting
+function InsertColorPhrase(text : string, phrase : string, atIndex : number, Color : Color3, Offset : number) : number
+    local R, G, B = math.floor(Color.R * 255), math.floor(Color.G * 255), math.floor(Color.B * 255);
+    local NewText = (
+        text:sub(0, math.max(0, atIndex + Offset - 1))
+        ..string.format(
+            HighlightFormat,
+            R,
+            G,
+            B,
+            phrase
+        )
+        ..text:sub(atIndex + Offset + #phrase + ((atIndex == 0 and 1) or 0))
+    );
+
+    return NewText, (#HighlightFormat - 2 + (#tostring(R..G..B) - 6));
+end
+
+return Highlighter

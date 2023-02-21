@@ -136,8 +136,8 @@ function InputBox:Initialize(Info : table) : metatable
         --\\ We need to color our syntaxes for UX purposes!
 
         local MarkedText = (
-            (Settings.AllowMarkdown and Markdown:Markup(Highlighter(CleanText), true)) or
-            Highlighter(CleanText)
+            (Settings.AllowMarkdown and Markdown:Markup(Highlighter:Highlight(CleanText), true)) or
+            Highlighter:Highlight(CleanText)
         );
 
         local NewText = MarkedText
@@ -478,7 +478,7 @@ function InputBox:Initialize(Info : table) : metatable
 
         if (not enterPressed) then -- Message was interrupted. Proceed with visuals
             self._oldText = ChatBox.Text
-            self:Set(Highlighter(
+            self:Set(Highlighter:Highlight(
                 (Settings.AllowMarkdown and Markdown:Markup(ChatBox.Text)) or
                 ChatBox.Text
             ));
