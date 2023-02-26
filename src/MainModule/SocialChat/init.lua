@@ -57,12 +57,12 @@ function getSocialChat()
 
         --// Configurations
         local Configurations = {};
-        local Directory = (
-            (IsServer and game.ServerStorage:WaitForChild("ServerChatSettings")) or
-            (game.ReplicatedFirst:WaitForChild("ClientChatSettings"))
-        );
 
-        local function AddToConfiguration(container : Folder)
+        local function AddToConfiguration(container : Folder, CustomEntryType : string?)
+            if (CustomEntryType) then
+                Configurations[CustomEntryType] = {};
+            end
+
             for _, Module in pairs(container:GetDescendants()) do
                 if (not Module:IsA("ModuleScript")) then continue; end
                 if (Module.Parent:IsA("ModuleScript")) then continue; end
@@ -71,13 +71,23 @@ function getSocialChat()
                     return require(Module);
                 end);
 
-                if (Success) then
+                if (not Success) then continue; end
+
+                if (CustomEntryType) then
+                    Configurations[CustomEntryType][Module.Name] = Response
+                else
                     Configurations[Module.Name] = Response
                 end
             end
         end
 
-        AddToConfiguration(Directory);
+        if (IsServer) then
+            AddToConfiguration(game.ServerStorage:WaitForChild("ServerChatSettings"));
+            AddToConfiguration(game.ReplicatedFirst:WaitForChild("ClientChatSettings"), "Client");
+        else
+            AddToConfiguration(game.ReplicatedFirst:WaitForChild("ClientChatSettings"));
+        end
+
         AddToConfiguration(game.ReplicatedStorage:WaitForChild("SharedChatSettings"));
 
         --// Initialization

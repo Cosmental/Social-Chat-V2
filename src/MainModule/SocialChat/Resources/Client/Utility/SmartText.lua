@@ -25,7 +25,8 @@ SmartStringObject.__index = SmartStringObject
 --// Services
 local TextService = game:GetService("TextService");
 
---// Container
+--// Constants
+local Player = game.Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 local SizeCheckUI = Instance.new("ScreenGui");
@@ -197,6 +198,7 @@ end
 
 --- Updates positioning and sizing of our TextObjects within our Container
 function SmartStringObject:Update()
+    if (not self.Container:IsDescendantOf(Player.PlayerGui)) then return; end -- The Container is not currently in 'StarterGui'!
 
     --// RenderGroup Organization
     --\\ We need to organize our RenderGroups by their proper index orders!

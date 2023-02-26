@@ -46,7 +46,7 @@ local LastInput = os.clock();
 function BubbleChat:Initialize(Info : table) : metatable
     local self = setmetatable(Info, BubbleChat);
 
-    Settings = self.Settings.BubbleChatSettings
+    Settings = self.Settings.BubbleChat
     TextStyles = self.Settings.Styles
     Channels = self.Src.Channels
 
@@ -60,8 +60,6 @@ function BubbleChat:Initialize(Info : table) : metatable
     Presets = self.Presets.BubbleChat
 
     --// Setup
-    if (not Settings.IsBubbleChatEnabled) then return self; end -- Even though we COULD end our operation here, we still need to return self
-
     BubbleChatContainer = Instance.new("ScreenGui");
     BubbleChatContainer.Name = "BubbleChat"
     BubbleChatContainer.ResetOnSpawn = false -- This MUST be false, otherwise the controller would break on respawn!
@@ -190,6 +188,11 @@ function BubbleChat:Initialize(Info : table) : metatable
     return self
 end
 
+--- Returns a list of registered BubbleChat Controller's
+function BubbleChat:GetControllers() : table
+    return OverheadControllers
+end
+
 --// Methods
 
 --- Creates a new BubbleController that can be handled via it's various API methods
@@ -273,6 +276,14 @@ function BubbleChat.new(Agent : BasePart | Player, Metadata : table?) : BubbleCo
     return Controller
 end
 
+--- Adjusts major configurable settings (not intended for API usage) [SCOPE-BYPASSER]
+function BubbleChat:Adjust(Configuration : string, Value : any?)
+    assert(type(Configuration) == "string", "Attempt to query replacement value with internal BubbleChat settings with a non-string type. (received "..(type(Configuration))..")");
+    assert(Settings[Configuration], "Requested BubbleChat configurable adjustment \""..(Configuration).."\" does not exist!");
+    
+    Settings[Configuration] = Value
+end
+
 --// Metamethods
 
 --- Sets the player's current thinking state to the provided boolean value
@@ -293,6 +304,8 @@ function BubbleController:SetThinking(IsThinking : boolean?)
 
     --// Visibility Tweening
     --\\ After handling out Controller state, we can tween our visibile state for our Thinking bubble!
+
+    IsThinking = (IsThinking and Settings.IsBubbleChatEnabled); -- Only allows for hiding based on settings!
 
     local MainFrame = self.Object.Main
     local ThinkingFrame = MainFrame.ThinkBubble
@@ -330,10 +343,10 @@ end
 
 --- Sets the controller's current state of activity to the provided boolean value
 function BubbleController:SetActive(IsActive : boolean?)
-    if (self.IsActive == IsActive) then return; end -- The requested state of activity is already in use! Deny the request here.
     self.IsActive = IsActive
 
     local MainFrame = self.Object.Main
+    IsActive = (IsActive and Settings.IsBubbleChatEnabled);
 
     if (IsActive) then
         MainFrame.Carrot.Visible = true
@@ -370,6 +383,7 @@ function BubbleController:Render(Message : string) : table
     Bubble.Name = ("BUBBLE_MESSAGE_"..(self.Agent.Name));
     Bubble.BackgroundBubble.BackgroundTransparency = 1
 
+    Bubble.Visible = Settings.IsBubbleChatEnabled
     Bubble.Parent = self.Object.Main.Bubbles -- We need to parent this early because our responsive text relies on our ChatBubble's parental status
 
     local TextColor = ((Metadata and Metadata.TextColor) or Settings.Default.TextColor);

@@ -74,13 +74,11 @@ function AdjustingCanvas:Update()
     
     local CurrentCanvasSize = self:GetCanvasSize();
     local SizeOffset = ((self.PreviousSize and CurrentCanvasSize - self.PreviousSize) or 0);
-    
-    local WasAtBottom = self:IsScrolledDown();
-    
-    if (not WasAtBottom) then
+
+    if (not self:IsScrolledDown()) then -- Maintain a constant position (not forced to bottom)
         self.Canvas.CanvasPosition = Vector2.new(
             0, (self.Canvas.CanvasPosition.Y - SizeOffset));
-    else
+    elseif (self.Layout.VerticalAlignment == Enum.VerticalAlignment.Bottom) then -- Force to bottom
         self.Canvas.CanvasPosition = Vector2.new(0, 9e9);
     end
 end

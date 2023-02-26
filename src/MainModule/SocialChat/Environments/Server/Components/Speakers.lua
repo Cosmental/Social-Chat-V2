@@ -36,7 +36,7 @@ local ChatSpeakers = {};
 function SpeakerMaster:Initialize(Setup : table)
     local self = setmetatable(Setup, SpeakerMaster);
 
-    Settings = self.Settings.SystemChannelSettings
+    Settings = self.Settings.Channels
     TextStyles = self.Settings.Styles
     ChatTags = self.Settings.ChatTags
 

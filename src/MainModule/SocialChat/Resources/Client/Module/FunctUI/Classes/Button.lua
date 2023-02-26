@@ -21,14 +21,16 @@ function Button.new(Element : GuiObject) : Button
     assert(Element:IsA("GuiObject"), "The provided Instance was not of ClassType \"GuiObject\". (received "..(Element.ClassName)..")");
     
     local Clicker = (Element:FindFirstChildOfClass("TextButton") or Element:FindFirstChildOfClass("ImageButton"));
-    assert(Clicker, "Attempt to create new FunctUI Class 'Button' with instance '"..(Element.Name).."' without a Clicker! (you need to add a GuiButton named 'Clicker' under your requested UI element)");
+    assert(Clicker, "Attempt to create new FunctUI Class 'Button' with instance '"..(Element.Name).."' without a Clicker! (you must add a GuiButton named 'Clicker' under your requested UI element)");
+
+    local ValueChangedEvent = Instance.new("BindableEvent");
 
     local self
     local Data = {
 
         --// DATA
         ["Disabled"] = nil, -- Determines if the button is clickable or not
-        ["Active"] = true, -- Determines if the button is currently active or not. This is based on the user's inputs.
+        ["Value"] = true, -- Determines if the button is currently active or not. This is based on the user's inputs.
 
         --// METADATA
 
@@ -62,14 +64,19 @@ function Button.new(Element : GuiObject) : Button
         --// PROPERTIES
         ["Element"] = Element,
 
+        --// EVENTS
+        ["ValueChanged"] = ValueChangedEvent.Event,
+
     }, {
         __index = function(_, Index : string)
             return (Button[Index] or Data[Index]);
         end,
 
         __newindex = function(_, Index : string, Value : any?)
-            if (Index == "Active" and type(Value) == "boolean") then
+            if (Index == "Value" and type(Value) == "boolean") then
+                ValueChangedEvent:Fire(Value);
                 Data[Index] = Value
+                
                 self:Update();
             else
                 Data[Index] = Value
@@ -78,7 +85,8 @@ function Button.new(Element : GuiObject) : Button
     });
 
     Clicker.MouseButton1Click:Connect(function()
-        self.Active = (not self.Active); -- Auto updating variables? COUNT ME IN >:D
+        if (self.Disabled) then return; end
+        self.Value = (not self.Value); -- Auto updating variables? COUNT ME IN >:D
     end);
 
     self:Update();
@@ -87,6 +95,8 @@ end
 
 --- Updates the current state of the button based on its activity state
 function Button:Update()
+    if (self.Disabled) then return; end
+
     local Metadata = self._visuals
     local Properties = {
         Button = {},
@@ -95,7 +105,7 @@ function Button:Update()
 
     local VisualInfo : table?
 
-    if (self.Active) then
+    if (self.Value) then
         VisualInfo = Metadata.Active
     else
         VisualInfo = Metadata.Inactive
@@ -105,7 +115,7 @@ function Button:Update()
         ["BackgroundColor3"] = VisualInfo.ButtonColor,
         ["BackgroundTransparency"] = VisualInfo.ButtonTransparency,
 
-        ["Position"] = (self.Active and UDim2.fromScale(0.05, 0.5)) or UDim2.fromScale(0.5, 0.5)
+        ["Position"] = (self.Value and UDim2.fromScale(0.07, 0.5)) or UDim2.fromScale(0.5, 0.5)
     };
 
     Properties.Stroke = {
@@ -115,6 +125,27 @@ function Button:Update()
 
     TweenService:Create(self.Element.Clicker, TweenInfo.new(Metadata.Tween.Speed, Metadata.Tween.EasingStyle), Properties.Button):Play();
     TweenService:Create(self.Element.UIStroke, TweenInfo.new(Metadata.Tween.Speed, Metadata.Tween.EasingStyle), Properties.Stroke):Play();
+end
+
+--- Determines the current state of this interactable. Disabling your button will lock it from further inputs, but its value will remain the same
+function Button:SetEnabled(State : boolean)
+    self.Disabled = State
+
+    if (self.Disabled) then
+        local Metadata = self._visuals
+
+        TweenService:Create(self.Element.Clicker, TweenInfo.new(Metadata.Tween.Speed, Metadata.Tween.EasingStyle), {
+            BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+            BackgroundTransparency = 0.5
+        }):Play();
+
+        TweenService:Create(self.Element.UIStroke, TweenInfo.new(Metadata.Tween.Speed, Metadata.Tween.EasingStyle), {
+            Color = Color3.fromRGB(0, 0, 0),
+            Transparency = 0.5
+        }):Play();
+    else
+        self:Update();
+    end
 end
 
 --- Applies the provided visual metadata to the Button's appearance

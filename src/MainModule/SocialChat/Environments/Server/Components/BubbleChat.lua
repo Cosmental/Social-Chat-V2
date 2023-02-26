@@ -4,7 +4,7 @@
     Date: 1/16/2022
 
     Description: This server component handle's BubbleChat functuality! This is completely self-reliant and serves no real purpose within
-    vanilla SocialChat. You can completely disable this component via the "BubbleChatSettings" module.
+    vanilla SocialChat. You can completely disable this component via the "BubbleChat" Settings module.
 
 ]]--
 
@@ -24,7 +24,7 @@ function BubbleChat:Initialize(Setup : table)
     local self = setmetatable(Setup, BubbleChat);
    
     Network = self.Remotes.BubbleChat
-    Settings = self.Settings.BubbleChatSettings
+    Settings = self.Settings.BubbleChat
 
     if (not Settings.IsBubbleChatEnabled) then return self; end
 

@@ -46,8 +46,8 @@ function ChannelManager:Initialize(Setup : table)
     Speakers = self.Src.Speakers
     ChatTags = self.Settings.ChatTags
 
-    Settings = self.Settings.SystemChannelSettings
-    BubbleChatSettings = self.Settings.BubbleChatSettings
+    Settings = self.Settings.Channels
+    BubbleChatSettings = self.Settings.BubbleChat
 
     BubbleChatEvent = self.Remotes.BubbleChat.EventRenderBubble
     Network = self.Remotes.Channels

@@ -1,3 +1,4 @@
+local StarterPack = game:GetService("StarterPack")
 --[[
 
     Name: Mari
@@ -14,8 +15,8 @@ local TopbarPlus
 local Network = game.ReplicatedStorage:WaitForChild("SocialChatEvents");
 local Player = game.Players.LocalPlayer
 
-local Handlers
 local UIComponents
+local Handlers
 
 local ChatToggleButton
 local CacheFolder
@@ -25,60 +26,12 @@ local Library
 local Settings
 
 --// States
-local isClientReady : boolean?
+local IsClientReady : boolean?
 
---// Functions
-
---- Extracts modules from a container
-local function Extract(Container : Instance) : table
-    local Modules = {};
-
-    for _, SubModule in pairs(Container:GetChildren()) do
-        if (not SubModule:IsA("ModuleScript")) then continue; end
-
-        local Success, Response = pcall(function()
-            return require(SubModule);
-        end);
-
-        if (not Success) then continue; end
-        Modules[SubModule.Name] = Response
-    end
-
-    return Modules
-end
-
---- Initializes Modular APIs within the specified array
-local function Init(Components : table) : table
-    for Name, Component in pairs(Components) do
-        local Success, Response = pcall(function()
-            return Component:Initialize({
-                ["Settings"] = Settings,
-                ["Library"] = Library,
-                ["Cache"] = CacheFolder,
-
-                ["Presets"] = script.Presets,
-                ["Remotes"] = Network,
-
-                ["Handlers"] = Handlers,
-                ["Src"] = Components,
-
-                ["ChatButton"] = ChatToggleButton,
-                ["ChatUI"] = ChatUI
-            });
-        end);
-
-        if (Success) then
-            Components[Name] = Response
-        elseif (not Success) then
-            error("Failed to initialize SocialChat component \""..(Name).."\". ("..(Response or "No error response indicated!").." )");
-        end
-    end
-
-    return Components
-end
+local DidDataLoadSuccessfully : boolean?
+local SocialChatData : table?
 
 --// Initialization
-
 local function Initialize(Setup : table)
     TopbarPlus = Setup.Library.TopbarPlus
     ChatUI = script.Chat
@@ -88,6 +41,20 @@ local function Initialize(Setup : table)
 
     ChatToggleButton = TopbarPlus.new();
 
+    --// Data Initiation
+    --\\ This will request Data from the server whenever it is called!
+
+    local Success, Response = pcall(function()
+        local Data : table, WasSuccessful : boolean? = Network.DataService.EventReplicateData:InvokeServer();
+
+        DidDataLoadSuccessfully = WasSuccessful
+        SocialChatData = Data
+    end);
+
+    if (not Success) then
+        warn("SocialChat Client Failed to retrieve data from the server! (Response: "..(Response)..")");
+    end
+
     --// Cache
     --\\ This serves as our client's cache for any SAVED instances create by the chat system
 
@@ -95,11 +62,112 @@ local function Initialize(Setup : table)
     CacheFolder.Name = "ClientCache"
     CacheFolder.Parent = script.Parent
 
+    --// Data configuration with Settings
+    --\\ Changes values for certain configurations
+
+    for Category : string, Data : table in pairs(Settings) do
+        local Objects = {};
+
+        for Entry : string, _ in pairs(Data) do
+            local Configuration = SocialChatData.Settings[Entry];
+            if (not Configuration) then continue; end
+
+            Settings[Category][Entry] = (if (Configuration.Value ~= nil) then (Configuration.Value) else (Configuration.Default));
+        end
+    end
+
     --// Component Setup
     --\\ We need to prepare our UI components. This helps with control, readability, and overall cleanlyness!
 
-    Handlers = Init(Extract(script.Handlers));
-    UIComponents = Init(Extract(script.Components));
+    local function Extract(Container : Instance) : table
+        local Modules = {};
+    
+        for _, SubModule in pairs(Container:GetChildren()) do
+            if (not SubModule:IsA("ModuleScript")) then continue; end
+    
+            local Success, Response = pcall(function()
+                return require(SubModule);
+            end);
+    
+            if (not Success) then continue; end
+            Modules[SubModule.Name] = Response
+        end
+    
+        return Modules
+    end
+
+    Handlers = Extract(script.Handlers);
+    UIComponents = Extract(script.Components);
+
+    for Name, Module in pairs(Handlers) do
+        local Success, Response = pcall(function()
+            return Module:Initialize({
+                ["Settings"] = Settings,
+                ["Library"] = Library,
+                ["Cache"] = CacheFolder,
+                
+                ["Presets"] = script.Presets,
+                ["Remotes"] = Network,
+                ["Src"] = Handlers,
+                
+                ["ChatButton"] = ChatToggleButton,
+                ["ChatUI"] = ChatUI,
+                
+                ["Data"] = SocialChatData,
+                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
+            });
+        end);
+
+        if (Success) then
+            Handlers[Name] = Response
+        elseif (not Success) then
+            error("Failed to initialize SocialChat handler: \""..(Name).."\". ("..(Response).." )");
+        end
+    end
+
+    --[[
+
+        IMPORTANT NOTICE:
+
+        As of 2/25/2023, while working on the Control Panel's Settings page; I ran into the issue in which components such as the
+        'ChatUIManager' and the 'Channels' module were unable to communicate values from one another. However, the UIManager can
+        access variables of the 'Channels' module easily?
+
+        After a deeper look, I discovered that this was due to a constent change caused by a RemoteEvent which apparently reaches
+        the scope of all other modules. While intruiging, I was unable to find out why this happens and how I can fix it if at all.
+
+        Whatever the result may be, please do not edit the way these modules preload each other! They are structured this way for a reason,
+        albeit looks ugly.
+
+    ]]--
+
+    for Name, Module in pairs(UIComponents) do
+        local Success, Response = pcall(function()
+            return Module:Initialize({
+                ["Settings"] = Settings,
+                ["Library"] = Library,
+                ["Cache"] = CacheFolder,
+                
+                ["Presets"] = script.Presets,
+                ["Remotes"] = Network,
+
+                ["Handlers"] = Handlers,
+                ["Src"] = UIComponents,
+                
+                ["ChatButton"] = ChatToggleButton,
+                ["ChatUI"] = ChatUI,
+                
+                ["Data"] = SocialChatData,
+                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
+            });
+        end);
+
+        if (Success) then
+            UIComponents[Name] = Response
+        elseif (not Success) then
+            error("Failed to initialize SocialChat component: \""..(Name).."\". ("..(Response).." )");
+        end
+    end
 
     --// TopbarPlus Control
     --\\ This is going to be our main chatFrame button (special thanks to TopbarPlus!)
@@ -132,13 +200,12 @@ local function Initialize(Setup : table)
     ChatUI.Parent = Player.PlayerGui -- Our ChatGUI needs to be parented BEFORE we initialize our Service!
 
     game.ReplicatedStorage.SocialChatEvents.EventClientReady:FireServer(); -- This tells our server that our client is ready to recieve networking calls!
-    isClientReady = true
+    IsClientReady = true
 end
 
 --// Module Request Handling
-
 local function OnRequest()
-    if (not isClientReady) then
+    if (not IsClientReady) then
         return Initialize
     else
         return {
@@ -147,9 +214,10 @@ local function OnRequest()
     
             ["Handlers"] = Handlers,
             ["Src"] = UIComponents,
+            ["Data"] = SocialChatData,
     
             ["ChatButton"] = ChatToggleButton,
-            ["ChatUI"] = ChatUI
+            ["ChatUI"] = ChatUI,
         };
     end
 end

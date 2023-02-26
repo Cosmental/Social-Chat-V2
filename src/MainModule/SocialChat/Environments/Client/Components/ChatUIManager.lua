@@ -16,20 +16,18 @@ local TweenService = game:GetService("TweenService");
 local RunService = game:GetService("RunService");
 
 --// Imports
-local Settings
+local FunctUI
 
 --// Constants
 local ChatFrame
 local Mouse = game.Players.LocalPlayer:GetMouse();
 
 local ContainerFrame
-local CanvasLayout
-
 local InputBox
 
 --// States
-local PreviousSize : number?
 local IsMouseOverChat : boolean?
+local IsEnabled : boolean?
 
 --// Initialization
 
@@ -39,54 +37,21 @@ function ChatUIManager:Initialize(Setup : table)
     ChatFrame = self.ChatUI.Chat
     ContainerFrame = ChatFrame.Input.MessageContainer
 	InputBox = ChatFrame.Input.InteractionBar.InputBox
-    CanvasLayout = ContainerFrame:FindFirstChildOfClass("UIListLayout");
-
-	Settings = self.Settings.Channels
+	FunctUI = self.Library.FunctUI
 
 	self.BackgroundTransparency = ChatFrame.BackgroundTransparency
 	self.LastInteraction = os.clock();
-	self.Enabled = true
+	IsEnabled = true
 
-    --// Canvas Control
-    local function GetCanvasSize()
-		local yCanvasSize = ContainerFrame.CanvasSize.Y.Offset
-		local yAbsoluteSize = ContainerFrame.AbsoluteSize.Y
-		
-		return (yCanvasSize - yAbsoluteSize);
-	end
-	
-	local function IsScrolledDown()
-		local yScrolledPosition = ContainerFrame.CanvasPosition.Y
-		local AbsoluteCanvas = GetCanvasSize();
-		
-		--// Comparing
-		local AbsoluteScroll = tonumber(string.format("%0.3f", yScrolledPosition));		
-		local WasScrolledDown = (PreviousSize and (AbsoluteScroll + 2 >= tonumber(string.format("%0.3f", PreviousSize))));
-		
-		PreviousSize = AbsoluteCanvas
-		return WasScrolledDown
-	end
-	
-	local function UpdateCanvas()
-		local AbsoluteContentSize = CanvasLayout.AbsoluteContentSize
-		ContainerFrame.CanvasSize = UDim2.new(0, 0, 0, AbsoluteContentSize.Y + 5);
-		
-		--// Solve for scrolling
-		local CurrentCanvasSize = GetCanvasSize();
-		local SizeOffset = ((PreviousSize and CurrentCanvasSize - PreviousSize) or 0);
-		
-		local WasAtBottom = IsScrolledDown();
-		
-		if (not WasAtBottom) then
-			ContainerFrame.CanvasPosition = Vector2.new(
-				0, (ContainerFrame.CanvasPosition.Y - SizeOffset));
-		else
-			ContainerFrame.CanvasPosition = Vector2.new(0, 9e9);
-		end
-	end
-	
-	CanvasLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas);
-	ContainerFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateCanvas);
+	self._legacy = {
+		["Input"] = ChatFrame.Input.Size,
+		["InteractionBar"] = {
+			Position = ChatFrame.Input.InteractionBar.Position,
+			Size = ChatFrame.Input.InteractionBar.Size
+		}
+	};
+
+	self:SetMode(self.Settings.Channels.HideChatFrame);
 
 	--// Visibility Management
 	RunService.RenderStepped:Connect(function()
@@ -111,14 +76,15 @@ function ChatUIManager:Initialize(Setup : table)
 	end);
 
 	RunService.Heartbeat:Connect(function()
-		if (not self.Enabled) then return; end -- We can't hide chat if it's already hidden!
+		if (not IsEnabled) then return; end -- We can't hide chat if it's already hidden!
 		if (IsMouseOverChat) then return; end -- We can't hide chat if our Mouse is over it!
 		if (InputBox:IsFocused()) then return; end -- Can't hide chat while we're typing!
-		if ((os.clock() - self.LastInteraction) < Settings.IdleTime) then return; end
+		if ((os.clock() - self.LastInteraction) < self.Settings.Channels.IdleTime) then return; end
 
 		self:SetEnabled(false);
 	end);
 
+	FunctUI.new("AdjustingCanvas", ContainerFrame, ChatFrame); -- Adds ScrollingFrame adjustments for us!
     return self
 end
 
@@ -126,8 +92,8 @@ end
 
 --- Determines if our Chat is currently visible or not. (this will ONLY hide chat display! Networking calls will still be made regardless)
 function ChatUIManager:SetEnabled(State : boolean, NoTween : boolean?)
-	if (self.Enabled == State) then return; end -- We're already at this state! Cancel API request.
-	self.Enabled = State
+	if (IsEnabled == State) then return; end -- We're already at this state! Cancel API request.
+	IsEnabled = State
 
 	if (State) then
 		ChatFrame.Visible = true
@@ -167,6 +133,37 @@ function ChatUIManager:SetEnabled(State : boolean, NoTween : boolean?)
 
 	if (State) then return; end
 	ChatFrame.Visible = false
+end
+
+--- Returns the current state of the ChatUIManager
+function ChatUIManager:IsEnabled() : boolean?
+	return IsEnabled
+end
+
+--- Updates the way the ChatFrame displays itself
+function ChatUIManager:SetMode(IsFrameHidden : boolean?)
+	ChatFrame.Input.Size = (
+		(not IsFrameHidden and self._legacy.Input)
+		or UDim2.fromScale(1, .127)
+	);
+	
+	ChatFrame.Input.InteractionBar.Position = (
+		(not IsFrameHidden and self._legacy.InteractionBar.Position)
+		or UDim2.fromScale(0.01, 0.1)
+	);
+
+	ChatFrame.Input.InteractionBar.Size = (
+		(not IsFrameHidden and self._legacy.InteractionBar.Size)
+		or UDim2.fromScale(.98, .814)
+	);
+
+	ChatFrame.Input.MessageContainer.Visible = (not IsFrameHidden);
+	ChatFrame.ChannelBar.Visible = (not IsFrameHidden);
+
+	if (IsFrameHidden) then
+		if (not self.Src.Channels.Main) then return; end -- 'Channels' module hasn't setup yet! (Race dependency ended)
+		self.Src.Channels.Main:Focus();
+	end
 end
 
 --- Fires an interaction signal [ **NOTE:** This WILL make the ChatUI visible! ]

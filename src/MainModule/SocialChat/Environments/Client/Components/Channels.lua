@@ -43,7 +43,7 @@ local Network
 local ChatCacheContainer : Instance?
 
 --// States
-local SystemChannels : table = {};
+local Registry : table = {};
 local TotalChannels = 0
 
 local FocusedChannel : string?
@@ -69,17 +69,6 @@ function ChannelMaster:Initialize(Setup : table)
     TextStyles = self.Settings.Styles
     Network = self.Remotes.Channels
     Presets = self.Presets
-
-    --// BubbleChat-Only Mode Setup
-
-    if (Settings.HideChatFrame) then
-        ChatFrame.Input.Size = UDim2.fromScale(1, .127);
-
-        ChatFrame.Input.InteractionBar.Size = UDim2.fromScale(.98, .814);
-        ChatFrame.Input.InteractionBar.Position = UDim2.fromScale(.008, .075);
-
-        ChannelBar:Destroy();
-    end
 
     --// Cache Folder
     ChatCacheContainer = Instance.new("Folder");
@@ -122,7 +111,7 @@ function ChannelMaster:Initialize(Setup : table)
                 local PrivateChannel = self:Get(Destination.Name);
                 
                 if (not PrivateChannel) then
-                    PrivateChannel = self.new(Destination.Name, {Destination}, nil, true);
+                    PrivateChannel = self:Create(Destination.Name, {Destination}, nil, true);
 
                     if (IsFromUs) then
                         PrivateChannel:Focus();
@@ -154,7 +143,7 @@ function ChannelMaster:Initialize(Setup : table)
     end);
 
     Network.EventJoinChannel.OnClientEvent:Connect(function(Name : string, Members : table, History : table)
-        self.new(Name, Members, History);
+        self:Create(Name, Members, History);
     end);
 
     return self
@@ -163,8 +152,8 @@ end
 --// Methods
 
 --- Creates a new channel using the provided parameters
-function ChannelMaster.new(name : string, members : table?, chatHistory : table?, isPrivate : boolean?) : Channel
-    local SystemChannel = setmetatable({
+function ChannelMaster:Create(name : string, members : table?, chatHistory : table?, isPrivate : boolean?) : Channel
+    local ThisChannel = setmetatable({
 
         --// PROPERTIES \\--
 
@@ -181,7 +170,9 @@ function ChannelMaster.new(name : string, members : table?, chatHistory : table?
 
     --// System Channel Handling
     if (TotalChannels < 1) then -- This is our FIRST channel! Make sure to focus on it o_O
-        SystemChannel:Focus();
+        self.Main = ThisChannel
+        ThisChannel.IsMain = true
+        ThisChannel:Focus();
     else -- Our client has multiple channels registered!
         local function CreateChannelButton(forChannel)
             local ChannelPrefab = Presets.ChannelPrefab:Clone();
@@ -193,40 +184,40 @@ function ChannelMaster.new(name : string, members : table?, chatHistory : table?
             ChannelPrefab.Parent = ChannelFrame
 
             ChannelPrefab.Channel.MouseButton1Click:Connect(function()
-                if (not ChatUIManager.Enabled) then return; end -- Our ChatUI is not currently enabled! Channel switching is temporarily disabled
+                if (not ChatUIManager:IsEnabled()) then return; end -- Our ChatUI is not currently enabled! Channel switching is temporarily disabled
                 forChannel:Focus();
             end);
         end
 
-        if (not ChannelBar.Visible) then
-            for _, RegisteredChannel in pairs(SystemChannels) do
+        if (TotalChannels == 1) then
+            for _, RegisteredChannel in pairs(Registry) do
                 CreateChannelButton(RegisteredChannel);
             end
 
-            ChannelBar.Visible = true
+            ChannelBar.Visible = (Settings.HideChatFrame ~= true);
         end
 
-        CreateChannelButton(SystemChannel);
+        CreateChannelButton(ThisChannel);
         ChannelMaster:GetFocus():Focus(); -- Refocus the currently focused channel in order for us to apply visual changes
     end
 
     --// Instance registration
-    if (SystemChannel.History) then
-        for _, Info in ipairs(SystemChannel.History) do
-            SystemChannel:Render(Info.Message, SystemChannel.Members[Info.Author].Metadata.Classic);
+    if (ThisChannel.History) then
+        for _, Info in ipairs(ThisChannel.History) do
+            ThisChannel:Render(Info.Message, ThisChannel.Members[Info.Author].Metadata.Classic);
         end
     end
 
-    SystemChannels[name] = SystemChannel
+    Registry[name] = ThisChannel
     TotalChannels += 1
 
-    return SystemChannel
+    return ThisChannel
 end
 
 -- Returns the requested channel
 function ChannelMaster:Get(query : string) : Channel?
     assert(type(query) == "string", "The provided query was not of type \"string\"! ( received \""..(type(query)).."\" instead )");
-    return SystemChannels[query];
+    return Registry[query];
 end
 
 --- Returns the currently focused channel
@@ -245,10 +236,51 @@ end
 
 --// Metamethods
 
+--- Sets our client's channel focus on this channel
+function Channel:Focus()
+    if ((Settings.HideChatFrame) and (not self.IsMain)) then
+        warn("Attempt to set Channel Focus to \'"..(self.Name).."\', but API request failed because configuration \"HideChatFrame\" is enabled!");
+        return;
+    end
+
+    FocusedChannel = self
+
+    for _, ContentFrame in pairs(MessageContainer:GetChildren()) do
+        if (not ContentFrame:IsA("Frame")) then continue; end
+        ContentFrame.Parent = ChatCacheContainer
+    end
+
+    for _, Content in pairs(self._cache) do
+        Content.Render.Parent = MessageContainer
+    end
+
+    if (self.NavButton) then
+        TweenService:Create(self.NavButton, Settings.ChannelFocusTweenInfo, {
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BackgroundTransparency = 0.2
+        }):Play();
+
+        TweenService:Create(self.NavButton.Channel, Settings.ChannelFocusTweenInfo, {
+            TextColor3 = Color3.fromRGB(40, 40, 40)
+        }):Play();
+
+        for _, OtherChannel in pairs(Registry) do
+            if (OtherChannel.Name == self.Name) then continue; end
+
+            TweenService:Create(OtherChannel.NavButton, Settings.ChannelFocusTweenInfo, {
+                BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+                BackgroundTransparency = 0.5
+            }):Play();
+    
+            TweenService:Create(OtherChannel.NavButton.Channel, Settings.ChannelFocusTweenInfo, {
+                TextColor3 = Color3.fromRGB(255, 255, 255)
+            }):Play();
+        end
+    end
+end
+
 --- Renders a message based on the specified parameters
 function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : boolean?, MessageIsFromUs : boolean?) : table
-    if (Settings.HideChatFrame) then return; end -- Rendering is disabled due to chat settings
-
     local MainFrame = Instance.new("Frame");
 
     MainFrame.BackgroundTransparency = 1
@@ -422,49 +454,6 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
     return Content
 end
 
---- Sets our client's channel focus on this channel
-function Channel:Focus()
-    if ((Settings.HideChatFrame) and (FocusedChannel ~= nil) and (FocusedChannel ~= self)) then
-        warn("Attempt to set Channel Focus to \'"..(self.Name).."\', but API request failed because configuration \"HideChatFrame\" is enabled!");
-        return;
-    end
-
-    FocusedChannel = self
-
-    for _, ContentFrame in pairs(MessageContainer:GetChildren()) do
-        if (not ContentFrame:IsA("Frame")) then continue; end
-        ContentFrame.Parent = ChatCacheContainer
-    end
-
-    for _, Content in pairs(self._cache) do
-        Content.Render.Parent = MessageContainer
-    end
-
-    if (self.NavButton) then
-        TweenService:Create(self.NavButton, Settings.ChannelFocusTweenInfo, {
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 0.2
-        }):Play();
-
-        TweenService:Create(self.NavButton.Channel, Settings.ChannelFocusTweenInfo, {
-            TextColor3 = Color3.fromRGB(40, 40, 40)
-        }):Play();
-
-        for _, OtherChannel in pairs(SystemChannels) do
-            if (OtherChannel.Name == self.Name) then continue; end
-
-            TweenService:Create(OtherChannel.NavButton, Settings.ChannelFocusTweenInfo, {
-                BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-                BackgroundTransparency = 0.5
-            }):Play();
-    
-            TweenService:Create(OtherChannel.NavButton.Channel, Settings.ChannelFocusTweenInfo, {
-                TextColor3 = Color3.fromRGB(255, 255, 255)
-            }):Play();
-        end
-    end
-end
-
 --- Removes this channel from our client's channel list and prevents our client from receiving further message events for this channel
 function Channel:Destroy()
     for _, Content in pairs(self._cache) do
@@ -520,7 +509,7 @@ function ExtractKeypointData(Gradient : UIGradient, Numerations : number) : tabl
     return Data
 end
 
-ChannelMaster.Registry = SystemChannels
+ChannelMaster.Registry = Registry
 ChannelMaster.MessageRendered = OnMessageRendered.Event -- function(Message : string, Metadata : table, Channel : Channel, IsPrivate : boolean)
 
 return ChannelMaster
