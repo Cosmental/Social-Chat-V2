@@ -50,7 +50,7 @@ local SyntaxEmbeds = {
 };
 
 --// States
-local systemWasTyping : boolean
+local SystemWasTyping : boolean
 local IsControlHeld : boolean?
 
 local LastCursorPosition : number
@@ -113,7 +113,7 @@ function InputBox:Initialize(Info : table) : metatable
     --// Control Functions
     --\\ This is where all of our local control functions exist!
 
-    local function updateDisplayText()
+    local function UpdateDisplayText()
         if (IsMobile) then return; end
     
         --// Escaping
@@ -177,7 +177,7 @@ function InputBox:Initialize(Info : table) : metatable
     end
     
     --- Updates our textbox's cursor frame position
-    local function updateCursorFrame()
+    local function UpdateCursorFrame()
         if (IsMobile) then return; end
 
         local Position = ChatBox.CursorPosition
@@ -204,7 +204,7 @@ function InputBox:Initialize(Info : table) : metatable
     end
     
     --- Updates our display label's position in a way that follows our cursor position
-    local function updateDisplayPosition()
+    local function UpdateDisplayPosition()
         local CursorPosition = ChatBox.CursorPosition
         if (CursorPosition == -1) then return; end -- Make sure we have a valid cursor position
     
@@ -246,7 +246,7 @@ function InputBox:Initialize(Info : table) : metatable
     end
     
     --- Updates the selected text content!
-    local function updateSelectionBox()
+    local function UpdateSelectionBox()
         if (IsMobile) then return; end
 
         local SelectionInfo = GetSelectedContent();
@@ -260,9 +260,9 @@ function InputBox:Initialize(Info : table) : metatable
         end
     end
 
-    updateDisplayText();
-    updateCursorFrame();
-    updateDisplayPosition();
+    UpdateDisplayText();
+    UpdateCursorFrame();
+    UpdateDisplayPosition();
 
     --// Instancing
     --\\ We need to create dynamic instances used to make our IDE function! (NOTE: This ONLY works on mobile devices!)
@@ -323,11 +323,11 @@ function InputBox:Initialize(Info : table) : metatable
         SelectionBox.Visible = false
         SelectionBox.Parent = DisplayLabel
         
-        ChatBox:GetPropertyChangedSignal("SelectionStart"):Connect(updateSelectionBox);
+        ChatBox:GetPropertyChangedSignal("SelectionStart"):Connect(UpdateSelectionBox);
         ChatBox:GetPropertyChangedSignal("CursorPosition"):Connect(function()
-            updateSelectionBox();
-            updateCursorFrame();
-            updateDisplayPosition();
+            UpdateSelectionBox();
+            UpdateCursorFrame();
+            UpdateDisplayPosition();
         end);
 
         DisplayLabel.InputBegan:Connect(function(input)
@@ -415,7 +415,7 @@ function InputBox:Initialize(Info : table) : metatable
             ChatBox.CursorPosition = SelectionA
             ChatBox.SelectionStart = (SelectionB + 1 + PositionOffset);
 
-            updateSelectionBox(); -- Sometimes our SelectionBox won't update on the same frame that our CursorPosition does!
+            UpdateSelectionBox(); -- Sometimes our SelectionBox won't update on the same frame that our CursorPosition does!
         elseif (input.KeyCode == Enum.KeyCode.LeftControl) then
             IsControlHeld = true
         end
@@ -427,7 +427,7 @@ function InputBox:Initialize(Info : table) : metatable
     end);
 
     ChatBox:GetPropertyChangedSignal("Text"):Connect(function()
-        if (systemWasTyping) then return; end
+        if (SystemWasTyping) then return; end
 
         --// Visual Button avaliability
         SubmitButton.ImageColor3 = (
@@ -443,9 +443,9 @@ function InputBox:Initialize(Info : table) : metatable
         end
 
         --// Local Updates
-        updateDisplayText();
-        updateCursorFrame();
-        updateDisplayPosition();
+        UpdateDisplayText();
+        UpdateCursorFrame();
+        UpdateDisplayPosition();
     end);
 
     ChatBox.Focused:Connect(function()
@@ -468,7 +468,7 @@ function InputBox:Initialize(Info : table) : metatable
         end, RunService.RenderStepped);
     end);
 
-    ChatBox.FocusLost:Connect(function(enterPressed : boolean)
+    ChatBox.FocusLost:Connect(function(EnterPressed : boolean)
         CursorFrame.Visible = false
         FocusPoint = 0
 
@@ -476,7 +476,7 @@ function InputBox:Initialize(Info : table) : metatable
             PlaceholderLabel.Visible = (#ChatBox.Text == 0);
         end, RunService.RenderStepped);
 
-        if (not enterPressed) then -- Message was interrupted. Proceed with visuals
+        if (not EnterPressed) then -- Message was interrupted. Proceed with visuals
             self._oldText = ChatBox.Text
             self:Set(Highlighter:Highlight(
                 (Settings.AllowMarkdown and Markdown:Markup(ChatBox.Text)) or
@@ -496,7 +496,7 @@ function InputBox:Initialize(Info : table) : metatable
     end);
 
     --// Font Sizing
-    local function updateFontSize()
+    local function UpdateFontSize()
         local FontSize = SmartText:GetBestFontSize(ChatBox.AbsoluteSize, ChatBox.Font, 0, 20);
         
         if (not IsMobile) then
@@ -507,9 +507,9 @@ function InputBox:Initialize(Info : table) : metatable
         ChatBox.TextSize = FontSize
     end
 
-    updateFontSize();
+    UpdateFontSize();
 
-    ChatBox:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateFontSize);
+    ChatBox:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateFontSize);
     ChatBox.Font = Settings.MessageFont
 
     return self
@@ -518,20 +518,20 @@ end
 --// Methods
 
 --- Sets the TextBox's text content to the provided string
-function InputBox:Set(content : string, captureClient : boolean?)
-    if ((type(content) ~= "string") or (#content == 0)) then return; end -- Silent cancelation is required for arbitrary functuality
+function InputBox:Set(Content : string, captureClient : boolean?)
+    if ((type(Content) ~= "string") or (#Content == 0)) then return; end -- Silent cancelation is required for arbitrary functuality
 
     if (captureClient) then
         ChatBox:CaptureFocus();
 
         task.defer(function()
-            ChatBox.CursorPosition = #content + 1
+            ChatBox.CursorPosition = #Content + 1
         end, ChatBox:GetPropertyChangedSignal("Text"));
     end
 
-    systemWasTyping = not captureClient
-    ChatBox.Text = content
-    systemWasTyping = false
+    SystemWasTyping = not captureClient
+    ChatBox.Text = Content
+    SystemWasTyping = false
 end
 
 --- Sends the currently typed message to the server (if any)
@@ -566,12 +566,12 @@ end
 --// Functions
 
 --- Returns RichText bounds based on the provided content string!
-function GetBoundX(content : string, atIndex : number) : number
+function GetBoundX(Content : string, Index : number) : number
 	local Occurences = Markdown:GetMarkdownData(ChatBox.Text);
 
 	if (not Occurences or not Settings.AllowMarkdown) then
 		return TextService:GetTextSize(
-            content,
+            Content,
             ChatBox.TextSize,
             ChatBox.Font,
             Vector2.new(math.huge, math.huge)
@@ -585,8 +585,8 @@ function GetBoundX(content : string, atIndex : number) : number
 	local ThisFont = Font.fromEnum(ChatBox.Font);
 	local BoundX = 0
 
-	for starts, ends in utf8.graphemes(content) do
-		local Character = content:sub(starts, ends);
+	for starts, ends in utf8.graphemes(Content) do
+		local Character = Content:sub(starts, ends);
 
         local IsItalic : boolean?
         local IsBold : boolean?
@@ -595,7 +595,7 @@ function GetBoundX(content : string, atIndex : number) : number
             if (syntax ~= "**" and syntax ~= "*") then continue; end
 
             for _, scope in ipairs(data.results) do
-                if (atIndex + starts >= scope.starts and atIndex + starts <= scope.ends) then
+                if (Index + starts >= scope.starts and Index + starts <= scope.ends) then
                     IsItalic = (syntax == "*");
                     IsBold = (syntax == "**");
 
@@ -653,9 +653,9 @@ function GetSelectedContent() : table
 end
 
 --- Searches for a player using the provided string
-function FindPlayer(query : string) : Player
+function FindPlayer(Query : string) : Player
     for _, Player in pairs(game.Players:GetPlayers()) do
-        if (Player.Name:lower() == query:lower()) then
+        if (Player.Name:lower() == Query:lower()) then
             return Player
         end
     end

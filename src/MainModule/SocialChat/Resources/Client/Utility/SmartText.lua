@@ -34,10 +34,10 @@ local API_LABEL : Instance? -- This label can be used for arbitrary API calls
 
 --// Main Methods
 
-function SmartText.new(Container : GuiObject, properties : table?) : SmartStringObject
+function SmartText.new(Container : GuiObject, Properties : table?) : SmartStringObject
     assert(typeof(Container) == "Instance", "The provided Container was not of type \"Instance\". Received \""..(typeof(Container)).."\"");
     assert(Container:IsA("GuiObject"), "Expected Instance of class \"GuiObject\". Got \""..(Container.ClassName).."\"");
-    assert(type(properties) == "table", "Failed to read from \"properties\" parameter. Expected typeof \"table\", but received \""..(type(properties)).."\"!");
+    assert(type(Properties) == "table", "Failed to read from \"Properties\" parameter. Expected typeof \"table\", but received \""..(type(Properties)).."\"!");
 
     local StringObject = setmetatable({
 
@@ -47,11 +47,11 @@ function SmartText.new(Container : GuiObject, properties : table?) : SmartString
 
         --// Properties \\--
 
-        ["MinFontSize"] = (properties and properties.MinFontSize) or 0,
-        ["MaxFontSize"] = (properties and properties.MaxFontSize) or 100,
+        ["MinFontSize"] = (Properties and Properties.MinFontSize) or 0,
+        ["MaxFontSize"] = (Properties and Properties.MaxFontSize) or 100,
 
-        ["Padding"] = (properties and properties.Padding) or nil, -- Padding will determine the bounding radius size (if any) [ Vector2 ]
-        ["BindSizeToContent"] = (properties and properties.BindSizeToContent) or false, -- if true, our container will receive automatic sizing updates
+        ["Padding"] = (Properties and Properties.Padding) or nil, -- Padding will determine the bounding radius size (if any) [ Vector2 ]
+        ["BindSizeToContent"] = (Properties and Properties.BindSizeToContent) or false, -- if true, our container will receive automatic sizing updates
 
         --// Programmable \\--
 
@@ -80,68 +80,68 @@ function SmartText.new(Container : GuiObject, properties : table?) : SmartString
 end
 
 --- Returns the absolute Vector2 spacing required to fit the provided text string using the specified Font and FontSize
-function SmartText:GetTextSize(text : string, fontSize : number, font : Enum.Font, absoluteSize : Vector2, byGrapheme : boolean?) : Vector2
-    assert(type(text) == "string", "The provided text content was not of type \"string\". (received \""..(type(text)).."\" )");
-    assert(type(fontSize) == "number", "The provided font size was not of type \"number\"! (received \""..(type(fontSize)).."\")");
-    assert(typeof(font) == "EnumItem", "The provided font was not of type \"EnumItem\"! (received \""..(typeof(font)).."\")");
-    assert(table.find(Enum.Font:GetEnumItems(), font), "The provided font EnumItem was not a valid Font EnumItem!");
-    assert(typeof(absoluteSize) == "Vector2", "The provided AbsoluteSize was not a \"Vector2\" type! (received \""..(typeof(absoluteSize)).."\")");
+function SmartText:GetTextSize(Text : string, FontSize : number, TextFont : Enum.Font, AbsoluteSize : Vector2, ByGrapheme : boolean?) : Vector2
+    assert(type(Text) == "string", "The provided text content was not of type \"string\". (received \""..(type(Text)).."\" )");
+    assert(type(FontSize) == "number", "The provided font size was not of type \"number\"! (received \""..(type(FontSize)).."\")");
+    assert(typeof(TextFont) == "EnumItem", "The provided font was not of type \"EnumItem\"! (received \""..(typeof(TextFont)).."\")");
+    assert(table.find(Enum.Font:GetEnumItems(), TextFont), "The provided font EnumItem was not a valid font EnumItem!");
+    assert(typeof(AbsoluteSize) == "Vector2", "The provided AbsoluteSize was not a \"Vector2\" type! (received \""..(typeof(AbsoluteSize)).."\")");
 
-    local SpaceSize = TextService:GetTextSize(text, fontSize, font, absoluteSize);
+    local SpaceSize = TextService:GetTextSize(Text, FontSize, TextFont, AbsoluteSize);
 
-    if (byGrapheme) then
-        local doesWordOverflow = false
+    if (ByGrapheme) then
+        local IsMultiLined = false
         
         local GraphemeX = 0
         local GraphemeY = SpaceSize.Y
 
-        for _, Grapheme in pairs(text:split("")) do
+        for _, Grapheme in pairs(Text:split("")) do
             local GraphemeSize = TextService:GetTextSize(
                 Grapheme,
-                fontSize,
-                font,
-                absoluteSize
+                FontSize,
+                TextFont,
+                AbsoluteSize
             );
 
             GraphemeX += GraphemeSize.X
 
-            if (GraphemeX >= absoluteSize.X) then
+            if (GraphemeX >= AbsoluteSize.X) then
                 GraphemeX = 0
                 GraphemeY += SpaceSize.Y
 
-                doesWordOverflow = true
+                IsMultiLined = true
             end
         end
 
         return Vector2.new(
-            (((doesWordOverflow) and (absoluteSize.X)) or (GraphemeX)),
+            (((IsMultiLined) and (AbsoluteSize.X)) or (GraphemeX)),
             GraphemeY
-        ), doesWordOverflow
+        ), IsMultiLined
     else
         return TextService:GetTextSize(
-            text,
-            fontSize,
-            font,
-            absoluteSize
+            Text,
+            FontSize,
+            TextFont,
+            AbsoluteSize
         );
     end
 end
 
 --- Returns the best fontsize for the requested GuiObject
-function SmartText:GetBestFontSize(AbsoluteSize : Vector2, font : Enum.Font, minFontSize : number, maxFontSize : number)
+function SmartText:GetBestFontSize(AbsoluteSize : Vector2, TextFont : Enum.Font, MinFontSize : number, MaxFontSize : number)
     assert(typeof(AbsoluteSize) == "Vector2", "The provided AbsoluteSize was not of type \"Vector2\"! (received \""..(typeof(AbsoluteSize)).."\")");
-    assert(typeof(font) == "EnumItem", "The provided font was not of type \"EnumItem\"! (received \""..(typeof(font)).."\")");
-    assert(table.find(Enum.Font:GetEnumItems(), font), "The provided font EnumItem was not a valid Font EnumItem!");
-    assert(type(maxFontSize) == "number", "The provided maximum font size was not a number! (FontSize can only be calculated with numbers.)");
-    assert(type(minFontSize) == "number", "The provided minimum font size was not a number! (FontSize can only be calculated with numbers.)");
-    assert(maxFontSize <= 100 and minFontSize >= 0, "The provided font sizes exceed legitimate font size ranges! (FontSize can only range from 0 - 100)");
+    assert(typeof(TextFont) == "EnumItem", "The provided font was not of type \"EnumItem\"! (received \""..(typeof(TextFont)).."\")");
+    assert(table.find(Enum.Font:GetEnumItems(), TextFont), "The provided font EnumItem was not a valid Font EnumItem!");
+    assert(type(MaxFontSize) == "number", "The provided maximum font size was not a number! (FontSize can only be calculated with numbers.)");
+    assert(type(MinFontSize) == "number", "The provided minimum font size was not a number! (FontSize can only be calculated with numbers.)");
+    assert(MaxFontSize <= 100 and MinFontSize >= 0, "The provided font sizes exceed legitimate font size ranges! (FontSize can only range from 0 - 100)");
 
-    local BestFontSize : number = maxFontSize
+    local BestFontSize : number = MaxFontSize
 
     API_LABEL.Size = UDim2.fromOffset(AbsoluteSize.X, self.MaxFontSize);
-    API_LABEL.Font = font
+    API_LABEL.Font = TextFont
 
-    for _ = 1, (maxFontSize - minFontSize) do
+    for _ = 1, (MaxFontSize - MinFontSize) do
         API_LABEL.TextSize = BestFontSize
 
         local TextFitsX = (API_LABEL.TextFits == true);
@@ -160,12 +160,12 @@ end
 --// Metamethods
 
 --- Adds a new RenderGroup using the provided TextObjects that originate from the RichString module
-function SmartStringObject:AddGroup(key : string, RenderGroup : table, TextFont : Enum.Font)
-    assert(type(key) == "string", "Expected \"string\" as an identifier key. Got \""..(type(key)).."\" instead!");
+function SmartStringObject:AddGroup(Key : string, RenderGroup : table, TextFont : Enum.Font)
+    assert(type(Key) == "string", "Expected \"string\" as an identifier key. Got \""..(type(Key)).."\" instead!");
     assert(type(RenderGroup) == "table", "Expected an array as an object group. Got "..(type(RenderGroup)).." instead!");
     assert(typeof(TextFont) == "EnumItem", "The provided Font Enum was not an EnumItem type! Got \""..(typeof(TextFont)).."\"");
     assert(table.find(Enum.Font:GetEnumItems(), TextFont), "The provided Font \""..(tostring(TextFont)).."\" was not a real Font EnumItem!");
-    assert(not self.RenderGroups[key], "The provided identifier key has already been used! ( \""..(key).."\" is unavaliable. ) ");
+    assert(not self.RenderGroups[Key], "The provided identifier key has already been used! ( \""..(Key).."\" is unavaliable. ) ");
 
     local GroupTextContent : string = ""
 
@@ -175,7 +175,7 @@ function SmartStringObject:AddGroup(key : string, RenderGroup : table, TextFont 
     end
 
     self.TotalRenderGroups += 1
-    self.RenderGroups[key] = {
+    self.RenderGroups[Key] = {
         ["Metadata"] = {
             ["Font"] = TextFont,
             ["Content"] = GroupTextContent
@@ -189,11 +189,11 @@ function SmartStringObject:AddGroup(key : string, RenderGroup : table, TextFont 
 end
 
 --- Removes a RenderGroup using it's string identifier key ( NOTE: This does NOT destroy the Text group itself )
-function SmartStringObject:RemoveGroup(key : string)
-    assert(type(key) == "string", "Expected \"string\" as an identifier key. Got \""..(type(key)).."\" instead!");
-    assert(self.RenderGroups[key], "The provided key \""..(key).."\" was not registered under this SmartStringObject!");
+function SmartStringObject:RemoveGroup(Key : string)
+    assert(type(Key) == "string", "Expected \"string\" as an identifier key. Got \""..(type(Key)).."\" instead!");
+    assert(self.RenderGroups[Key], "The provided key \""..(Key).."\" was not registered under this SmartStringObject!");
 
-    self.RenderGroups[key] = nil
+    self.RenderGroups[Key] = nil
 end
 
 --- Updates positioning and sizing of our TextObjects within our Container
@@ -312,11 +312,11 @@ function SmartStringObject:Update()
 end
 
 --- Destroys all inherited Instances and terminates the OOP process
-function SmartStringObject:Destroy(callback : Callback?)
+function SmartStringObject:Destroy(Callback : Callback?)
     for _, RenderGroup in pairs(self.RenderGroups) do
         for _, Object in pairs(RenderGroup.Objects) do
-            if (callback and (Object:IsA("TextLabel") or Object:IsA("TextButton"))) then
-                callback(Object); -- Can be used as a standalone garbage collection function
+            if (Callback and (Object:IsA("TextLabel") or Object:IsA("TextButton"))) then
+                Callback(Object); -- Can be used as a standalone garbage collection function
             end
 
             Object:Destroy();

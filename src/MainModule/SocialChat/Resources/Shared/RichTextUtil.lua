@@ -14,15 +14,15 @@ local RichTextUtil = {};
 local RichKeywords = {"font", "b", "u", "i", "s", "br", "uc", "uppercase", "smallcaps", "sc"};
 
 --- Returns a table containing all valid richtext occurences in the provided text string
-function RichTextUtil:GetOccurences(text : string) : table?
+function RichTextUtil:GetOccurences(Text : string) : table?
     local RichTextOccurences = {};
 	local OccurenceSkipIndex = 0
 	
     --// Occurence Finding
     --\\ We need to collect data about our string for further calculations! This gmatch iteration looks for any potential richtext in our string
 
-	for queryMatch in text:gmatch("<.->") do
-		local MatchStart, MatchEnd = text:find("<.->", OccurenceSkipIndex);
+	for queryMatch in Text:gmatch("<.->") do
+		local MatchStart, MatchEnd = Text:find("<.->", OccurenceSkipIndex);
 		local InnerMatches = queryMatch:split("<");
 		
 		OccurenceSkipIndex += (MatchEnd - OccurenceSkipIndex + 1);
@@ -70,11 +70,11 @@ function RichTextUtil:GetOccurences(text : string) : table?
 		local ThisKeyword = ThisContent:split(" ")[1]:sub(2, #ThisContent - 1);
 		local NextKeyword = NextContent:split(" ")[1]:sub(3, #NextContent - 1);
 		
-		local doesStartWithSlash = (NextContent:sub(2, 2) == "/"); -- Does our RichText format have "</...>"?
-		local doesUseRichKeyword = (ThisKeyword == NextKeyword); -- Do our RichText occurences have the same keyword? ( eg. "b == b" )
+		local StartsWithSlash = (NextContent:sub(2, 2) == "/"); -- Does our RichText format have "</...>"?
+		local UsesRichKeyword = (ThisKeyword == NextKeyword); -- Do our RichText occurences have the same keyword? ( eg. "b == b" )
         local isKeywordValid = table.find(RichKeywords, ThisKeyword); -- Determines if this is a valid RichText keyword or not!
 		
-		if (doesStartWithSlash and doesUseRichKeyword and isKeywordValid) then
+		if (StartsWithSlash and UsesRichKeyword and isKeywordValid) then
 			SkipNextOccurence = true -- Since we found an actual occurence, we can skip the next iteration because it's a part of this match!
 			
 			table.insert(Results, {
@@ -94,9 +94,9 @@ function RichTextUtil:GetOccurences(text : string) : table?
 end
 
 --- Algorithmically removes any FUNCTIONAL richtext from the provided text!
-function RichTextUtil:WipeRichText(text : string, keepInnerContent : boolean?)
-	local Results = RichTextUtil:GetOccurences(text);
-    if (not Results) then return text; end -- There was not enough data to retrieve results from!
+function RichTextUtil:WipeRichText(Text : string, KeepInnerContent : boolean?)
+	local Results = RichTextUtil:GetOccurences(Text);
+    if (not Results) then return Text; end -- There was not enough data to retrieve results from!
 	
     --// Formatting
     --\\ After collecting our occurence data, we can start removing our richText!
@@ -106,26 +106,26 @@ function RichTextUtil:WipeRichText(text : string, keepInnerContent : boolean?)
 	for _, occurence in ipairs(Results) do
 		local contentSize
 		
-		if (keepInnerContent) then
+		if (KeepInnerContent) then
             contentSize = (occurence.format.starts:len() + occurence.format.ends:len());
 
-            text = text:sub(1, occurence.starts - Appendence - 1)
-                ..text:sub(
+            Text = Text:sub(1, occurence.starts - Appendence - 1)
+                ..Text:sub(
                     (occurence.starts - Appendence) + (occurence.format.starts:len()),
                     (occurence.ends - Appendence) - (occurence.format.ends:len())
                 )
-                ..text:sub(occurence.ends - Appendence + 1)
+                ..Text:sub(occurence.ends - Appendence + 1)
         else
             contentSize = ((occurence.ends - occurence.starts) + 1);
 
-            text = text:sub(1, occurence.starts - Appendence - 1)
-                ..text:sub(occurence.ends - Appendence + 1)
+            Text = Text:sub(1, occurence.starts - Appendence - 1)
+                ..Text:sub(occurence.ends - Appendence + 1)
         end
 		
 		Appendence += contentSize
 	end
 	
-	return text
+	return Text
 end
 
 return RichTextUtil

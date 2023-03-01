@@ -98,7 +98,7 @@ return function(Configurations : Folder)
 	require(SocialChat);
 	
 	--// Player Handling
-	local function handlePlayer(Player : Player)
+	local function HandlePlayer(Player : Player)
 		local Container = Player:WaitForChild("PlayerGui");
 		local SocialChatClient = script.SocialChatClient:Clone();
 		
@@ -107,8 +107,8 @@ return function(Configurations : Folder)
 	end
 	
 	for _, Player in pairs(game.Players:GetPlayers()) do
-		handlePlayer(Player);
+		HandlePlayer(Player);
 	end
 	
-	game.Players.PlayerAdded:Connect(handlePlayer);
+	game.Players.PlayerAdded:Connect(HandlePlayer);
 end

@@ -31,14 +31,14 @@ local ChatClient : table?
 local wasInitialized : boolean
 
 --// Initializer
-function getSocialChat()
+function GetSocialChat()
     if (not wasInitialized) then
 
         --// Module Collection
         local Library = {};
 
-        local function AddToLibrary(container : Folder) : table
-            for _, Module in pairs(container:GetDescendants()) do
+        local function AddToLibrary(Container : Folder) : table
+            for _, Module in pairs(Container:GetDescendants()) do
                 if (not Module:IsA("ModuleScript")) then continue; end
                 if (Module.Parent:IsA("ModuleScript")) then continue; end
 
@@ -58,12 +58,12 @@ function getSocialChat()
         --// Configurations
         local Configurations = {};
 
-        local function AddToConfiguration(container : Folder, CustomEntryType : string?)
+        local function AddToConfiguration(Container : Folder, CustomEntryType : string?)
             if (CustomEntryType) then
                 Configurations[CustomEntryType] = {};
             end
 
-            for _, Module in pairs(container:GetDescendants()) do
+            for _, Module in pairs(Container:GetDescendants()) do
                 if (not Module:IsA("ModuleScript")) then continue; end
                 if (Module.Parent:IsA("ModuleScript")) then continue; end
 
@@ -145,4 +145,4 @@ function getSocialChat()
     );
 end
 
-return getSocialChat();
+return GetSocialChat();

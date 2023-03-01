@@ -67,7 +67,7 @@ function ChannelManager:Initialize(Setup : table)
     DefaultChannel = ChannelManager:Create(Settings.DefaultChannel); -- We need at least ONE system channel for our main messages to go through
     DefaultChannel.IsMainChannel = true -- You can't leave the main channel
 
-    local function onSpeakerReady(Player : Player)
+    local function OnSpeakerReady(Player : Player)
         ClientCooldowns[Player] = Settings.MessageRate
 
         DefaultChannel:Subscribe(Player);
@@ -78,12 +78,12 @@ function ChannelManager:Initialize(Setup : table)
         local Speaker = Speakers:GetSpeaker(Player);
         if (not Speaker) then continue; end -- The player is NOT ready yet
 
-        onSpeakerReady(Player);
+        OnSpeakerReady(Player);
     end
 
-    Speakers.OnSpeakerAdded:Connect(function(Agent : string | Player, Speaker : Speaker)
+    Speakers.OnSpeakerAdded:Connect(function(Agent : string | Player)
         if (typeof(Agent) ~= "Instance") then return; end
-        onSpeakerReady(Agent);
+        OnSpeakerReady(Agent);
     end)
 
     --// Event Handling
@@ -156,16 +156,16 @@ end
 --// Methods
 
 --- Creates a new Channel
-function ChannelManager:Create(name : string) : Channel
-    assert(type(name) == "string", "Expected a \"string\" to use as a channel name. Received \""..(type(name)).."\" instead!");
-    assert(not SystemChannels[name], "A channel with the name \""..(name).."\" already exists!");
+function ChannelManager:Create(Name : string) : Channel
+    assert(type(Name) == "string", "Expected a \"string\" to use as a channel name. Received \""..(type(Name)).."\" instead!");
+    assert(not SystemChannels[Name], "A channel with the name \""..(Name).."\" already exists!");
 
     local NewSystemChannel = setmetatable({
 
         --// PROPERTIES \\--
 
         ["Members"] = {},
-        ["Name"] = name,
+        ["Name"] = Name,
 
         --// PROGRAMMABLE \\--
 
@@ -173,14 +173,14 @@ function ChannelManager:Create(name : string) : Channel
 
     }, Channel);
 
-    SystemChannels[name] = NewSystemChannel
+    SystemChannels[Name] = NewSystemChannel
     return NewSystemChannel
 end
 
 --- Returns the requested channel based on it's name ( NOTE: THIS IS CASE SENSITIVE )
-function ChannelManager:Get(query : string) : Channel
-    assert(type(query) == "string", "Expected a \"string\" to use as a channel query. Received \""..(type(query)).."\" instead!");
-    return SystemChannels[query];
+function ChannelManager:Get(Query : string) : Channel
+    assert(type(Query) == "string", "Expected a \"string\" to use as a channel query. Received \""..(type(Query)).."\" instead!");
+    return SystemChannels[Query];
 end
 
 --- Sends a new message to the specified recipient using the provided parameters

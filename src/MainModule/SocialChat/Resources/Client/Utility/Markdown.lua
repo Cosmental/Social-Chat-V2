@@ -18,7 +18,7 @@
 local Markdown = {};
 
 --// Constants
-local syntaxes = { -- These are valid syntaxes that we can use to determine markdown information! (the order of these matters)
+local Syntaxes = { -- These are valid syntaxes that we can use to determine markdown information! (the order of these matters)
     [1] = {
         ["syntax"] = "**",
         ["format"] = "<b>%s</b>",
@@ -47,20 +47,20 @@ local syntaxes = { -- These are valid syntaxes that we can use to determine mark
 --// Main Methods
 
 --- Returns an array of markdown occurences found within the provided string!
-function Markdown:GetMarkdownData(content : string, order : boolean?) : table
+function Markdown:GetMarkdownData(Content : string, order : boolean?) : table
     local Result = {}; -- The occurence result array
     local Closed = {}; -- A list of closed character subpositions that are already in use!
 
     local utf8Codes = {};
 
-    for starts, ends in utf8.graphemes(content) do
+    for starts, ends in utf8.graphemes(Content) do
         table.insert(utf8Codes, {
             ["starts"] = starts,
             ["ends"] = ends
         });
     end
 
-    for _, data in ipairs(syntaxes) do
+    for _, data in ipairs(Syntaxes) do
         local syntax = data.syntax
         local occurences = {};
 
@@ -68,12 +68,12 @@ function Markdown:GetMarkdownData(content : string, order : boolean?) : table
         --\\ This way we can see where all of our syntax occurences happen
         
         for i, utf8Group in ipairs(utf8Codes) do
-            local ThisChar = GetUTF8Character(content, utf8Group);
+            local ThisChar = GetUTF8Character(Content, utf8Group);
 
             if (table.find(Closed, i)) then continue; end -- This character is within the CLOSED array and is not available for re-evaluation
             if (ThisChar ~= syntax:sub(1, 1)) then continue; end -- This character is not our syntax (SKIP)
 
-            local PreviousChar = GetUTF8Character(content, utf8Codes[i - 1]);
+            local PreviousChar = GetUTF8Character(Content, utf8Codes[i - 1]);
             local isEscaped = (PreviousChar == "\\");
             if (isEscaped) then continue; end -- If our syntax is escaped by a backslash, we can just leave it alone
 
@@ -84,7 +84,7 @@ function Markdown:GetMarkdownData(content : string, order : boolean?) : table
                 local isStartOfSyntax = true
 
                 for ii = 1, #syntax - 1 do -- Make sure our syntax and our search query is EXACTLY the same as our actual syntax!
-                    if (GetUTF8Character(content, utf8Codes[i + ii]) ~= syntax:sub(1 + ii, 1 + ii)) then
+                    if (GetUTF8Character(Content, utf8Codes[i + ii]) ~= syntax:sub(1 + ii, 1 + ii)) then
                         isStartOfSyntax = false
                         break;
                     end
@@ -96,7 +96,7 @@ function Markdown:GetMarkdownData(content : string, order : boolean?) : table
             --// Occurence Matching
             --\\ Make sure our occurences meet our greedy search expectations!
 
-            local PrecedingChar = GetUTF8Character(content, utf8Codes[i + #syntax]);
+            local PrecedingChar = GetUTF8Character(Content, utf8Codes[i + #syntax]);
 
             local IsFollowedBySyntax = (PreviousChar == syntax:sub(1, 1));
             local IsPrecededBySyntax = (PrecedingChar == syntax:sub(1, 1));
@@ -125,7 +125,7 @@ function Markdown:GetMarkdownData(content : string, order : boolean?) : table
         end
 
         --// Compile Results
-        --\\ With our occurences now held accounted for, we can now take a look at the content between these occurences and their formatting!
+        --\\ With our occurences now held accounted for, we can now take a look at the Content between these occurences and their formatting!
 
         Result[syntax] = {
             ["results"] = {},
@@ -172,44 +172,44 @@ function Markdown:GetMarkdownData(content : string, order : boolean?) : table
     return Result
 end
 
---- Converts the provided content string into a new string using markdown langauge and syntaxing!
-function Markdown:Markup(content : string, keepSyntaxes : boolean?) : string & table
-    local OrderedMarkdown = GetOrderedMarkdown(Markdown:GetMarkdownData(content));
+--- Converts the provided Content string into a new string using markdown langauge and syntaxing!
+function Markdown:Markup(Content : string, KeepSyntaxes : boolean?) : string & table
+    local OrderedMarkdown = GetOrderedMarkdown(Markdown:GetMarkdownData(Content));
     local offset = 0
 
     for _, result in pairs(OrderedMarkdown) do
-        local syntaxOffset = ((not keepSyntaxes and #result.syntax) or 0);
+        local syntaxOffset = ((not KeepSyntaxes and #result.syntax) or 0);
 
         if (result.atStart) then
-            local after = content:sub(result.at + offset + syntaxOffset);
+            local after = Content:sub(result.at + offset + syntaxOffset);
             
-            content = content:sub(1, result.at + offset - 1)
+            Content = Content:sub(1, result.at + offset - 1)
                 ..result.rich
                 ..after
         else
-            local before = content:sub(1, result.at + offset - syntaxOffset);
+            local before = Content:sub(1, result.at + offset - syntaxOffset);
 
-            content = before
+            Content = before
                 ..result.rich
-                ..content:sub(result.at + offset + 1)
+                ..Content:sub(result.at + offset + 1)
         end
 
         offset += (result.rich:len() - syntaxOffset); -- We need an offset to account for all the new characters we're adding into our string
     end
     
-    return content, OrderedMarkdown
+    return Content, OrderedMarkdown
 end
 
 --// Function
 
 --- Returns a list of markdown info that can be used to markdown our original string
-function GetOrderedMarkdown(data : table)
+function GetOrderedMarkdown(Data : table)
     local OrderedMarkdown = {};
 
     --// Info Dumping
     --\\ We need to dump all of our markdown data into a singular table for in depth analysis!
 
-    for syntax, info in pairs(data) do
+    for syntax, info in pairs(Data) do
         local FormatSplit = info.format:split("%s"); -- 1 = Start, 2 = End
 
         for _, occurence in pairs(info.results) do
@@ -242,9 +242,9 @@ end
 --// Function
 
 --- Returns a singular utf8 character based on the provided data! (this is purely for readability)
-function GetUTF8Character(content : string, fromUTF8Group : table) : string
-    if (not fromUTF8Group) then return "" end
-    return content:sub(fromUTF8Group.starts, fromUTF8Group.ends);
+function GetUTF8Character(Content : string, UTF8Group : table) : string
+    if (not UTF8Group) then return "" end
+    return Content:sub(UTF8Group.starts, UTF8Group.ends);
 end
 
 return Markdown

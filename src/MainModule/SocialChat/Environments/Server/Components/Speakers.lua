@@ -66,13 +66,13 @@ end
 --// Methods
 
 --- Creates a new Chat speaker
-function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
-    assert(type(agent) == "string" or typeof(agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(agent)).."\" )");
-    assert(type(agent) == "string" or agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"!");
-    VerifyMetadata(agent, tagData);
+function SpeakerMaster.new(Agent : string | Player, TagData : table?) : Speaker
+    assert(type(Agent) == "string" or typeof(Agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(Agent)).."\" )");
+    assert(type(Agent) == "string" or Agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"!");
+    VerifyMetadata(Agent, TagData);
 
-    if (ChatSpeakers[agent]) then
-        warn("Attempt to recreate a pre-existing chat speaker! ( \""..(tostring(agent)).."\" is already registed. ) ");
+    if (ChatSpeakers[Agent]) then
+        warn("Attempt to recreate a pre-existing chat speaker! ( \""..(tostring(Agent)).."\" is already registed. ) ");
         return;
     end
 
@@ -82,23 +82,23 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
 
         ["Metadata"] = {
             ["Classic"] = {
-                ["Tag"] = (tagData and tagData.Classic.Tag) or nil,
-                ["Content"] = (tagData and tagData.Classic.Content) or nil,
+                ["Tag"] = (TagData and TagData.Classic.Tag) or nil,
+                ["Content"] = (TagData and TagData.Classic.Content) or nil,
 
                 ["Username"] = { -- We only go in depth with our username data because the username color is a required dataset
                     ["Name"] = (
-                        ((typeof(agent) == "Instance") and ((Settings.UseDisplayNames and agent.DisplayName) or agent.Name)) -- "agent" is a Player!
-                        or agent -- "agent" is a string!
+                        ((typeof(Agent) == "Instance") and ((Settings.UseDisplayNames and Agent.DisplayName) or Agent.Name)) -- "Agent" is a Player!
+                        or Agent -- "Agent" is a string!
                     ),
 
-                    ["Font"] = (tagData and tagData.Classic.Username and tagData.Classic.Username.Font) or nil,
-                    ["Color"] = (tagData and tagData.Classic.Username and tagData.Classic.Username.Color) or getRandomSpeakerColor(),
+                    ["Font"] = (TagData and TagData.Classic.Username and TagData.Classic.Username.Font) or nil,
+                    ["Color"] = (TagData and TagData.Classic.Username and TagData.Classic.Username.Color) or GetRandomSpeakerColor(),
                 };
 
-                ["UserId"] = ((typeof(agent) == "Instance" and agent.UserId) or nil), -- UserId is useful for security cases!
+                ["UserId"] = ((typeof(Agent) == "Instance" and Agent.UserId) or nil), -- UserId is useful for security cases!
             },
 
-            ["Bubble"] = (tagData and tagData.ChatBubble) or nil
+            ["Bubble"] = (TagData and TagData.ChatBubble) or nil
         };
 
         --// PROGRAMMABLE \\--
@@ -108,37 +108,37 @@ function SpeakerMaster.new(agent : string | Player, tagData : table?) : Speaker
 
     }, Speaker);
 
-    ChatSpeakers[agent] = NewSpeaker
-    SpeakerAdded:Fire(agent, NewSpeaker);
+    ChatSpeakers[Agent] = NewSpeaker
+    SpeakerAdded:Fire(Agent, NewSpeaker);
 
     --// Team Color Appliance \\--
-    if (Settings.ApplyTeamColors and typeof(agent) == "Instance") then
-        agent:GetPropertyChangedSignal("Team"):Connect(function()
-            if (agent.Team ~= nil) then -- This Player is now in a team
+    if (Settings.ApplyTeamColors and typeof(Agent) == "Instance") then
+        Agent:GetPropertyChangedSignal("Team"):Connect(function()
+            if (Agent.Team ~= nil) then -- This Player is now in a team
                 NewSpeaker.__previousNameColor = NewSpeaker.TagData.NameColor
-                NewSpeaker.TagData.NameColor = agent.Team.TeamColor.Color
+                NewSpeaker.TagData.NameColor = Agent.Team.TeamColor.Color
             else -- This player is no longer in a team
                 NewSpeaker.TagData.NameColor = NewSpeaker.__previousNameColor
             end
         end);
     end
 
-    Network.EventSpeakerAdded:FireAllClients(agent, NewSpeaker.Metadata);
+    Network.EventSpeakerAdded:FireAllClients(Agent, NewSpeaker.Metadata);
     return NewSpeaker
 end
 
 --- Returns the speaker object for the requested agent
-function SpeakerMaster:GetSpeaker(agent : string | Player) : Speaker
-    assert(type(agent) == "string" or typeof(agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(agent)).."\" )");
-    assert(type(agent) == "string" or agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"! ( got \""..(agent.ClassName).."\" instead )");
+function SpeakerMaster:GetSpeaker(Agent : string | Player) : Speaker
+    assert(type(Agent) == "string" or typeof(Agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(Agent)).."\" )");
+    assert(type(Agent) == "string" or Agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"! ( got \""..(Agent.ClassName).."\" instead )");
     
-    return ChatSpeakers[agent];
+    return ChatSpeakers[Agent];
 end
 
 --// Functions
 
 --- Returns a random Speaker color
-function getRandomSpeakerColor() : Color3
+function GetRandomSpeakerColor() : Color3
     if (not Settings.ApplyRandomColorAsDefault) then return Color3.fromRGB(255, 255, 255); end
 
     if (next(Settings.UsernameColors)) then
@@ -203,12 +203,12 @@ function GetMainChannel(FromSpeaker : Speaker) : Channel
 end
 
 --- Verifies the provided metadata (this is purely for debugging)
-function VerifyMetadata(agent : string | Player, metadata : table) : boolean?
-    if (not metadata) then return; end
+function VerifyMetadata(Agent : string | Player, Metadata : table) : boolean?
+    if (not Metadata) then return; end
 
-    assert(type(metadata) == "table", "The provided metadata was not of type \"table\", but as type \""..(type(metadata)).."\". Metadata can only be read as a table.");
-    assert(next(metadata), "The provided metadata is an empty array. Metadata needs to hold at least one value.");
-    assert(type(metadata.Classic) == "table" or type(metadata.ChatBubble) == "table", "The provided metadata does not hold any readable information! You must provide at least a \"Classic\" array OR a \"ChatBubble\" array with your data!");
+    assert(type(Metadata) == "table", "The provided metadata was not of type \"table\", but as type \""..(type(Metadata)).."\". Metadata can only be read as a table.");
+    assert(next(Metadata), "The provided metadata is an empty array. Metadata needs to hold at least one value.");
+    assert(type(Metadata.Classic) == "table" or type(Metadata.ChatBubble) == "table", "The provided metadata does not hold any readable information! You must provide at least a \"Classic\" array OR a \"ChatBubble\" array with your data!");
     
     local function AnalyzeStructure(structureSet : string, fromTable : table, isForPlayer : boolean?)
         if (not fromTable) then return; end
@@ -223,13 +223,13 @@ function VerifyMetadata(agent : string | Player, metadata : table) : boolean?
         , "The provided EnumItem was not a valid item of \"Font\"! Please set this value as a valid \"Enum.Font\" value!");
 
         if (isForPlayer and fromTable.Name) then
-            warn("The provided username metadata for "..(agent.Name).." will be used, however, it's \"Name\" value will be ignored for all Player's who use the same metadata. (requested name: \""..(fromTable.Name).."\")");
+            warn("The provided username metadata for "..(Agent.Name).." will be used, however, it's \"Name\" value will be ignored for all Player's who use the same metadata. (requested name: \""..(fromTable.Name).."\")");
         end
     end
 
-    if (metadata.Classic) then
-        if (metadata.Classic.Tag and metadata.Classic.Tag.Icon) then
-            local Icon = metadata.Classic.Tag.Icon
+    if (Metadata.Classic) then
+        if (Metadata.Classic.Tag and Metadata.Classic.Tag.Icon) then
+            local Icon = Metadata.Classic.Tag.Icon
             assert(type(tonumber(Icon)) == "number"
             , "The requested Icon ImageId was not a number! Please provide the asset id of your requested Icon image! (received "..(type(Icon))..")");
             
@@ -240,13 +240,13 @@ function VerifyMetadata(agent : string | Player, metadata : table) : boolean?
             end
         end
 
-        AnalyzeStructure("Tag", metadata.Classic.Tag);
-        AnalyzeStructure("Content", metadata.Classic.Content);
-        AnalyzeStructure("Username", metadata.Classic.Username, type(agent) ~= "string");
+        AnalyzeStructure("Tag", Metadata.Classic.Tag);
+        AnalyzeStructure("Content", Metadata.Classic.Content);
+        AnalyzeStructure("Username", Metadata.Classic.Username, type(Agent) ~= "string");
     end
 
-    if (metadata.ChatBubble) then
-        AnalyzeStructure("ChatBubble", metadata.ChatBubble);
+    if (Metadata.ChatBubble) then
+        AnalyzeStructure("ChatBubble", Metadata.ChatBubble);
     end
 end
 

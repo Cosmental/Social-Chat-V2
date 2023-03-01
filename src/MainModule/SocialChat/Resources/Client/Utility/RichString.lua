@@ -19,8 +19,9 @@
 
 --// Module
 local RichString = {};
-local stringObject = {};
-stringObject.__index = stringObject
+
+local StringObject = {};
+StringObject.__index = StringObject
 
 --// Imports
 local Markdown = require(script.Parent.Markdown);
@@ -28,50 +29,50 @@ local Markdown = require(script.Parent.Markdown);
 --// Main Methods
 
 --- Creates a new RichString object through OOP
-function RichString.new(properties : table?) : stringObject
+function RichString.new(Properties : table?) : StringObject
     return setmetatable({
 
         --// Configurations \\--
 
-        ["MarkdownEnabled"] = (properties and properties.MarkdownEnabled) or true, -- Will text automatically be MarkedDown? ( boolean )
-        ["ResponsiveSizing"] = (properties and properties.ResponsiveSizing) or true, -- Will text automatically resize when the ancestor does? ( boolean )
+        ["MarkdownEnabled"] = (Properties and Properties.MarkdownEnabled) or true, -- Will text automatically be MarkedDown? ( boolean )
+        ["ResponsiveSizing"] = (Properties and Properties.ResponsiveSizing) or true, -- Will text automatically resize when the ancestor does? ( boolean )
 
         --// Programmable \\--
         
         ["_hyperFunctions"] = {}, -- { key = function }
         ["_replacements"] = {} -- { keyword = function OR string }
 
-    }, stringObject);
+    }, StringObject);
 end
 
 --// Metamethods
 
 --- Defines a function for programmic string functuality!
-function stringObject:Define(key : string, callback : callback)
-    assert(type(key) == "string", "A string type was not passed for the \"key\" parameter. Received \""..(type(key)).."\"");
-    assert(type(callback) == "function", "A callback function type was not passed for the \"callback\" parameter. Received \""..(type(callback)).."\"");
+function StringObject:Define(Key : string, Callback : callback)
+    assert(type(Key) == "string", "A string type was not passed for the \"Key\" parameter. Received \""..(type(Key)).."\"");
+    assert(type(Callback) == "function", "A callback function type was not passed for the \"callback\" parameter. Received \""..(type(Callback)).."\"");
 
-    if (self._hyperFunctions[key]) then
-        warn("A function with the name \""..(key).."\" has already exists!");
+    if (self._hyperFunctions[Key]) then
+        warn("A function with the name \""..(Key).."\" has already exists!");
         return
     end
 
-    self._hyperFunctions[key] = callback
+    self._hyperFunctions[Key] = Callback
 end
 
-function stringObject:Replace(keyWord : string, replacement : callback | string)
-    assert(type(keyWord) == "string", "A string type was not passed for the \"key\" parameter. Received \""..(type(keyWord)).."\"");
-    assert(not self._replacements[keyWord], "The provided KeyWord \""..(keyWord).."\" is already in use!");
+function StringObject:Replace(KeyWord : string, Replacement : callback | string)
+    assert(type(KeyWord) == "string", "A string type was not passed for the \"key\" parameter. Received \""..(type(KeyWord)).."\"");
+    assert(not self._replacements[KeyWord], "The provided KeyWord \""..(KeyWord).."\" is already in use!");
 
-    self._replacements[keyWord] = replacement
+    self._replacements[KeyWord] = Replacement
 end
 
 --- Creates a new set of TextLabels using previously assigned property metadata. [ THIS WILL NOT FORMAT YOUR LABELS! You must use the SmartText module for further functuality! ]
-function stringObject:Generate(Text : string, TextFont : Enum.Font, callback : callback?, isButton : boolean?) : table
+function StringObject:Generate(Text : string, TextFont : Enum.Font, Callback : callback?, IsButton : boolean?) : table
     assert(type(Text) == "string", "The provided Text parameter was not of type \"string\". (received \""..(type(Text)).."\" instead.)");
     assert(typeof(TextFont) == "EnumItem", "The provided TextFont parameter was not of type \"EnumItem\". (received \""..(type(TextFont)).."\" instead.)")
     assert(table.find(Enum.Font:GetEnumItems(), TextFont), "The provided TextFont EnumItem was not a valid Font EnumItem!");
-    assert((not callback) or (type(callback) == "function"), "The provided callback function was not of type \"function\". Received \""..(type(callback)).."\"");
+    assert((not Callback) or (type(Callback) == "function"), "The provided callback function was not of type \"function\". Received \""..(type(Callback)).."\"");
 
     local MarkdownInfo : table = ((self.MarkdownEnabled and Markdown:GetMarkdownData(Text, true)) or {});
     local HyperCases : table = GetHyperCases(Text);
@@ -79,7 +80,7 @@ function stringObject:Generate(Text : string, TextFont : Enum.Font, callback : c
     local Labels = {};
 
     for Starts, Ends in utf8.graphemes(Text) do
-        if (IsSpecialSyntax(Starts, MarkdownInfo, HyperCases, Text)) then continue; end -- This is a markdown/hypertext syntax! (does NOT require instancing)
+        if (IsSpecialSyntax(Starts, MarkdownInfo, HyperCases)) then continue; end -- This is a markdown/hypertext syntax! (does NOT require instancing)
 
         local Character : string = Text:sub(Starts, Ends);
         local Word, StartIndex : string & number = GetParentWord(Text, Starts);
@@ -121,7 +122,7 @@ function stringObject:Generate(Text : string, TextFont : Enum.Font, callback : c
             local NewTextObject = CreateTextObject(
                 TextFont,
                 Character,
-                ((HyperData or isButton) and "TextButton") or "TextLabel"
+                ((HyperData or IsButton) and "TextButton") or "TextLabel"
             );
             
             if (self.MarkdownEnabled) then -- We only need to markdown our string IF "MarkdownEnabled" is true
@@ -140,8 +141,8 @@ function stringObject:Generate(Text : string, TextFont : Enum.Font, callback : c
             
             table.insert(Labels, NewTextObject);
 
-            if (callback) then
-                callback(NewTextObject);
+            if (Callback) then
+                Callback(NewTextObject);
             end
         end
     end
