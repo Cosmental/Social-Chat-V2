@@ -62,16 +62,12 @@ function ChannelManager:Initialize(Setup : table)
         };
     };
 
-    local ChannelTest = ChannelManager:Create("TestChannel");
-
     DefaultChannel = ChannelManager:Create(Settings.DefaultChannel); -- We need at least ONE system channel for our main messages to go through
     DefaultChannel.IsMainChannel = true -- You can't leave the main channel
 
     local function OnSpeakerReady(Player : Player)
         ClientCooldowns[Player] = Settings.MessageRate
-
         DefaultChannel:Subscribe(Player);
-        ChannelTest:Subscribe(Player);
     end
 
     for _, Player in pairs(game.Players:GetPlayers()) do
@@ -235,7 +231,7 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
             local AuthorFilter = GetFilteredMessageForClient(Response, Author);
 
             Network.EventSendMessage:FireClient(Recipient, RecipientFilter, Author, Speaker.Metadata);
-            Network.EventSendMessage:FireClient(Author, AuthorFilter, Recipient, Speaker.Metadata, true);
+            Network.EventSendMessage:FireClient(Author, AuthorFilter, Recipient, Speaker.Metadata);
             
             if (BubbleChatSettings.IsBubbleChatEnabled) then
                 BubbleChatEvent:FireClient(Author, Author, AuthorFilter, Speaker.Metadata);

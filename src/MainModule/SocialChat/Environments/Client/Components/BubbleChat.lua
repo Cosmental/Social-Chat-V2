@@ -138,7 +138,7 @@ function BubbleChat:Initialize(Info : table) : metatable
         local Controller = (OverheadControllers[Agent] or (not IsPlayer and BubbleChat.new(Agent)));
 
         if (not Controller) then return; end
-        Controller:Render(Message);
+        Controller:Chat(Message);
     end);
 
     --// Typing Checks
@@ -273,6 +273,7 @@ function BubbleChat.new(Agent : BasePart | Player, Metadata : table?) : BubbleCo
         coroutine.wrap(LoopAnimation)();
     end
 
+    task.wait(.1); -- Give roblox some rendering time
     return Controller
 end
 
@@ -373,7 +374,7 @@ function BubbleController:SetActive(IsActive : boolean?)
 end
 
 --- Renders a new chat bubble for the provided content
-function BubbleController:Render(Message : string) : table
+function BubbleController:Chat(Message : string) : table
     local Bubble = Presets.BubbleChatMessage:Clone();
     local Metadata = (self.Metadata);
 

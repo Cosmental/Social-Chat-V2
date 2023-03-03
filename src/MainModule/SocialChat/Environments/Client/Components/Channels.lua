@@ -28,8 +28,8 @@ local TextStyles
 local InputBox
 
 --// Constants
-local Player = game.Players.LocalPlayer
 local OnMessageRendered = Instance.new("BindableEvent");
+local Player = game.Players.LocalPlayer
 
 local ChatFrame
 local MessageContainer
@@ -103,7 +103,7 @@ function ChannelMaster:Initialize(Setup : table)
     end);
 
     --// Events
-    Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, Metadata : table?, IsFromUs : boolean?)
+    Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, Metadata : table?)
         local SpeakerData = ((Metadata and Metadata.Classic) or {});
         
         if (typeof(Destination) == "Instance" and Destination:IsA("Player")) then -- Private Message
@@ -113,15 +113,15 @@ function ChannelMaster:Initialize(Setup : table)
                 if (not PrivateChannel) then
                     PrivateChannel = self:Create(Destination.Name, {Destination}, nil, true);
 
-                    if (IsFromUs) then
+                    if (SpeakerData.UserId and SpeakerData.UserId == Player.UserId) then
                         PrivateChannel:Focus();
                     end
                 end
 
-                PrivateChannel:Render(Message, SpeakerData);
+                PrivateChannel:CreateMessage(Message, SpeakerData);
             else -- Create the message in our current channel!
                 local CurrentChannel = self:GetFocus();
-                CurrentChannel:Render(Message, SpeakerData, true, IsFromUs);
+                CurrentChannel:CreateMessage(Message, SpeakerData, true);
             end
         else -- Channel Mesage
             local DirectedChannel = self:Get(Destination.Name);
@@ -131,7 +131,7 @@ function ChannelMaster:Initialize(Setup : table)
                 return;
             end
 
-            DirectedChannel:Render(Message, SpeakerData);
+            DirectedChannel:CreateMessage(Message, SpeakerData);
         end
     end);
 
@@ -152,21 +152,23 @@ end
 --// Methods
 
 --- Creates a new channel using the provided parameters
-function ChannelMaster:Create(name : string, members : table?, chatHistory : table?, isPrivate : boolean?) : Channel
+function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : table?, IsPrivate : boolean?) : Channel
     local ThisChannel = setmetatable({
 
         --// PROPERTIES \\--
 
-        ["Name"] = name,
-        ["History"] = chatHistory,
-        ["IsPrivate"] = isPrivate,
+        ["Name"] = Name,
+        ["History"] = ChatHistory,
+        ["IsPrivate"] = IsPrivate,
 
         --// PROGRAMMABLE \\--
 
-        ["Members"] = members,
+        ["Members"] = Members,
         ["_cache"] = {}
         
     }, Channel);
+
+    print(Name);
 
     --// System Channel Handling
     if (TotalChannels < 1) then -- This is our FIRST channel! Make sure to focus on it o_O
@@ -174,18 +176,18 @@ function ChannelMaster:Create(name : string, members : table?, chatHistory : tab
         ThisChannel.IsMain = true
         ThisChannel:Focus();
     else -- Our client has multiple channels registered!
-        local function CreateChannelButton(forChannel)
+        local function CreateChannelButton(ForChannel : Channel)
             local ChannelPrefab = Presets.ChannelPrefab:Clone();
 
-            ChannelPrefab.Name = forChannel.Name
-            ChannelPrefab.Channel.Text = forChannel.Name
+            ChannelPrefab.Name = ForChannel.Name
+            ChannelPrefab.Channel.Text = ForChannel.Name
 
-            forChannel.NavButton = ChannelPrefab
+            ForChannel.NavButton = ChannelPrefab
             ChannelPrefab.Parent = ChannelFrame
 
             ChannelPrefab.Channel.MouseButton1Click:Connect(function()
                 if (not ChatUIManager:IsEnabled()) then return; end -- Our ChatUI is not currently enabled! Channel switching is temporarily disabled
-                forChannel:Focus();
+                ForChannel:Focus();
             end);
         end
 
@@ -194,6 +196,7 @@ function ChannelMaster:Create(name : string, members : table?, chatHistory : tab
                 CreateChannelButton(RegisteredChannel);
             end
 
+            print(TotalChannels);
             ChannelBar.Visible = (Settings.HideChatFrame ~= true);
         end
 
@@ -208,16 +211,16 @@ function ChannelMaster:Create(name : string, members : table?, chatHistory : tab
         end
     end
 
-    Registry[name] = ThisChannel
+    Registry[Name] = ThisChannel
     TotalChannels += 1
 
     return ThisChannel
 end
 
 -- Returns the requested channel
-function ChannelMaster:Get(query : string) : Channel?
-    assert(type(query) == "string", "The provided query was not of type \"string\"! ( received \""..(type(query)).."\" instead )");
-    return Registry[query];
+function ChannelMaster:Get(Query : string) : Channel?
+    assert(type(Query) == "string", "The provided query was not of type \"string\"! ( received \""..(type(Query)).."\" instead )");
+    return Registry[Query];
 end
 
 --- Returns the currently focused channel
@@ -225,13 +228,26 @@ function ChannelMaster:GetFocus() : Channel
     return FocusedChannel
 end
 
---- Sends a new message to our currently focused channel
-function ChannelMaster:SendMessage(text : string, privateRecipient : Player?)
-    assert(type(text) == "string", "The provided message content was not of type \"string\"! ( received \""..(type(text)).."\" instead )");
-    assert(not privateRecipient or typeof(privateRecipient) == "Instance", "The requested recipient was not of type \"Instance\". ( received \""..(typeof(privateRecipient)).."\" instead )");
-    assert(not privateRecipient or privateRecipient:IsA("Player"), "The provided recipient was not of class \"Player\". Only players can recieve private messages!");
+--- Sends a new message to our currently focused channel OR a receiver (if provided) [DOES NOT REQUIRE CHANNEL INPUT]
+function ChannelMaster:SendMessage(Text : string, Receiver : Player?)
+    assert(type(Text) == "string", "The provided message content was not of type \"string\"! ( received \""..(type(Text)).."\" instead )");
+    assert(not Receiver or typeof(Receiver) == "Instance", "The requested recipient was not of type \"Instance\". ( received \""..(typeof(Receiver)).."\" instead )");
+    assert(not Receiver or Receiver:IsA("Player"), "The provided recipient was not of class \"Player\". Only players can recieve private messages!");
 
-    Network.EventSendMessage:FireServer(text, privateRecipient or FocusedChannel.Name);
+    Network.EventSendMessage:FireServer(Text, Receiver or FocusedChannel.Name);
+end
+
+--- Creates a message for the current channel OR a specific channel (if provided)
+function ChannelMaster:CreateMessage(Message : string, Metadata : table?, Channel : Channel?)
+    if (not self.Main) then -- Prevents race issues
+        repeat
+            task.wait();
+        until
+        self.Main
+    end
+
+    local ToChannel = (Channel or self:GetFocus());
+    ToChannel:CreateMessage(Message, Metadata);
 end
 
 --// Metamethods
@@ -280,7 +296,7 @@ function Channel:Focus()
 end
 
 --- Renders a message based on the specified parameters
-function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : boolean?, MessageIsFromUs : boolean?) : table
+function Channel:CreateMessage(Message : string, Metadata : table?, IsPrivateMessage : boolean?) : table
     local MainFrame = Instance.new("Frame");
 
     MainFrame.BackgroundTransparency = 1
@@ -337,7 +353,7 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
     if (IsPrivateMessage) then -- Private Message!
         Generate("FromWho",
             "{"
-            ..((MessageIsFromUs and "to") or "from").." "
+            ..(((Metadata.UserId and Metadata.UserId == Player.UserId) and "to") or "from").." "
             ..(Metadata.Name).."}: ",
             {Color = Color3.fromRGB(255, 255, 255), Font = Settings.MessageFont},
             nil, true
@@ -357,15 +373,17 @@ function Channel:Render(Message : string, Metadata : table?, IsPrivateMessage : 
                 ImageLabel.Parent = MainFrame
             end
 
-            Generate(
-                "Tag",
-                "**["..(Metadata.Tag.Name).."]** ",
-                {
-                    ["Color"] = (Metadata.Tag.Color or Color3.fromRGB(255, 255, 255)),
-                    ["Font"] = Metadata.Tag.Font or Settings.MessageFont
-                },
-                nil, true
-            );
+            if (Metadata.Tag.Name) then
+                Generate(
+                    "Tag",
+                    "**["..(Metadata.Tag.Name).."]** ",
+                    {
+                        ["Color"] = (Metadata.Tag.Color or Color3.fromRGB(255, 255, 255)),
+                        ["Font"] = Metadata.Tag.Font or Settings.MessageFont
+                    },
+                    nil, true
+                ); 
+            end
         end
 
         --// Name Rendering

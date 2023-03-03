@@ -158,7 +158,7 @@ function ChatUIManager:SetMode(IsFrameHidden : boolean?)
 	);
 
 	ChatFrame.Input.MessageContainer.Visible = (not IsFrameHidden);
-	ChatFrame.ChannelBar.Visible = (not IsFrameHidden);
+	ChatFrame.ChannelBar.Visible = ((not IsFrameHidden) and (#self.Src.Channels.Registry >= 2));
 
 	if (IsFrameHidden) then
 		if (not self.Src.Channels.Main) then return; end -- 'Channels' module hasn't setup yet! (Race dependency ended)
