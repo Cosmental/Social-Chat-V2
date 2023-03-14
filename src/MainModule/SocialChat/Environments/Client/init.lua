@@ -1,4 +1,3 @@
-local StarterPack = game:GetService("StarterPack")
 --[[
 
     Name: Mari
@@ -16,7 +15,6 @@ local Network = game.ReplicatedStorage:WaitForChild("SocialChatEvents");
 local Player = game.Players.LocalPlayer
 
 local UIComponents
-local Handlers
 
 local ChatToggleButton
 local CacheFolder
@@ -66,7 +64,7 @@ local function Initialize(Setup : table)
     --\\ Changes values for certain configurations
 
     for Category : string, Data : table in pairs(Settings) do
-        local Objects = {};
+        --local Objects = {};
 
         for Entry : string, _ in pairs(Data) do
             local Configuration = SocialChatData.Settings[Entry];
@@ -96,34 +94,7 @@ local function Initialize(Setup : table)
         return Modules
     end
 
-    Handlers = Extract(script.Handlers);
     UIComponents = Extract(script.Components);
-
-    for Name, Module in pairs(Handlers) do
-        local Success, Response = pcall(function()
-            return Module:Initialize({
-                ["Settings"] = Settings,
-                ["Library"] = Library,
-                ["Cache"] = CacheFolder,
-                
-                ["Presets"] = script.Presets,
-                ["Remotes"] = Network,
-                ["Src"] = Handlers,
-                
-                ["ChatButton"] = ChatToggleButton,
-                ["ChatUI"] = ChatUI,
-                
-                ["Data"] = SocialChatData,
-                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
-            });
-        end);
-
-        if (Success) then
-            Handlers[Name] = Response
-        elseif (not Success) then
-            error("Failed to initialize SocialChat handler: \""..(Name).."\". ("..(Response).." )");
-        end
-    end
 
     --[[
 
@@ -150,10 +121,8 @@ local function Initialize(Setup : table)
                 
                 ["Presets"] = script.Presets,
                 ["Remotes"] = Network,
-
-                ["Handlers"] = Handlers,
                 ["Src"] = UIComponents,
-                
+
                 ["ChatButton"] = ChatToggleButton,
                 ["ChatUI"] = ChatUI,
                 
@@ -212,7 +181,6 @@ local function OnRequest()
             ["Settings"] = Settings,
             ["Library"] = Library,
     
-            ["Handlers"] = Handlers,
             ["Src"] = UIComponents,
             ["Data"] = SocialChatData,
     
