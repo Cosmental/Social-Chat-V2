@@ -3,10 +3,26 @@ return {
     --// BEHAVIOR \\--
 
     ["HideChatFrame"] = false, -- Determines if the ChatFrame will be hidden. If true, the only form of communication will be through BubbleChat!
+    ["IdleTime"] = 10, -- Determines how long the ChatUI can remain idle before automatically hiding itself
     
     ["AllowMarkdown"] = true, -- Determines if players can use Markdown syntaxing in their messages. ( this behaves similar to how discord messaging )
 
-    ["IdleTime"] = 10, -- Determines how long the ChatUI can remain idle before automatically hiding itself
+    --// HIGHLIGHTING \\--
+    
+    ["UsernameHighlightsEnabled"] = true, -- Highlight usernames when typing in chat! [ Example: "Cosmental" would be highlighted ]
+    ["UserHighlightColor"] = Color3.fromRGB(83, 173, 224),
+
+    ["SystemKeywordHighlightsEnabled"] = true, -- Highlight keywords like "/e dance"
+    ["SystemHighlights"] = { -- This is the highlighting data passed to our highlighter [only works if "SystemKeywordHighlights" are enabled]
+        ["Phrases"] = {
+            "/e dance", "/e dance1", "/e dance2", "/e dance3",
+            "/e point", "/e cheer", "/e wave", "/e laugh",
+            "/help", "/w"
+        },
+
+        ["Color"] = Color3.fromRGB(233, 75, 75),
+        ["OnlyAtStart"] = true
+    };
 
     --// DANCE EMOTES \\--
 

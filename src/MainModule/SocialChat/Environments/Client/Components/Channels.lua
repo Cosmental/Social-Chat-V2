@@ -168,8 +168,6 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
         
     }, Channel);
 
-    print(Name);
-
     --// System Channel Handling
     if (TotalChannels < 1) then -- This is our FIRST channel! Make sure to focus on it o_O
         self.Main = ThisChannel

@@ -17,7 +17,7 @@ local TextService = game:GetService("TextService");
 local RunService = game:GetService("RunService");
 
 --// Imports
-local Highlighter
+local HighlightUtil
 local SmartText
 local Markdown
 
@@ -64,7 +64,7 @@ local CurrentEmoteTrack : AnimationTrack?
 function InputBox:Initialize(Info : table) : metatable
     local self = setmetatable(Info, InputBox);
 
-    Highlighter = self.Handlers.Highlighter
+    HighlightUtil = self.Library.HighlightUtil
     SmartText = self.Library.SmartText
     Markdown = self.Library.Markdown
 
@@ -78,6 +78,22 @@ function InputBox:Initialize(Info : table) : metatable
     ChatBox = InteractionBar.InputBox
 
     LastCursorPosition = ChatBox.CursorPosition
+
+    self.Highlighter = HighlightUtil.new(
+        Settings.SystemHighlights.Color,
+        Settings.SystemHighlights.Phrases,
+        Settings.SystemHighlights.OnlyAtStart
+    );
+
+    self.Highlighter:SetHandler(function(Word : string)
+        if (not Settings.UsernameHighlightsEnabled) then return; end
+
+        for _, Client in pairs(game.Players:GetPlayers()) do
+            if (Client.Name:lower() == Word:lower()) then
+                return true, Settings.UserHighlightColor
+            end
+        end
+    end);
 
     --// Animation Setup
     --\\ This setups up animations that can be used via our Chat System later!
@@ -136,8 +152,8 @@ function InputBox:Initialize(Info : table) : metatable
         --\\ We need to color our syntaxes for UX purposes!
 
         local MarkedText = (
-            (Settings.AllowMarkdown and Markdown:Markup(Highlighter:Highlight(CleanText), true)) or
-            Highlighter:Highlight(CleanText)
+            (Settings.AllowMarkdown and Markdown:Markup(self.Highlighter:Highlight(CleanText), true)) or
+            self.Highlighter:Highlight(CleanText)
         );
 
         local NewText = MarkedText
@@ -478,7 +494,7 @@ function InputBox:Initialize(Info : table) : metatable
 
         if (not EnterPressed) then -- Message was interrupted. Proceed with visuals
             self._oldText = ChatBox.Text
-            self:Set(Highlighter:Highlight(
+            self:Set(self.Highlighter:Highlight(
                 (Settings.AllowMarkdown and Markdown:Markup(ChatBox.Text)) or
                 ChatBox.Text
             ));
