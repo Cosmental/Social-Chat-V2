@@ -196,78 +196,84 @@ function ChannelManager:Message(Author : Player, Message : string, Recipient : P
 
         return;
     end
-
-    if (ClientCooldowns[Author] <= 0) then -- This author is currently rate limited ( CANCEL )
-        Network.EventSendMessage:FireClient(
-            Author,
-            "You're sending messages too quickly!",
-            Recipient,
-            ServerErrorMetadata
-        );
-
-        return;
-    end
-
-    --// Cooldown Management
-    --\\ We need to handle cooldowns here in order to prevent the client from spam messaging our channels!
-
-    ClientCooldowns[Author] -= 1
-
-    coroutine.wrap(function()
-        task.wait(10);
-        ClientCooldowns[Author] += 1
-    end)();
-
-    --// Message Filtering
-    --\\ We need to filter our message to abide by Roblox's TOS
-
-    local Success, Response = pcall(function()
-        return TextService:FilterStringAsync(Message, Author.UserId);
-    end);
-
-    if (Success) then -- We successfully filtered our message!
-        if (typeof(Recipient) == "Instance") then -- This message is for a PRIVATE client
-            local RecipientFilter = GetFilteredMessageForClient(Response, Recipient);
-            local AuthorFilter = GetFilteredMessageForClient(Response, Author);
-
-            Network.EventSendMessage:FireClient(Recipient, RecipientFilter, Author, Speaker.Metadata);
-            Network.EventSendMessage:FireClient(Author, AuthorFilter, Recipient, Speaker.Metadata);
-            
-            if (BubbleChatSettings.IsBubbleChatEnabled) then
-                BubbleChatEvent:FireClient(Author, Author, AuthorFilter, Speaker.Metadata);
-                BubbleChatEvent:FireClient(Recipient, Author, RecipientFilter, Speaker.Metadata);
-            end
-        else -- This message is for a specific channel
-            for Member, _ in pairs(Recipient.Members) do
-                local FilterSuccess, FilterResponse = pcall(function()
-                    return GetFilteredMessageForClient(Response, Member);
-                end); -- Sometimes filtering can error in some cases. Due to this fact, we want to stop errors from breaking the loop
-
-                if (not FilterSuccess) then continue; end
-
-                Network.EventSendMessage:FireClient(Member, FilterResponse, Recipient, Speaker.Metadata);
-                BubbleChatEvent:FireClient(Member, Author, FilterResponse, Speaker.Metadata);
-            end
     
-            if (#Recipient._cache >= Settings.MaxMessagesPerChannel) then
-                table.remove(Recipient._cache, 1); -- The oldest message will always be our 1st Index
-            end
+    if (Speaker.IsPlayer) then -- This speaker is a Player! Make sure to rate-limit messages to prevent spam
+    
+        --// Cooldown Management
+        --\\ We need to handle cooldowns here in order to prevent the client from spam messaging our channels! (only applies to players)
 
-            table.insert(Recipient._cache, {
-                ["Author"] = Author, -- string | Player
-                ["Message"] = Message, -- string
-                ["AtTime"] = os.clock() -- number
-            });
+        if (ClientCooldowns[Author] <= 0) then -- This author is currently rate limited ( CANCEL )
+            Network.EventSendMessage:FireClient(
+                Author,
+                "You're sending messages too quickly!",
+                Recipient,
+                ServerErrorMetadata
+            );
+
+            return;
         end
-    else -- Oh no! Filtering failed :(
-        Network.EventSendMessage:FireClient(
-            Author,
-            Recipient,
-            "Your message failed to send due to a server error! (ERROR: \""..(Response or "No feedback was given").."\")",
-            ServerErrorMetadata
-        );
 
-        error("Failed to filter message for \""..(Author.Name).."\"! (Response: \""..(Response or "No response provided.").."\")");
+        ClientCooldowns[Author] -= 1
+
+        coroutine.wrap(function()
+            task.wait(10);
+            ClientCooldowns[Author] += 1
+        end)();
+
+        --// Message Filtering
+        --\\ We need to filter our message to abide by Roblox's TOS
+
+        local Success, Response = pcall(function()
+            return TextService:FilterStringAsync(Message, Author.UserId);
+        end);
+
+        if (Success) then -- We successfully filtered our message!
+            if (typeof(Recipient) == "Instance") then -- This message is for a PRIVATE client
+                local RecipientFilter = GetFilteredMessageForClient(Response, Recipient);
+                local AuthorFilter = GetFilteredMessageForClient(Response, Author);
+
+                Network.EventSendMessage:FireClient(Recipient, RecipientFilter, Author, Speaker.Metadata);
+                Network.EventSendMessage:FireClient(Author, AuthorFilter, Recipient, Speaker.Metadata);
+                
+                if (BubbleChatSettings.IsBubbleChatEnabled) then
+                    BubbleChatEvent:FireClient(Author, Author, AuthorFilter, Speaker.Metadata);
+                    BubbleChatEvent:FireClient(Recipient, Author, RecipientFilter, Speaker.Metadata);
+                end
+            else -- This message is for a specific channel
+                for Member, _ in pairs(Recipient.Members) do
+                    local FilterSuccess, FilterResponse = pcall(function()
+                        return GetFilteredMessageForClient(Response, Member);
+                    end); -- Sometimes filtering can error in some cases. Due to this fact, we want to stop errors from breaking the loop
+
+                    if (not FilterSuccess) then continue; end
+
+                    Network.EventSendMessage:FireClient(Member, FilterResponse, Recipient, Speaker.Metadata);
+                    BubbleChatEvent:FireClient(Member, Author, FilterResponse, Speaker.Metadata);
+                end
+        
+                if (#Recipient._cache >= Settings.MaxMessagesPerChannel) then
+                    table.remove(Recipient._cache, 1); -- The oldest message will always be our 1st Index
+                end
+
+                table.insert(Recipient._cache, {
+                    ["Author"] = Author, -- string | Player
+                    ["Message"] = Message, -- string
+                    ["AtTime"] = os.clock() -- number
+                });
+            end
+        else -- Oh no! Filtering failed :(
+            Network.EventSendMessage:FireClient(
+                Author,
+                Recipient,
+                "Your message failed to send due to a server error! (ERROR: \""..(Response or "No feedback was given").."\")",
+                ServerErrorMetadata
+            );
+
+            error("Failed to filter message for \""..(Author.Name).."\"! (Response: \""..(Response or "No response provided.").."\")");
+        end
+
+    else -- Non-player Speakers may bypass most restrictions, but developers must be catious as to what gets passed through here as the content is NOT filtered!
+        Network.EventSendMessage:FireAllClients(Message, Recipient, Speaker.Metadata);
     end
 
     MessageEvent:Fire(Author, Message, Recipient); -- API Event callback
@@ -303,8 +309,8 @@ function Channel:Unsubscribe(Player : Player)
     Network.EventLeaveChannel:FireClient(Player, self.Name);
 end
 
---- Destroys the requested Channel
-function Channel:Destroy()
+--- Removes the requested Channel
+function Channel:Remove()
     assert(not self.IsMainChannel, "Failed to destroy Channel \""..(self.Name).."\". Destroying the game's main chat channel would result in bugs!");
 
     for _, Member in pairs(self.Members) do

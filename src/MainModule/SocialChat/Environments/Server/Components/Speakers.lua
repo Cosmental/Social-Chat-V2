@@ -106,6 +106,8 @@ function SpeakerMaster.new(Agent : string | Player, TagData : table?) : Speaker
         ["Channels"] = {}, -- a table of channels that this speaker is in
         ["__previousNameColor"] = nil, -- a Color3 value that recalls the speaker's previous TagColor
 
+        ["IsPlayer"] = (typeof(Agent) == "Instance" and Agent:IsA("Player")) -- Tells us if this speaker object pertains to a Player : boolean
+
     }, Speaker);
 
     ChatSpeakers[Agent] = NewSpeaker
@@ -130,7 +132,7 @@ end
 --- Returns the speaker object for the requested agent
 function SpeakerMaster:GetSpeaker(Agent : string | Player) : Speaker
     assert(type(Agent) == "string" or typeof(Agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(Agent)).."\" )");
-    assert(type(Agent) == "string" or Agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"! ( got \""..(Agent.ClassName).."\" instead )");
+    assert(type(Agent) == "string" or Agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"! ( got \""..tostring(Agent.ClassName).."\" instead )");
     
     return ChatSpeakers[Agent];
 end
