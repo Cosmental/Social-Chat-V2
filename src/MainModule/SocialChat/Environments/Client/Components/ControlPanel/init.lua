@@ -104,11 +104,6 @@ function ControlPanel:Initialize(Setup : table)
         end
     end
 
-    --// Terminal Page Setup
-    local Terminal = Navigator.new("Terminal", MainPanel.Terminal, 3);
-    Terminal:SetImage("rbxassetid://3926305904", Vector2.new(404, 844), Vector2.new(36, 36));
-    Terminal:SetState(false);
-
     return self
 end
 

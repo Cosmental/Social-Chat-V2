@@ -1,4 +1,3 @@
-local ProximityPromptService = game:GetService("ProximityPromptService")
 --[[
 
     Name: Mari
@@ -75,11 +74,11 @@ function AdjustingCanvas:Update()
     local CurrentCanvasSize = self:GetCanvasSize();
     local SizeOffset = ((self.PreviousSize and CurrentCanvasSize - self.PreviousSize) or 0);
 
-    if (not self:IsScrolledDown()) then -- Maintain a constant position (not forced to bottom)
+    if (self.Layout.VerticalAlignment == Enum.VerticalAlignment.Bottom) then -- Force to bottom
+        self.Canvas.CanvasPosition = Vector2.new(0, 9e9);
+    elseif (not self:IsScrolledDown()) then -- Maintain a constant position (not forced to bottom)
         self.Canvas.CanvasPosition = Vector2.new(
             0, (self.Canvas.CanvasPosition.Y - SizeOffset));
-    elseif (self.Layout.VerticalAlignment == Enum.VerticalAlignment.Bottom) then -- Force to bottom
-        self.Canvas.CanvasPosition = Vector2.new(0, 9e9);
     end
 end
 

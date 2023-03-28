@@ -113,29 +113,61 @@ local function Initialize(Setup : table)
     ]]--
 
     for Name, Module in pairs(UIComponents) do
-        local Success, Response = pcall(function()
-            return Module:Initialize({
-                ["Settings"] = Settings,
-                ["Library"] = Library,
-                ["Cache"] = CacheFolder,
-                
-                ["Presets"] = script.Presets,
-                ["Remotes"] = Network,
-                ["Src"] = UIComponents,
+        local StartTick = os.clock();
+        local ContentReady : boolean?
 
-                ["ChatButton"] = ChatToggleButton,
-                ["ChatUI"] = ChatUI,
-                
-                ["Data"] = SocialChatData,
-                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
-            });
-        end);
+        --// Initialization of our module
+        --\\ Wrapped in a seperate thread function for simultaneous startup
 
-        if (Success) then
-            UIComponents[Name] = Response
-        elseif (not Success) then
-            error("Failed to initialize SocialChat component: \""..(Name).."\". ("..(Response).." )");
-        end
+        coroutine.wrap(function()
+
+            --// Infinite Yield Warning
+            --\\ A warning for truly strange cases that fetch no errors
+
+            coroutine.wrap(function()
+                local WarningFired : boolean? -- We only want to send an infinite yield warning ONCE!
+
+                repeat
+                    if ((not WarningFired) and ((os.clock() - StartTick) >= 5)) then
+                        WarningFired = true
+                        warn("Infinite Yield Possible on SocialChat Client Component \""..(Name).."\". (this process has exceeded the intended initialization time)");
+                    end
+                    
+                    task.wait();
+                until
+                (ContentReady or WarningFired);
+            end)();
+
+            --// Pcall Handling
+            --\\ Implemented for proper error catching
+
+            local Success, Response = pcall(function()
+                return Module:Initialize({
+                    ["Settings"] = Settings,
+                    ["Library"] = Library,
+                    ["Cache"] = CacheFolder,
+                    
+                    ["Presets"] = script.Presets,
+                    ["Remotes"] = Network,
+                    ["Src"] = UIComponents,
+    
+                    ["ChatButton"] = ChatToggleButton,
+                    ["ChatUI"] = ChatUI,
+                    
+                    ["Data"] = SocialChatData,
+                    ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
+                });
+            end);
+    
+            ContentReady = true
+
+            if (Success) then
+                UIComponents[Name] = Response
+            elseif (not Success) then
+                error("Failed to initialize SocialChat component: \""..(Name).."\". ("..(Response).." )");
+            end
+
+        end)();
     end
 
     --// TopbarPlus Control
