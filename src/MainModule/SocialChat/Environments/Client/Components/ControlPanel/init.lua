@@ -87,6 +87,7 @@ function ControlPanel:Initialize(Setup : table)
                 ["Presets"] = script.Presets,
                 ["Library"] = self.Library,
                 ["Settings"] = self.Settings,
+                ["Extensions"] = self.Extensions,
                 ["Src"] = self.Src,
 
                 ["Button"] = Button,

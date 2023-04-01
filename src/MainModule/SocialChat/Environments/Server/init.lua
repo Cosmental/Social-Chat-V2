@@ -133,6 +133,16 @@ local function Initialize(Setup : table)
         end
     end
 
+    Network.ExtensionGateway.OnServerInvoke = function()
+        local Data = {};
+
+        for Name, API in pairs(Extensions) do
+            Data[Name] = API.__meta
+        end
+        
+        return Data
+    end
+
     IsRequestable = true -- You may now request SocialChat's API!
 end
 
