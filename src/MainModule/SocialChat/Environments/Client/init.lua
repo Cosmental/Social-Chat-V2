@@ -15,6 +15,7 @@ local Network = game.ReplicatedStorage:WaitForChild("SocialChatEvents");
 local Player = game.Players.LocalPlayer
 
 local UIComponents
+local Extensions = {};
 
 local ChatToggleButton
 local CacheFolder
@@ -95,6 +96,17 @@ local function Initialize(Setup : table)
     end
 
     UIComponents = Extract(script.Components);
+    
+    local ClientExtensions = Extract(game.ReplicatedFirst:WaitForChild("ClientChatExtensions"));
+    local SharedExtensions = Extract(game.ReplicatedStorage:WaitForChild("SharedChatExtensions"));
+
+    for Name, Module in pairs(ClientExtensions) do
+        Extensions[Name] = Module
+    end
+
+    for Name, Module in pairs(SharedExtensions) do
+        Extensions[Name] = Module
+    end
 
     --[[
 
@@ -150,6 +162,7 @@ local function Initialize(Setup : table)
                     ["Presets"] = script.Presets,
                     ["Remotes"] = Network,
                     ["Src"] = UIComponents,
+                    ["Extensions"] = Extensions,
     
                     ["ChatButton"] = ChatToggleButton,
                     ["ChatUI"] = ChatUI,
@@ -194,6 +207,33 @@ local function Initialize(Setup : table)
         ChatToggleButton:notify();
     end);
 
+    --// Extension Setup
+    --\\ This is where we setup all of our extensions!
+
+    for Name, API in pairs(Extensions) do
+        local Success, Response = pcall(function()
+            return API:Deploy({
+                ["Settings"] = Settings,
+                ["Library"] = Library,
+                
+                ["Presets"] = script.Presets,
+                ["Remotes"] = Network,
+                ["Src"] = Extensions,
+                ["Components"] = UIComponents,
+    
+                ["ChatButton"] = ChatToggleButton,
+                ["ChatUI"] = ChatUI,
+                
+                ["Data"] = SocialChatData,
+                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
+            });
+        end);
+
+        if (not Success) then
+            error("Failed to start extension \""..(Name).."\"! ("..(Response or "No response indicated")..")");
+        end
+    end
+
     --// Client Setup
     --\\ These are extra tweaks used for SocialChat!
 
@@ -215,6 +255,7 @@ local function OnRequest()
     
             ["Src"] = UIComponents,
             ["Data"] = SocialChatData,
+            ["Extensions"] = Extensions,
     
             ["ChatButton"] = ChatToggleButton,
             ["ChatUI"] = ChatUI,

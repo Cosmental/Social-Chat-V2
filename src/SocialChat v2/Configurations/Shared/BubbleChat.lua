@@ -34,7 +34,7 @@ return {
 
     ["ThinkingSpeed"] = 1.25, -- Determines how long it takes our thinking animation to full play out!
 
-    ["BubblePadding"] = Vector2.new(30, 40), -- This will be used as UI padding for our bubble messages! [DO NOT CHANGE THIS UNLESS YOU KNOW WHAT THIS DOES]
+    ["BubblePadding"] = Vector2.new(15, 45), -- This will be used as UI padding for our bubble messages! [DO NOT CHANGE THIS UNLESS YOU KNOW WHAT THIS DOES]
 
     ["VisibilityTweenInfo"] = TweenInfo.new(.5, Enum.EasingStyle.Exponential) -- This is the TweenInfo used to toggle ChatBubble visibility!
 

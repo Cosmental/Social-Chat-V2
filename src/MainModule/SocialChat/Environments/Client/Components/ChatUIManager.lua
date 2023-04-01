@@ -15,14 +15,10 @@ ChatUIManager.__index = ChatUIManager
 local TweenService = game:GetService("TweenService");
 local RunService = game:GetService("RunService");
 
---// Imports
-local FunctUI
-
 --// Constants
 local ChatFrame
 local Mouse = game.Players.LocalPlayer:GetMouse();
 
-local ContainerFrame
 local InputBox
 
 --// States
@@ -35,9 +31,7 @@ function ChatUIManager:Initialize(Setup : table)
     local self = setmetatable(Setup, ChatUIManager);
 
     ChatFrame = self.ChatUI.Chat
-    ContainerFrame = ChatFrame.Input.MessageContainer
 	InputBox = ChatFrame.Input.InteractionBar.InputBox
-	FunctUI = self.Library.FunctUI
 
 	self.BackgroundTransparency = ChatFrame.BackgroundTransparency
 	self.LastInteraction = os.clock();
@@ -84,7 +78,6 @@ function ChatUIManager:Initialize(Setup : table)
 		self:SetEnabled(false);
 	end);
 
-	FunctUI.new("AdjustingCanvas", ContainerFrame, ChatFrame); -- Adds ScrollingFrame adjustments for us!
     return self
 end
 
@@ -100,14 +93,14 @@ function ChatUIManager:SetEnabled(State : boolean, NoTween : boolean?)
 	end
 
     if (not NoTween) then
-		local TweenTime = ((not State and 0.1) or 0.2);
+		local TweenTime = ((not State and 0.2) or 0.5);
 		local MainTween = TweenService:Create(ChatFrame, TweenInfo.new(TweenTime), {
 			BackgroundTransparency = (State and self.BackgroundTransparency) or 1
 		});
 
 		if (State and self._displayCache) then
 			for Object, Properties in pairs(self._displayCache) do
-				TweenService:Create(Object, TweenInfo.new(0.2), Properties):Play();
+				TweenService:Create(Object, TweenInfo.new(0.4), Properties):Play();
 			end
 
 			self._displayCache = nil
@@ -157,7 +150,7 @@ function ChatUIManager:SetMode(IsFrameHidden : boolean?)
 		or UDim2.fromScale(.98, .814)
 	);
 
-	ChatFrame.Input.MessageContainer.Visible = (not IsFrameHidden);
+	ChatFrame.Input.Visible = (not IsFrameHidden);
 	ChatFrame.ChannelBar.Visible = ((not IsFrameHidden) and (#self.Src.Channels.Registry >= 2));
 
 	if (IsFrameHidden) then

@@ -65,17 +65,15 @@ local function CheckChatUI(Interface : ScreenGui)
 	local InteractionBar = Validate(InputFrame, "InteractionBar", {"Frame"});
 	Validate(InteractionBar, "Submit", {"ImageButton", "TextButton"});
 	Validate(InteractionBar, "InputBox", {"TextBox"});
-	
-	local MessageContainer = Validate(InputFrame, "MessageContainer", {"ScrollingFrame"});
-	Validate(MessageContainer, "UIListLayout");
 end
 
-return function(Configurations : Folder)
+return function(Configurations : Folder, Extensions : Folder?)
 	assert(game:GetService("RunService"):IsServer(), "SocialChat MainModule Error: The SocialChat main module can only be preloaded by a \"Server\" Script. (callback cancelation error)");
 	assert(game:GetService("RunService"):IsRunning(), "SocialChat can only be initialized in an active game!");
 	assert(Configurations:FindFirstChild("Chat") and Configurations.Chat:IsA("ScreenGui"), "SocialChat Misconfiguration: ChatUI Missing! Please install the 'Chat' ScreenGui object into the SocialChat configurations folder to fix this issue.");
 	CheckChatUI(Configurations.Chat);
 	
+	--// Configurable Instancing
 	local ServerSettings = Configurations.Server
 	local ClientSettings = Configurations.Client
 	local SharedSettings = Configurations.Shared
@@ -93,7 +91,25 @@ return function(Configurations : Folder)
 	
 	Configurations.Chat.Parent = SocialChat.Environments.Client
 	Configurations:Destroy();
+	
+	--// Extensions
+	if (Extensions) then
+		local ServerExtensions = Extensions.Server
+		ServerExtensions.Name = "ServerChatExtensions"
+		ServerExtensions.Parent = game.ServerStorage
 		
+		local ClientExtensions = Extensions.Client
+		ClientExtensions.Name = "ClientChatExtensions"
+		ClientExtensions.Parent = game.ReplicatedFirst
+
+		local SharedExtensions = Extensions.Shared
+		SharedExtensions.Name = "SharedChatExtensions"
+		SharedExtensions.Parent = game.ReplicatedStorage
+		
+		Extensions:Destroy();
+	end
+
+	--// Finalization
 	SocialChat.Parent = game.ReplicatedStorage
 	require(SocialChat);
 	

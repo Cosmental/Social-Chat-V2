@@ -349,6 +349,6 @@ function GetFilteredMessageForClient(FilterObject : Instance, Client : Player) :
 end
 
 ChannelManager.OnMessageSent = MessageEvent.Event -- function( Author : string | Player, Message : string, Recipient : Player | Channel ) [ NOTE: MESSAGE IS NOT FILTERED ]
-ChannelManager.ProcessMessage = nil -- This can be set as a function that handles message processing! (can only be used by one thread)
+ChannelManager.ProcessMessage = nil -- This can be set as a function that handles message processing! (can only be used by one thread) [doesnt work due to OOP boundaries]
 
 return ChannelManager

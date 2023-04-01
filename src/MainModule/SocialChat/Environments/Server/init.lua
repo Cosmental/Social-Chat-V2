@@ -13,6 +13,7 @@ local Settings
 
 --// Constants
 local ServerComponents = {};
+local Extensions = {};
 
 --// States
 local IsRequestable : boolean?
@@ -23,19 +24,44 @@ local function Initialize(Setup : table)
     Library = Setup.Library
     Settings = Setup.Settings
 
-    --// Component Setup
+    --// General Setup
     --\\ We need to prepare our server components for networking
 
-    for _, SubModule in pairs(script.Components:GetChildren()) do
-        if (not SubModule:IsA("ModuleScript")) then continue; end
+    local Network = script.Parent.Parent.Remotes
 
-        local Success, Response = pcall(function()
-            return require(SubModule);
-        end);
-
-        if (not Success) then continue; end
-        ServerComponents[SubModule.Name] = Response
+    --- Extracts modules from the requested container Instance!
+    local function Extract(Container : Instance) : table
+        local Modules = {};
+    
+        for _, SubModule in pairs(Container:GetChildren()) do
+            if (not SubModule:IsA("ModuleScript")) then continue; end
+    
+            local Success, Response = pcall(function()
+                return require(SubModule);
+            end);
+    
+            if (not Success) then continue; end
+            Modules[SubModule.Name] = Response
+        end
+    
+        return Modules
     end
+
+    local ServerExtensions = Extract(game.ServerStorage:WaitForChild("ServerChatExtensions"));
+    local SharedExtensions = Extract(game.ReplicatedStorage:WaitForChild("SharedChatExtensions"));
+
+    for Name, Module in pairs(ServerExtensions) do
+        Extensions[Name] = Module
+    end
+
+    for Name, Module in pairs(SharedExtensions) do
+        Extensions[Name] = Module
+    end
+
+    ServerComponents = Extract(script.Components);
+
+    --// Secure Initialization
+    --\\ We must securely initialize ALL of our components using programming standards that assist us in debugging.
 
     for Name, Component in pairs(ServerComponents) do
         local StartTick = os.clock();
@@ -71,7 +97,7 @@ local function Initialize(Setup : table)
                     ["Settings"] = Settings,
                     ["Library"] = Library,
     
-                    ["Remotes"] = game.ReplicatedStorage:WaitForChild("SocialChatEvents"),
+                    ["Remotes"] = Network,
                     ["Src"] = ServerComponents
                 });
             end);
@@ -87,6 +113,26 @@ local function Initialize(Setup : table)
         end)();
     end
 
+    --// Extension Setup
+    --\\ This will initialize and return a list of registered extensions on our server!
+    
+    for Name, API in pairs(Extensions) do
+        local Success, Response = pcall(function()
+            return API:Deploy({
+                ["Settings"] = Settings,
+                ["Library"] = Library,
+                ["Remotes"] = Network,
+
+                ["Src"] = Extensions,
+                ["Components"] = ServerComponents
+            });
+        end);
+
+        if (not Success) then
+            error("Failed to start extension \""..(Name).."\"! ("..(Response or "No response indicated")..")");
+        end
+    end
+
     IsRequestable = true -- You may now request SocialChat's API!
 end
 
@@ -99,7 +145,9 @@ local function OnRequest()
         return {
             ["Settings"] = Settings,
             ["Library"] = Library,
-            ["Src"] = ServerComponents
+
+            ["Src"] = ServerComponents,
+            ["Extensions"] = Extensions
         };
     end
 end

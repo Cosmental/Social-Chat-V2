@@ -476,7 +476,7 @@ function BubbleController:Chat(Message : string) : table
     );
 
     Bubble.BackgroundBubble.Size = UDim2.fromOffset(
-        BubbleSizeX,
+        BubbleSizeX + Settings.BubblePadding.X,
         MovementY + Settings.BubblePadding.Y
     );
 

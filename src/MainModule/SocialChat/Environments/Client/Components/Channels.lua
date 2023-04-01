@@ -27,20 +27,20 @@ local ChatUIManager
 local TextStyles
 local InputBox
 
+local FunctUI
+
 --// Constants
 local OnMessageRendered = Instance.new("BindableEvent");
 local Player = game.Players.LocalPlayer
 
 local ChatFrame
-local MessageContainer
+local InputFrame
 
 local ChannelBar
 local ChannelFrame
 
 local Presets
 local Network
-
-local ChatCacheContainer : Instance?
 
 --// States
 local Registry : table = {};
@@ -55,7 +55,7 @@ function ChannelMaster:Initialize(Setup : table)
     local self = setmetatable(Setup, ChannelMaster);
 
     ChatFrame = self.ChatUI.Chat
-    MessageContainer = ChatFrame.Input.MessageContainer
+    InputFrame = ChatFrame.Input
 
     ChannelBar = ChatFrame.ChannelBar
     ChannelFrame = ChannelBar.Channels
@@ -63,17 +63,13 @@ function ChannelMaster:Initialize(Setup : table)
     Settings = self.Settings.Channels
     RichString = self.Library.RichString
     SmartText = self.Library.SmartText
+    FunctUI = self.Library.FunctUI
     InputBox = self.Src.InputBox
 
     ChatUIManager = self.Src.ChatUIManager
     TextStyles = self.Settings.Styles
     Network = self.Remotes.Channels
     Presets = self.Presets
-
-    --// Cache Folder
-    ChatCacheContainer = Instance.new("Folder");
-    ChatCacheContainer.Name = "CLIENT_CHAT_CACHE"
-    ChatCacheContainer.Parent = script
 
     --// Gradient Control
     for _, Info in pairs(TextStyles) do
@@ -153,18 +149,25 @@ end
 
 --- Creates a new channel using the provided parameters
 function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : table?, IsPrivate : boolean?) : Channel
+    local Container = self.Presets.MessageContainer:Clone();
+    Container.Name = Name.."_CONTAINER"
+
+    FunctUI.new("AdjustingCanvas", Container);
+
     local ThisChannel = setmetatable({
 
         --// PROPERTIES \\--
 
-        ["Name"] = Name,
-        ["History"] = ChatHistory,
-        ["IsPrivate"] = IsPrivate,
+        ["Name"] = Name, -- string
+        ["History"] = ChatHistory, -- table :: {Instances...}
+        ["IsPrivate"] = IsPrivate, -- boolean
 
         --// PROGRAMMABLE \\--
 
-        ["Members"] = Members,
-        ["_cache"] = {}
+        ["Container"] = Container, -- Prefabs -> MessageContainer
+
+        ["Members"] = Members, -- table :: {Players...}
+        ["_cache"] = {} -- table :: {ChatInstances...}
         
     }, Channel);
 
@@ -189,16 +192,15 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
             end);
         end
 
-        if (TotalChannels == 1) then
-            for _, RegisteredChannel in pairs(Registry) do
-                CreateChannelButton(RegisteredChannel);
-            end
-
-            print(TotalChannels);
-            ChannelBar.Visible = (Settings.HideChatFrame ~= true);
+        for _, RegisteredChannel in pairs(Registry) do
+            if (ChannelFrame:FindFirstChild(RegisteredChannel.Name)) then warn(RegisteredChannel.Name) continue; end -- Button already exists!
+            CreateChannelButton(RegisteredChannel);
         end
 
+        print("Registered SocialChat Channels: "..TotalChannels.." :: [ "..(Name).." ]");
         CreateChannelButton(ThisChannel);
+
+        ChannelBar.Visible = (Settings.HideChatFrame ~= true);
         ChannelMaster:GetFocus():Focus(); -- Refocus the currently focused channel in order for us to apply visual changes
     end
 
@@ -212,6 +214,7 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
     Registry[Name] = ThisChannel
     TotalChannels += 1
 
+    Container.Parent = InputFrame
     return ThisChannel
 end
 
@@ -258,15 +261,7 @@ function Channel:Focus()
     end
 
     FocusedChannel = self
-
-    for _, ContentFrame in pairs(MessageContainer:GetChildren()) do
-        if (not ContentFrame:IsA("Frame")) then continue; end
-        ContentFrame.Parent = ChatCacheContainer
-    end
-
-    for _, Content in pairs(self._cache) do
-        Content.Render.Parent = MessageContainer
-    end
+    self.Container.Visible = true
 
     if (self.NavButton) then
         TweenService:Create(self.NavButton, Settings.ChannelFocusTweenInfo, {
@@ -280,6 +275,9 @@ function Channel:Focus()
 
         for _, OtherChannel in pairs(Registry) do
             if (OtherChannel.Name == self.Name) then continue; end
+            OtherChannel.Container.Visible = false
+
+            if (OtherChannel.__removing) then continue; end
 
             TweenService:Create(OtherChannel.NavButton, Settings.ChannelFocusTweenInfo, {
                 BackgroundColor3 = Color3.fromRGB(0, 0, 0),
@@ -300,7 +298,7 @@ function Channel:CreateMessage(Message : string, Metadata : table?, IsPrivateMes
     MainFrame.BackgroundTransparency = 1
     MainFrame.Name = "MESSAGE_RENDER_FRAME"
     
-    local StringRenderer : SmartStringObject = SmartText.new(MessageContainer, {
+    local StringRenderer : SmartStringObject = SmartText.new(self.Container, {
         MaxFontSize = Settings.MaxFontSize
     });
 
@@ -395,7 +393,7 @@ function Channel:CreateMessage(Message : string, Metadata : table?, IsPrivateMes
                 },
                 function()
                     if (not Metadata.UserId) then return; end
-                    if (Metadata.UserId == Player.UserId) then return; end -- We cant whisper to ourselves! (and... we're also using name strings because Metadata doesn't pass UserIds) [TEMP]
+                    --if (Metadata.UserId == Player.UserId) then return; end -- We cant whisper to ourselves! (and... we're also using name strings because Metadata doesn't pass UserIds) [TEMP]
 
                     local Client = game.Players:GetPlayerByUserId(Metadata.UserId);
                     if (not Client) then return; end -- The client either left or isnt in the server anymore :(
@@ -422,7 +420,7 @@ function Channel:CreateMessage(Message : string, Metadata : table?, IsPrivateMes
     StringRenderer:Update(); -- We need to update our renderer for setting updates
 
     if (FocusedChannel == self) then
-        MainFrame.Parent = MessageContainer
+        MainFrame.Parent = self.Container
     end
 
     --// Trash Collection & Finalization
@@ -472,6 +470,8 @@ end
 
 --- Removes this channel from our client's channel list and prevents our client from receiving further message events for this channel
 function Channel:Destroy()
+    assert(TotalChannels > 1, "You may not destroy this channel as it is the last remaining channel on this client! Please create another channel before deleting this one.");
+
     for _, Content in pairs(self._cache) do
         for _, GradientArray in pairs(Content.Gradients) do
             table.remove(GradientLabels, table.find(GradientLabels, GradientArray));
@@ -481,6 +481,26 @@ function Channel:Destroy()
         Content.Render:Destroy();
     end
 
+    self.__removing = true
+    TotalChannels -= 1
+
+    if (ChannelFrame:FindFirstChild(self.Name)) then
+        ChannelFrame[self.Name]:Destroy();
+        
+        if (TotalChannels <= 1) then
+            ChannelBar.Visible = false
+        end
+    end
+
+    for _, Channel in pairs(Registry) do -- Since channels get registered with "string" keys, this is essentially our only way to ensure focus
+        if (Channel.__removing) then continue; end
+
+        Channel:Focus();
+        break;
+    end
+
+    Registry[self.Name] = nil
+    self.Container:Destroy();
     self = nil
 end
 

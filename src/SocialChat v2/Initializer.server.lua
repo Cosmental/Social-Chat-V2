@@ -29,4 +29,4 @@
 
 ]]--
 
-require(game.ServerScriptService.MainModule)(script.Parent.Configurations);
+require(game.ServerScriptService.MainModule)(script.Parent.Configurations, script.Parent:FindFirstChild("Extensions"));
