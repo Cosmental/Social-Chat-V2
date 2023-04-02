@@ -15,11 +15,12 @@ AdjustingCanvas.__index = AdjustingCanvas
 --// Main Methods
 
 --- Creates a new Adjusting Canvas
-function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?) : AdjustingCanvas
+function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?, SizeCoefficient : Vector2?) : AdjustingCanvas
     assert(typeof(Canvas) == "Instance", "The provided 'Canvas' was not an Instance! (received "..(typeof(Canvas))..")");
     assert(Canvas:IsA("GuiObject"), "The provided Instance was not of ClassType \"GuiObject\". (received "..(Canvas.ClassName)..")");
     assert(not Container or typeof(Container) == "Instance", "The provided 'Container' was not an Instance! (received "..(typeof(Container))..")");
     assert(not Container or Container:IsA("GuiObject"), "The provided 'Container' was not of ClassType \"GuiObject\". (received "..((Container and Container.ClassName) or "nil")..")");
+    assert(not SizeCoefficient or typeof(SizeCoefficient) == "Vector2", "The provided 'SizeCoefficient' was not of type 'Vector2'! (received "..(typeof(SizeCoefficient))..")");
 
     local CanvasLayout = Canvas:FindFirstChildOfClass("UIListLayout");
     assert(CanvasLayout, "The provided Canvas does not have a \"UIListLayout\"! (this is required for the functuality of an 'AdjustingCanvas'!)");
@@ -44,6 +45,24 @@ function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?) : Adjus
         self:Update(); -- The only reason this function exists is because 'self.FUNCTION' callbacks dont send metadata, hence the API would break
 	end
 	
+    local function ResizeChild(Child : GuiObject)
+        if (not SizeCoefficient) then return; end
+        if (not Child:IsA("GuiObject")) then return; end
+
+        local Relative = Canvas.AbsoluteSize
+        local Coefficient = {
+            X = (Relative.X * SizeCoefficient.X),
+            Y = (Relative.Y * SizeCoefficient.Y)
+        };
+
+        Child.Size = UDim2.fromOffset(Coefficient.X, Coefficient.Y);
+    end
+
+    for _, Child in pairs(Canvas:GetChildren()) do
+        ResizeChild(Child);
+    end
+
+    Canvas.ChildAdded:Connect(ResizeChild);
 	Canvas:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateCanvas);
 	CanvasLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas);
 

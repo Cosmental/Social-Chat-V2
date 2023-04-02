@@ -197,7 +197,7 @@ function Category.new(Name : string, IconSettings : table) : Category
         ["Name"] = Name,
 
         --// DATA
-        ["AdjustingCanvas"] = FunctUI.new("AdjustingCanvas", Canvas.Configurations, Page.Categories, true),
+        ["AdjustingCanvas"] = FunctUI.new("AdjustingCanvas", Canvas.Configurations, Page.Categories),
         ["Options"] = {}, -- table : of? => FunctUI ClassTypes
 
     }, Category);
