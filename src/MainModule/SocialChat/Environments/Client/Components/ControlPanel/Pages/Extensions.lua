@@ -50,14 +50,19 @@ function Extensions:Init(Setup : table)
     --\\ We still need to know what extensions the SERVER has installed for crediting!
 
     local Extensions = self.Extensions
+    local Extraction = {};
+
+    for Name, API in pairs(Extensions) do -- Client Extensions
+        Extraction[Name] = API.__meta
+    end
 
     local Success, Response = pcall(function()
         return self.Remotes.ExtensionGateway:InvokeServer();
     end);
 
     if (Success) then
-        for Name, Data in pairs(Response) do
-            Extensions[Name] = Data
+        for Name, Data in pairs(Response) do -- Server Extensions
+            Extraction[Name] = Data
         end
     else
         warn("Failed to register Server Extensions due to network failure! ("..(Response or "No response available")..")")
@@ -66,8 +71,8 @@ function Extensions:Init(Setup : table)
     --// Visual Instancing
     --\\ For each extension we want to create a visual tab for! Otherwise, crediting wouldn't be present :(
 
-    if (next(Extensions)) then -- Extensions installed and found! (yay!)
-        for Name, Data in pairs(Extensions) do
+    if (next(Extraction)) then -- Extensions installed and found! (yay!)
+        for Name, Data in pairs(Extraction) do
             local Widget = self.Presets.Extension:Clone();
             local CreatorName = game.Players:GetNameFromUserIdAsync(Data.CreatorId);
 
@@ -78,6 +83,11 @@ function Extensions:Init(Setup : table)
             Widget.Version.Text = "v"..Data.Version
 
             local Badges = Widget.Badges
+
+            FunctUI.new("Note", Badges.DevAccess, "This extension was created by the official SocialChat developer!");
+            FunctUI.new("Note", Badges.Official, "This extension was made by a verified developer!");
+            FunctUI.new("Note", Badges.Trending, "This extension is currently trending!");
+            FunctUI.new("Note", Badges.Verified, "This extension is recognized by a developer of SocialChat. Copies of this extension without this badge may be fradulent or fake.")
 
             Badges.DevAccess.Visible = (Data.CreatorId == 876817222); -- UserId == Cosmental's UserId
             Badges.Official.Visible = (Data.CreatorId == 876817222); -- TEMPORARY! [TODO: Make an official SocialChat website OR use a group!]

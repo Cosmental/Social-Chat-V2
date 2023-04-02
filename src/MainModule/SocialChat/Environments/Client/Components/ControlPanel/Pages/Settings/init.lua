@@ -87,7 +87,8 @@ function SettingsPage:Init(Setup : table)
                 continue;
             end
 
-            local _, API = Element:Create(DataSet, Option);
+            local Interactable, API = Element:Create(DataSet, Option);
+            FunctUI.new("Note", Interactable.Configuration, Option.Info);
 
             API.Value = (if (Data.Value ~= nil) then Data.Value else Data.Default);
             API:SetEnabled(Data.Locked);

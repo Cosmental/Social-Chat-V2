@@ -52,7 +52,7 @@ local Structure = {
         ["Options"] = {
             ["HideChatFrame"] = {
                 Name = "Hide Chat Frame",
-                Info = "This will hide the ChatFrame leaving only the InputBox available! If the ChatFrame becomes hidden then you may only communicate through ChatBubbles!",
+                Info = "Hides the ChatFrame leaving only the <b>InputBox</b> to be visible. Communication can only be done through ChatBubbles if enabled.",
                 Type = InteractionTypes.Button,
                 
                 Order = 1,
@@ -66,7 +66,7 @@ local Structure = {
 
             ["IdleTime"] = {
                 Name = "Chat Fade Time",
-                Info = "This will determine the amount of time that can pass before the ChatFrame fades away until its interacted with again!",
+                Info = "Determines the amount of time that can pass before the ChatFrame fades away until it is interacted with again.",
                 Type = InteractionTypes.Slider,
                 
                 Order = 2,
@@ -82,7 +82,7 @@ local Structure = {
 
             ["MaxFontSize"] = {
                 Name = "Max Font Size",
-                Info = "This will determine the default FontSize of messages that get rendered! This configuration will get bypassed if a user with custom SpeakerData uses the chat system!",
+                Info = "Determines the default <b>FontSize</b> of messages in your <u>Chat Frame</u>. This configuration will get <i>bypassed</i> if a user with <b>custom SpeakerData</b> uses the chat system.",
                 Type = InteractionTypes.Slider,
                 
                 Order = 3,
@@ -98,7 +98,7 @@ local Structure = {
 
             ["MaxRenderableMessages"] = {
                 Name = "Max Renderable Messages",
-                Info = "This will determine how many messages can be rendered within the ChatFrame. Lower amounts usually provide better performance!",
+                Info = "Determines how many messages can be rendered within your Chat Frame.\n\nLower amounts usually provide better performance!",
                 Type = InteractionTypes.Slider,
                 
                 Order = 4,
@@ -124,7 +124,7 @@ local Structure = {
         ["Options"] = {
             ["IsBubbleChatEnabled"] = {
                 Name = "Bubble Chat Enabled",
-                Info = "This will determine whether or not BubbleChat will be used.",
+                Info = "Determines the enabled state of <b>Bubble Chat</b>.",
                 Type = InteractionTypes.Button,
                 
                 Order = 1,
@@ -151,7 +151,7 @@ local Structure = {
 
             ["ChatBubbleLifespan"] = {
                 Name = "Chat Bubble Lifespan",
-                Info = "This will determine how long a Chat Bubble can last before it vanishes. (in seconds)",
+                Info = "Determines how long a Chat Bubble can last before it vanishes.\n\n<i>(in seconds)</i>",
                 Type = InteractionTypes.Slider,
                 
                 Order = 2,
@@ -168,7 +168,7 @@ local Structure = {
 
             ["MaxDisplayableBubbles"] = {
                 Name = "Maximum Bubbles Per Individual",
-                Info = "This will determine how many ChatBubbles can be rendered over a given individual. (recommended: 3)",
+                Info = "Determines how many Chat Bubbles can be rendered per individual.\n\n[ Recommended: <b>3</b> ]",
                 Type = InteractionTypes.Slider,
                 
                 Order = 3,

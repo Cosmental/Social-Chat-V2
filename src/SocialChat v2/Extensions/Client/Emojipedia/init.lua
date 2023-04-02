@@ -1,7 +1,7 @@
 --[[
 
     Name: Mari
-    Date: 3/29/2023
+    Date: 4/1/2023
 
     Description: ...
 
@@ -12,11 +12,11 @@ local Extension = {};
 
 Extension.__index = Extension
 Extension.__meta = {
-    Name = "Server Secret!",
-    CreatorId = 876817222, -- userId
-    Description = "This is the silliest extension of all time!",
-    IconId = "rbxasset://textures/ui/GuiImagePlaceholder.png",
-    Version = "1.0"
+    Name = "Example-Extension", -- Extesion Name
+    CreatorId = 876817222, -- Creator's UserId
+    Description = "This is the silliest extension of all time!", -- Extension Description
+    IconId = "http://www.roblox.com/asset/?id=12293400310", -- Extension IconId (must be a decal Id such as "rbxassetid://ID-HERE")
+    Version = "1.0" -- Extension version (will be displayed)
 };
 
 --// Main
