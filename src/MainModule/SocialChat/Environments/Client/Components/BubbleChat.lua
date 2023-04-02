@@ -422,10 +422,16 @@ function BubbleController:Chat(Message : string) : table
         function(TextObject)
             TextObject.Parent = CurrentLine -- We need to parent our UI element before-hand in order for calculations to work!
 
-            local TextBounds = SmartText:GetTextSize(TextObject.Text:gsub("<.->", ""), FontSize, TextFont, self.Object.AbsoluteSize);
+            local TextBounds, MultiLine = SmartText:GetTextSize(
+                TextObject.Text:gsub("<.->", ""),
+                FontSize,
+                TextFont,
+                self.Object.AbsoluteSize
+            );
+
             TextObject.Size = UDim2.fromOffset(TextBounds.X, TextBounds.Y);
 
-            if (TextBounds.X + MovementX > (Bounds.X - Settings.BubblePadding.X)) then
+            if ((TextBounds.X + MovementX > (Bounds.X - Settings.BubblePadding.X)) or (MultiLine)) then
                 CurrentLine.Size = UDim2.new(1, 0, 0, TextBounds.Y);
                 CurrentLine = RenderLine();
 
@@ -470,9 +476,9 @@ function BubbleController:Chat(Message : string) : table
 
     --// Handling
     local BubbleSizeX = (
-        if (MovementY > 0) then Bounds.X
-        elseif (MovementX + Settings.BubblePadding.X > Bounds.X) then MovementX
-        else MovementX + Settings.BubblePadding.X
+        if (MovementY > 0) then Bounds.X - Settings.BubblePadding.X -- Bubble is clearly multi-lined. Thus, we can maximize the X-axis
+        elseif (MovementX + Settings.BubblePadding.X >= Bounds.X) then MovementX -- Bubble is one line AND fits the container (no changes)
+        else MovementX + Settings.BubblePadding.X -- Bubble is small, hence requiring some extra padding (eg: "Hi!");
     );
 
     Bubble.BackgroundBubble.Size = UDim2.fromOffset(
