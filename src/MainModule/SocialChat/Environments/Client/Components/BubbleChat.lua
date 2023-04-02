@@ -130,14 +130,16 @@ function BubbleChat:Initialize(Info : table) : metatable
         local Controller = OverheadControllers[AffectedPlayer];
         if (not Controller) then return; end -- This player isn't registered by our system!
 
-        Controller:SetThinking(NewState);
+        Controller.Thinking = NewState
     end);
 
-    Network.EventRenderBubble.OnClientEvent:Connect(function(Agent : Player | Part, Message : string)
-        local IsPlayer = (Agent:IsA("Player"));
-        local Controller = (OverheadControllers[Agent] or (not IsPlayer and BubbleChat.new(Agent)));
+    Network.EventRenderBubble.OnClientEvent:Connect(function(Agent : Player | BasePart | string, Message : string, Metadata : table?)
+        local IsInstance = (typeof(Agent) == "Instance");
+        if (not IsInstance) then return; end -- Non-Instance Speakers *can* exist, but in such cases they may NOT have BubbleChat access
 
-        if (not Controller) then return; end
+        local Controller = (OverheadControllers[Agent] or BubbleChat.new(Agent, (Metadata and Metadata.Bubble)));
+
+        if (not Controller) then print("no controller") return; end
         Controller:Chat(Message);
     end);
 
@@ -150,7 +152,7 @@ function BubbleChat:Initialize(Info : table) : metatable
                 local Controller = OverheadControllers[Player];
                 if (not Controller) then return; end
                 
-                Controller:SetThinking(IsTyping);
+                Controller.Thinking = IsTyping
             end
 
             IsActivelyTyping = IsTyping
@@ -216,7 +218,8 @@ function BubbleChat.new(Agent : BasePart | Player, Metadata : table?) : BubbleCo
     OverheadUI.Main.Carrot.ImageTransparency = Transparency
 
     --// Metadata Handling \\--
-    local Controller = setmetatable({
+    local Controller
+    Controller = setmetatable({
 
         --// PROPERTIES \\--
 
@@ -228,10 +231,26 @@ function BubbleChat.new(Agent : BasePart | Player, Metadata : table?) : BubbleCo
         --// PROGRAMMABLE \\--
 
         ["RenderedBubbles"] = {}, -- A table containing data based on our currently rendered chat bubbles (if any) [CAN BE EMPTY]
-        ["IsThinking"] = false, -- Determines if the controller is currently thinking or not.
-        ["IsActive"] = false -- Tells us when our BubbleController is active or not. This helps control our carrot's visibility
+        ["__states"] = {
+            -- ["Thinking"] = nil, -- Determines if the controller is currently thinking or not.
+            -- ["Enabled"] = nil -- Tells us when our BubbleController is active or not. This helps control our carrot's visibility
+        },
 
-    }, BubbleController);
+    }, {
+        __newindex = function(_, Index : string, Value : any?)
+            if (Controller[Index]) then
+                rawset(Controller, Index, Value);
+            elseif (Index == "Thinking") then
+                assert(type(Value) == "boolean" or Value == nil, "BubbleChat Error: Attempt to set thinking state to a non-boolean value! (got "..(type(Value))..")");
+                Controller:__setThinking(Value);
+            elseif (Index == "Enabled") then
+                assert(type(Value) == "boolean" or Value == nil, "BubbleChat Error: Attempt to set enabled state to a non-boolean value! (got "..(type(Value))..")");
+                Controller:__setActive(Value);
+            end
+        end,
+
+        __index = BubbleController
+    });
 
     OverheadControllers[Agent] = Controller
 
@@ -278,7 +297,7 @@ function BubbleChat.new(Agent : BasePart | Player, Metadata : table?) : BubbleCo
 end
 
 --- Adjusts major configurable settings (not intended for API usage) [SCOPE-BYPASSER]
-function BubbleChat:Adjust(Configuration : string, Value : any?)
+function BubbleChat:Configure(Configuration : string, Value : any?)
     assert(type(Configuration) == "string", "Attempt to query replacement value with internal BubbleChat settings with a non-string type. (received "..(type(Configuration))..")");
     assert(Settings[Configuration], "Requested BubbleChat configurable adjustment \""..(Configuration).."\" does not exist!");
     
@@ -286,92 +305,6 @@ function BubbleChat:Adjust(Configuration : string, Value : any?)
 end
 
 --// Metamethods
-
---- Sets the player's current thinking state to the provided boolean value
-function BubbleController:SetThinking(IsThinking : boolean?)
-    if (self.IsThinking == IsThinking) then return; end -- The API requested a repeat state! End the thread here.
-    if (not Settings.DisplayThinkingBubble) then return; end -- This API function is currently denied by a configuration in our system!
-
-    self.IsThinking = IsThinking
-
-    --// State Handling
-    --\\ We need to handle our states here for special conditions such as no chat messages being rendered, etc.
-
-    if (not self.IsActive and IsThinking) then
-        self:SetActive(true);
-    elseif (not IsThinking and not next(self.RenderedBubbles)) then
-        self:SetActive(false);
-    end
-
-    --// Visibility Tweening
-    --\\ After handling out Controller state, we can tween our visibile state for our Thinking bubble!
-
-    IsThinking = (IsThinking and Settings.IsBubbleChatEnabled); -- Only allows for hiding based on settings!
-
-    local MainFrame = self.Object.Main
-    local ThinkingFrame = MainFrame.ThinkBubble
-    local Background = ThinkingFrame.Background
-
-    local Transparency = ((self.Metadata and  self.Metadata.BubbleTransparency) or Settings.Default.BubbleTransparency);
-    local TransGoal = ((IsThinking and Transparency) or 1); -- Silly little variable name :3
-    ThinkingFrame.Visible = true
-
-    local BackgroundTween = TweenService:Create(Background, Settings.VisibilityTweenInfo, {
-        BackgroundTransparency = TransGoal
-    });
-
-    TweenService:Create(MainFrame.Bubbles, Settings.VisibilityTweenInfo, {
-        Position = UDim2.fromScale(0.5, (IsThinking and 0.83) or .96)
-    }):Play();
-
-    for _, Circle in pairs(Background:GetChildren()) do
-        if (not Circle:IsA("Frame")) then continue; end
-        
-        TweenService:Create(Circle, Settings.VisibilityTweenInfo, {
-            BackgroundTransparency = ((TransGoal ~= 1 and 0) or 1)
-        }):Play();
-    end
-
-    BackgroundTween.Completed:Connect(function(PlaybackState)
-        if (PlaybackState ~= Enum.PlaybackState.Completed) then return; end
-        if (IsThinking) then return; end
-
-        ThinkingFrame.Visible = false
-    end);
-
-    BackgroundTween:Play();
-end
-
---- Sets the controller's current state of activity to the provided boolean value
-function BubbleController:SetActive(IsActive : boolean?)
-    self.IsActive = IsActive
-
-    local MainFrame = self.Object.Main
-    IsActive = (IsActive and Settings.IsBubbleChatEnabled);
-
-    if (IsActive) then
-        MainFrame.Carrot.Visible = true
-    end
-
-    TweenService:Create(MainFrame.ThinkBubble.Background, Settings.VisibilityTweenInfo, {
-        Size = ((IsActive and UDim2.fromScale(.25, 1)) or (UDim2.fromScale(0, 0)))
-    }):Play();
-
-    TweenService:Create(MainFrame.Bubbles, Settings.VisibilityTweenInfo, {
-        Size = ((IsActive and UDim2.new(1, 0, 0.97, 0)) or (UDim2.new(0, 0, 0, 0)))
-    }):Play();
-
-    local CarrotTween = TweenService:Create(MainFrame.Carrot, Settings.VisibilityTweenInfo, {
-        Size = ((IsActive and UDim2.fromOffset(20, 9)) or (UDim2.fromOffset(0, 0)))
-    });
-    
-    CarrotTween.Completed:Connect(function(PlaybackState)
-        if (PlaybackState ~= Enum.PlaybackState.Completed or IsActive) then return; end
-        MainFrame.Carrot.Visible = false
-    end);
-
-    CarrotTween:Play();
-end
 
 --- Renders a new chat bubble for the provided content
 function BubbleController:Chat(Message : string) : table
@@ -385,7 +318,7 @@ function BubbleController:Chat(Message : string) : table
     Bubble.BackgroundBubble.BackgroundTransparency = 1
 
     Bubble.Visible = Settings.IsBubbleChatEnabled
-    Bubble.Parent = self.Object.Main.Bubbles -- We need to parent this early because our responsive text relies on our ChatBubble's parental status
+    Bubble.Parent = self.Object.Main.Bubbles -- We need to parent this early because our responsive text relies on our Chat-Bubble's parental status
 
     local TextColor = ((Metadata and Metadata.TextColor) or Settings.Default.TextColor);
     local TextFont = ((Metadata and Metadata.Font) or Settings.Default.Font);
@@ -533,8 +466,8 @@ function BubbleController:Chat(Message : string) : table
         Fade:Play();
         table.remove(self.RenderedBubbles, Index);
             
-        if (#self.RenderedBubbles <= 0 and not self.IsThinking) then
-            self:SetActive(false);
+        if (#self.RenderedBubbles <= 0 and not self.Thinking) then
+            self.Enabled = false
         end
     end
 
@@ -547,7 +480,7 @@ function BubbleController:Chat(Message : string) : table
     }):Play();
 
     table.insert(self.RenderedBubbles, Content);
-    self:SetActive(true);
+    self.Enabled = true
 
     task.delay(Settings.ChatBubbleLifespan, function()
         DestroyBubble(table.find(self.RenderedBubbles, Content));
@@ -570,9 +503,98 @@ function BubbleController:Destroy()
     self = nil
 end
 
+--// Sub-metamethods
+--\\ These methods are only designed for __index calls
+
+--- Sets the controller's current thinking state to the provided boolean value
+function BubbleController:__setThinking(State: boolean?)
+    if (self.Thinking == State) then return; end -- The API requested a repeat state! End the thread here.
+    if (not Settings.DisplayThinkingBubble) then return; end -- This API function is currently denied by a configuration in our system!
+
+    rawset(self.__states, "Thinking", State);
+
+    --// State Handling
+    --\\ We need to handle our states here for special conditions such as no chat messages being rendered, etc.
+
+    if (not self.__states.Enabled and State) then
+        self.Enabled = true
+    elseif (not State and not next(self.RenderedBubbles)) then
+        self.Enabled = false
+    end
+
+    --// Visibility Tweening
+    --\\ After handling out Controller state, we can tween our visibile state for our Thinking bubble!
+
+    State = (State and Settings.IsBubbleChatEnabled); -- Only allows for hiding based on settings!
+
+    local MainFrame = self.Object.Main
+    local ThinkingFrame = MainFrame.ThinkBubble
+    local Background = ThinkingFrame.Background
+
+    local Transparency = ((self.Metadata and  self.Metadata.BubbleTransparency) or Settings.Default.BubbleTransparency);
+    local TransGoal = ((State and Transparency) or 1); -- Silly little variable name :3
+    ThinkingFrame.Visible = true
+
+    local BackgroundTween = TweenService:Create(Background, Settings.VisibilityTweenInfo, {
+        BackgroundTransparency = TransGoal
+    });
+
+    TweenService:Create(MainFrame.Bubbles, Settings.VisibilityTweenInfo, {
+        Position = UDim2.fromScale(0.5, (State and 0.83) or .96)
+    }):Play();
+
+    for _, Circle in pairs(Background:GetChildren()) do
+        if (not Circle:IsA("Frame")) then continue; end
+        
+        TweenService:Create(Circle, Settings.VisibilityTweenInfo, {
+            BackgroundTransparency = ((TransGoal ~= 1 and 0) or 1)
+        }):Play();
+    end
+
+    BackgroundTween.Completed:Connect(function(PlaybackState)
+        if (PlaybackState ~= Enum.PlaybackState.Completed) then return; end
+        if (State) then return; end
+
+        ThinkingFrame.Visible = false
+    end);
+
+    BackgroundTween:Play();
+end
+
+--- Sets the controller's current state of activity to the provided boolean value
+function BubbleController:__setActive(State : boolean?)
+    rawset(self.__states, "Enabled", State);
+
+    local MainFrame = self.Object.Main
+    State = (State and Settings.IsBubbleChatEnabled);
+
+    if (State) then
+        MainFrame.Carrot.Visible = true
+    end
+
+    TweenService:Create(MainFrame.ThinkBubble.Background, Settings.VisibilityTweenInfo, {
+        Size = ((State and UDim2.fromScale(.25, 1)) or (UDim2.fromScale(0, 0)))
+    }):Play();
+
+    TweenService:Create(MainFrame.Bubbles, Settings.VisibilityTweenInfo, {
+        Size = ((State and UDim2.new(1, 0, 0.97, 0)) or (UDim2.new(0, 0, 0, 0)))
+    }):Play();
+
+    local CarrotTween = TweenService:Create(MainFrame.Carrot, Settings.VisibilityTweenInfo, {
+        Size = ((State and UDim2.fromOffset(20, 9)) or (UDim2.fromOffset(0, 0)))
+    });
+    
+    CarrotTween.Completed:Connect(function(PlaybackState)
+        if (PlaybackState ~= Enum.PlaybackState.Completed or State) then return; end
+        MainFrame.Carrot.Visible = false
+    end);
+
+    CarrotTween:Play();
+end
+
 --// Functions
 
---- Returns a usable ChatBubble height for the provided character
+--- Returns a usable Chat Bubble height for the provided character
 function GetBubbleHeight(Character : Model) : number
     if ((not Character) or (not Character:FindFirstChild("Head"))) then return 0; end
 

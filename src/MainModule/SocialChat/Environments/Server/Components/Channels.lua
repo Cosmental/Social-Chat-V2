@@ -8,8 +8,8 @@
 ]]--
 
 --// Module
-local ChannelManager = {};
-ChannelManager.__index = ChannelManager
+local ChannelAPI = {};
+ChannelAPI.__index = ChannelAPI
 
 local Channel = {};
 Channel.__index = Channel
@@ -40,8 +40,8 @@ local LastServerDownError = 0
 
 --// Initialization
 
-function ChannelManager:Initialize(Setup : table)
-    local self = setmetatable(Setup, ChannelManager);
+function ChannelAPI:Initialize(Setup : table)
+    local self = setmetatable(Setup, ChannelAPI);
 
     Speakers = self.Src.Speakers
     ChatTags = self.Settings.ChatTags
@@ -62,7 +62,7 @@ function ChannelManager:Initialize(Setup : table)
         };
     };
 
-    DefaultChannel = ChannelManager:Create(Settings.DefaultChannel); -- We need at least ONE system channel for our main messages to go through
+    DefaultChannel = ChannelAPI.new(Settings.DefaultChannel); -- We need at least ONE system channel for our main messages to go through
     DefaultChannel.IsMainChannel = true -- You can't leave the main channel
 
     local function OnSpeakerReady(Player : Player)
@@ -71,26 +71,29 @@ function ChannelManager:Initialize(Setup : table)
     end
 
     for _, Player in pairs(game.Players:GetPlayers()) do
-        local Speaker = Speakers:GetSpeaker(Player);
+        local Speaker = Speakers:Get(Player);
         if (not Speaker) then continue; end -- The player is NOT ready yet
 
         OnSpeakerReady(Player);
     end
 
-    Speakers.OnSpeakerAdded:Connect(function(Agent : string | Player)
-        if (typeof(Agent) ~= "Instance") then return; end
-        OnSpeakerReady(Agent);
+    Speakers.OnSpeakerAdded:Connect(function(Speaker : Speaker)
+        if (not Speaker.IsPlayer) then return; end
+        OnSpeakerReady(Speaker.Agent);
     end)
 
     --// Event Handling
 
     Network.EventSendMessage.OnServerEvent:Connect(function(Player : Player, Message : string, Recipient : string | Player)
         if (type(Recipient) ~= "string" and typeof(Recipient) ~= "Instance") then return; end -- The provided recipient is not an acceptable type of parameter
-        if ((type(Recipient) == "string") and (not ChannelManager:Get(Recipient))) then return; end -- The client requested a Channel recipient that doesnt exist!
+        if ((type(Recipient) == "string") and (not ChannelAPI:Get(Recipient))) then return; end -- The client requested a Channel recipient that doesnt exist!
         if ((typeof(Recipient) == "Instance") and (not Player:IsA("Player"))) then return; end -- The client requested a non-player object
 
-        local RecievingChannel = ((type(Recipient) == "string") and (ChannelManager:Get(Recipient)));
-        ChannelManager:Message(Player, Message, RecievingChannel or Recipient);
+        local RecievingChannel = ((type(Recipient) == "string") and (ChannelAPI:Get(Recipient)));
+        local Speaker = Speakers:Get(Player);
+        if (not Speaker) then warn("Failed to get speaker for Player", Player); return; end -- Speaker has not yet registered! (or doesnt exist...)
+
+        ChannelAPI:Message(Speaker, Message, RecievingChannel or Recipient);
     end);
 
     --// Hooking onto SystemAlert RBXScriptSignals
@@ -152,7 +155,7 @@ end
 --// Methods
 
 --- Creates a new Channel
-function ChannelManager:Create(Name : string) : Channel
+function ChannelAPI.new(Name : string) : Channel
     assert(type(Name) == "string", "Expected a \"string\" to use as a channel name. Received \""..(type(Name)).."\" instead!");
     assert(not SystemChannels[Name], "A channel with the name \""..(Name).."\" already exists!");
 
@@ -174,17 +177,17 @@ function ChannelManager:Create(Name : string) : Channel
 end
 
 --- Returns the requested channel based on it's name ( NOTE: THIS IS CASE SENSITIVE )
-function ChannelManager:Get(Query : string) : Channel
+function ChannelAPI:Get(Query : string) : Channel
     assert(type(Query) == "string", "Expected a \"string\" to use as a channel query. Received \""..(type(Query)).."\" instead!");
     return SystemChannels[Query];
 end
 
 --- Sends a new message to the specified recipient using the provided parameters
-function ChannelManager:Message(Author : Player | string, Message : string, Recipient : Player | Channel)
-    local Speaker = Speakers:GetSpeaker(Author);
+function ChannelAPI:Message(Speaker : Speaker, Message : string, Recipient : Player | Channel)
+    if (not Speaker) then print("No spekaer") return; end
+    --if (ChannelAPI.ProcessMessage and not ChannelAPI.ProcessMessage(Author, Message, Speaker)) then return; end
 
-    if (not Speaker) then return; end
-    if (ChannelManager.ProcessMessage and not ChannelManager.ProcessMessage(Author, Message, Speaker)) then return; end
+    local Author = Speaker.Agent
 
     if (utf8.len(Message) > Settings.MaxMessageLength) then -- This message is ABOVE our message string limit!
         Network.EventSendMessage:FireClient(
@@ -276,7 +279,7 @@ function ChannelManager:Message(Author : Player | string, Message : string, Reci
         Network.EventSendMessage:FireAllClients(Message, Recipient, Speaker.Metadata);
     end
 
-    MessageEvent:Fire(Author, Message, Recipient); -- API Event callback
+    MessageEvent:Fire(Speaker, Message, Recipient); -- API Event callback
 end
 
 --// Metamethods
@@ -286,7 +289,7 @@ function Channel:Subscribe(Player : Player)
     assert(typeof(Player) == "Instance", "Expected an \"Instance\" as a valid member! (received \""..(typeof(Player)).."\")");
     assert(Player:IsA("Player"), "The provided Instance was not of class \"Player\". Got \""..(Player.ClassName).."\" instead");
 
-    local Speaker = Speakers:GetSpeaker(Player);
+    local Speaker = Speakers:Get(Player);
     if (self.Members[Player]) then return; end -- This client is already in this channel
 
     self.Members[Player] = Speaker
@@ -300,7 +303,7 @@ function Channel:Unsubscribe(Player : Player)
     assert(typeof(Player) == "Instance", "Expected an \"Instance\" as a valid member! ( received \""..(typeof(Player)).."\" )");
     assert(Player:IsA("Player"), "The provided Instance was not of class \"Player\". Got \""..(Player.ClassName).."\" instead");
 
-    local Speaker = Speakers:GetSpeaker(Player);
+    local Speaker = Speakers:Get(Player);
     if (not self.Members[Player]) then return; end -- This client isnt even in this channel! (we can just cancel the request here)
 
     self.Members[Player] = nil
@@ -348,7 +351,7 @@ function GetFilteredMessageForClient(FilterObject : Instance, Client : Player) :
     end
 end
 
-ChannelManager.OnMessageSent = MessageEvent.Event -- function( Author : string | Player, Message : string, Recipient : Player | Channel ) [ NOTE: MESSAGE IS NOT FILTERED ]
-ChannelManager.ProcessMessage = nil -- This can be set as a function that handles message processing! (can only be used by one thread) [doesnt work due to OOP boundaries]
+ChannelAPI.OnMessageSent = MessageEvent.Event -- function( Speaker : Speaker, Message : string, Recipient : Player | Channel ) [ NOTE: MESSAGE IS NOT FILTERED ]
+ChannelAPI.ProcessMessage = nil -- This can be set as a function that handles message processing! (can only be used by one thread) [doesnt work due to OOP boundaries]
 
-return ChannelManager
+return ChannelAPI

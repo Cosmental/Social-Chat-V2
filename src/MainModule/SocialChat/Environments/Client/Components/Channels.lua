@@ -43,7 +43,7 @@ local Presets
 local Network
 
 --// States
-local Registry : table = {};
+local Registry : table = {}; -- a list of ALL channels
 local TotalChannels = 0
 
 local FocusedChannel : string?
@@ -101,7 +101,7 @@ function ChannelMaster:Initialize(Setup : table)
     --// Events
     Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, Metadata : table?)
         local SpeakerData = ((Metadata and Metadata.Classic) or {});
-        
+
         if (typeof(Destination) == "Instance" and Destination:IsA("Player")) then -- Private Message
             if ((TotalChannels >= 2) and (not Settings.HideChatFrame)) then -- Create the message in a new PRIVATE channel!
                 local PrivateChannel = self:Get(Destination.Name);
@@ -119,7 +119,7 @@ function ChannelMaster:Initialize(Setup : table)
                 local CurrentChannel = self:GetFocus();
                 CurrentChannel:Message(Message, SpeakerData, true);
             end
-        else -- Channel Mesage
+        else -- Channel Message
             local DirectedChannel = self:Get(Destination.Name);
 
             if (not DirectedChannel) then -- The desired channel for this message does not exist!
@@ -557,6 +557,6 @@ function ExtractKeypointData(Gradient : UIGradient, Numerations : number) : tabl
 end
 
 ChannelMaster.Registry = Registry
-ChannelMaster.MessageRendered = OnMessageRendered.Event -- function(Message : string, Metadata : table, Channel : Channel, IsPrivate : boolean)
+ChannelMaster.OnMessaged = OnMessageRendered.Event -- function(Message : string, Metadata : table, Channel : Channel, IsPrivate : boolean)
 
 return ChannelMaster

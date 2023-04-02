@@ -66,15 +66,18 @@ end
 --// Methods
 
 --- Creates a new Chat speaker
-function SpeakerMaster.new(Agent : string | Player, TagData : table?) : Speaker
+function SpeakerMaster.new(Agent : BasePart | Player | string, TagData : table?) : Speaker
     assert(type(Agent) == "string" or typeof(Agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(Agent)).."\" )");
-    assert(type(Agent) == "string" or Agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"!");
+    assert(type(Agent) == "string" or Agent:IsA("Player") or Agent:IsA("BasePart"), "The provided agent Instance was not of class \"Player\" or \"BasePart\"!");
     VerifyMetadata(Agent, TagData);
 
     if (ChatSpeakers[Agent]) then
         warn("Attempt to recreate a pre-existing chat speaker! ( \""..(tostring(Agent)).."\" is already registed. ) ");
         return;
     end
+
+    local IsInstance = (typeof(Agent) == "Instance");
+    local IsPlayer = (IsInstance and Agent:IsA("Player"));
 
     local NewSpeaker = setmetatable({
 
@@ -87,18 +90,19 @@ function SpeakerMaster.new(Agent : string | Player, TagData : table?) : Speaker
 
                 ["Username"] = { -- We only go in depth with our username data because the username color is a required dataset
                     ["Name"] = (
-                        ((typeof(Agent) == "Instance") and ((Settings.UseDisplayNames and Agent.DisplayName) or Agent.Name)) -- "Agent" is a Player!
-                        or Agent -- "Agent" is a string!
+                        (IsPlayer and ((Settings.UseDisplayNames and Agent.DisplayName) or Agent.Name)) -- "Agent" is a Player!
+                        or (TagData and TagData.Classic.Username and TagData.Classic.Username.Name) -- Agent isn't a player (use tagdata instead)
+                        or tostring(Agent) -- Agent is not a player AND doesn't have a custom name! (default to it's instance name instead)
                     ),
 
                     ["Font"] = (TagData and TagData.Classic.Username and TagData.Classic.Username.Font) or nil,
                     ["Color"] = (TagData and TagData.Classic.Username and TagData.Classic.Username.Color) or GetRandomSpeakerColor(),
                 };
 
-                ["UserId"] = ((typeof(Agent) == "Instance" and Agent.UserId) or nil), -- UserId is useful for security cases!
+                ["UserId"] = ((IsPlayer and Agent.UserId) or nil), -- UserId is useful for security cases!
             },
 
-            ["Bubble"] = (TagData and TagData.ChatBubble) or nil
+            ["Bubble"] = (TagData and TagData.Bubble) or nil
         };
 
         --// PROGRAMMABLE \\--
@@ -106,15 +110,16 @@ function SpeakerMaster.new(Agent : string | Player, TagData : table?) : Speaker
         ["Channels"] = {}, -- a table of channels that this speaker is in
         ["__previousNameColor"] = nil, -- a Color3 value that recalls the speaker's previous TagColor
 
-        ["IsPlayer"] = (typeof(Agent) == "Instance" and Agent:IsA("Player")) -- Tells us if this speaker object pertains to a Player : boolean
+        ["Agent"] = Agent, -- For reference
+        ["IsPlayer"] = (IsPlayer and Agent:IsA("Player")) -- Tells us if this speaker object pertains to a Player : boolean
 
     }, Speaker);
 
     ChatSpeakers[Agent] = NewSpeaker
-    SpeakerAdded:Fire(Agent, NewSpeaker);
+    SpeakerAdded:Fire(NewSpeaker);
 
     --// Team Color Appliance \\--
-    if (Settings.ApplyTeamColors and typeof(Agent) == "Instance") then
+    if (Settings.ApplyTeamColors and IsPlayer) then
         Agent:GetPropertyChangedSignal("Team"):Connect(function()
             if (Agent.Team ~= nil) then -- This Player is now in a team
                 NewSpeaker.__previousNameColor = NewSpeaker.TagData.NameColor
@@ -130,7 +135,7 @@ function SpeakerMaster.new(Agent : string | Player, TagData : table?) : Speaker
 end
 
 --- Returns the speaker object for the requested agent
-function SpeakerMaster:GetSpeaker(Agent : string | Player) : Speaker
+function SpeakerMaster:Get(Agent : string | Player) : Speaker
     assert(type(Agent) == "string" or typeof(Agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(Agent)).."\" )");
     assert(type(Agent) == "string" or Agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"! ( got \""..tostring(Agent.ClassName).."\" instead )");
     
@@ -210,7 +215,7 @@ function VerifyMetadata(Agent : string | Player, Metadata : table) : boolean?
 
     assert(type(Metadata) == "table", "The provided metadata was not of type \"table\", but as type \""..(type(Metadata)).."\". Metadata can only be read as a table.");
     assert(next(Metadata), "The provided metadata is an empty array. Metadata needs to hold at least one value.");
-    assert(type(Metadata.Classic) == "table" or type(Metadata.ChatBubble) == "table", "The provided metadata does not hold any readable information! You must provide at least a \"Classic\" array OR a \"ChatBubble\" array with your data!");
+    assert(type(Metadata.Classic) == "table" or type(Metadata.Bubble) == "table", "The provided metadata does not hold any readable information! You must provide at least a \"Classic\" array OR a \"Bubble\" array with your data!");
     
     local function AnalyzeStructure(structureSet : string, fromTable : table, isForPlayer : boolean?)
         if (not fromTable) then return; end
@@ -247,8 +252,8 @@ function VerifyMetadata(Agent : string | Player, Metadata : table) : boolean?
         AnalyzeStructure("Username", Metadata.Classic.Username, type(Agent) ~= "string");
     end
 
-    if (Metadata.ChatBubble) then
-        AnalyzeStructure("ChatBubble", Metadata.ChatBubble);
+    if (Metadata.Bubble) then
+        AnalyzeStructure("Bubble", Metadata.Bubble);
     end
 end
 

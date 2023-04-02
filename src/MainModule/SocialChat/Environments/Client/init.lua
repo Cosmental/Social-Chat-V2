@@ -202,7 +202,7 @@ local function Initialize(Setup : table)
         UIComponents.ChatUIManager:SetEnabled(false);
     end);
 
-    UIComponents.Channels.MessageRendered:Connect(function()
+    UIComponents.Channels.OnMessaged:Connect(function()
         if (ChatToggleButton.isSelected) then return; end
         ChatToggleButton:notify();
     end);

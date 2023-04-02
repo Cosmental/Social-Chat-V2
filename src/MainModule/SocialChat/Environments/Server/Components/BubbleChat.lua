@@ -41,10 +41,16 @@ function BubbleChat:Initialize(Setup : table)
     return self
 end
 
-function BubbleChat:Chat(Agent : Instance | Player, Message : string)
+--- Sends a client-request to instance a Chat Bubble over the provided Agent
+function BubbleChat:Chat(Speaker : Speaker, Message : string)
+    assert(type(Speaker) == "table", "The provided Agent parameter was not of type \"table\"! Please provide a Speaker Object to render from!");
+    assert(type(Message) == "string", "The provided 'Message' was not of type \"string\"! (got "..(type(Message))..")");
+
+    local Author = Speaker.Agent
+
     for _, Player in pairs(game.Players:GetPlayers()) do
-        if ((typeof(Agent) == "Instance" and Agent:IsA("Player")) and (Agent == Player)) then continue; end
-        Network.EventRenderBubble:FireClient(Player, Agent, Message);
+        if ((Speaker.IsPlayer) and (Author == Player)) then continue; end
+        Network.EventRenderBubble:FireClient(Player, Author, Message, Speaker.Metadata);
     end
 end
 

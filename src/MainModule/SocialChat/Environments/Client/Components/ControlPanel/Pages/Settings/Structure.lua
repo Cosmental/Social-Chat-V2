@@ -143,8 +143,8 @@ local Structure = {
                             Bubble.Render.Visible = Value
                         end
 
-                        API:SetActive(API.IsActive and Value);
-                        API:SetThinking(API.IsThinking and Value);
+                        API.Enabled = (API.Enabled and Value);
+                        API.Thinking = (API.Thinking and Value);
                     end
                 end
             };
@@ -162,7 +162,7 @@ local Structure = {
 
                 OnUpdated = function(Value : number)
                     ChatFrameSettings.ChatBubbleLifespan = Value
-                    self.Src.BubbleChat:Adjust("ChatBubbleLifespan", Value);
+                    self.Src.BubbleChat:Configure("ChatBubbleLifespan", Value);
                 end
             };
 
@@ -179,7 +179,7 @@ local Structure = {
 
                 OnUpdated = function(Value : number)
                     ChatFrameSettings.MaxDisplayableBubbles = Value
-                    self.Src.BubbleChat:Adjust("MaxDisplayableBubbles", Value);
+                    self.Src.BubbleChat:Configure("MaxDisplayableBubbles", Value);
                 end
             };
         };
