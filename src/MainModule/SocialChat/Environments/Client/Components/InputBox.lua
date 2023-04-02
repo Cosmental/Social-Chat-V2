@@ -575,6 +575,12 @@ function InputBox:Submit()
             ((IsValidClient and not Focus.IsPrivate) and table.concat(Words, " ", 3))
             or ChatBox.Text, (IsValidClient and WhisperClient)
         );
+
+        if (WhisperClient and IsValidClient) then
+            task.defer(function()
+                self:Set("/w "..(WhisperClient.Name).." ", true); -- Capturing must be true to prevent errors. Will change if complaints arise
+            end, RunService.RenderStepped); -- RenderStepped to prevent race-conditions
+        end
     end
 
     if (not IsMobile) then

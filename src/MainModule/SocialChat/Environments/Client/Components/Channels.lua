@@ -101,8 +101,6 @@ function ChannelMaster:Initialize(Setup : table)
     --// Events
     Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, Metadata : table?)
         local SpeakerData = ((Metadata and Metadata.Classic) or {});
-
-        print("NEW MESSAGE INTAKE:", Message, Destination);
         
         if (typeof(Destination) == "Instance" and Destination:IsA("Player")) then -- Private Message
             if ((TotalChannels >= 2) and (not Settings.HideChatFrame)) then -- Create the message in a new PRIVATE channel!
@@ -129,7 +127,6 @@ function ChannelMaster:Initialize(Setup : table)
                 return;
             end
 
-            print("CHANNEL FOUND! Sending...");
             DirectedChannel:Message(Message, SpeakerData);
         end
     end);
