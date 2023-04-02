@@ -39,6 +39,7 @@ function ChatUIManager:Initialize(Setup : table)
 
 	self._legacy = {
 		["Input"] = ChatFrame.Input.Size,
+		["InputStroke"] = ChatFrame.Input.InteractionBar.UIStroke.Transparency,
 		["InteractionBar"] = {
 			Position = ChatFrame.Input.InteractionBar.Position,
 			Size = ChatFrame.Input.InteractionBar.Size
@@ -97,6 +98,10 @@ function ChatUIManager:SetEnabled(State : boolean, NoTween : boolean?)
 		local MainTween = TweenService:Create(ChatFrame, TweenInfo.new(TweenTime), {
 			BackgroundTransparency = (State and self.BackgroundTransparency) or 1
 		});
+
+		TweenService:Create(ChatFrame.Input.InteractionBar.UIStroke, TweenInfo.new(TweenTime), {
+			Transparency = (State and self._legacy.InputStroke) or 1
+		}):Play();
 
 		if (State and self._displayCache) then
 			for Object, Properties in pairs(self._displayCache) do
