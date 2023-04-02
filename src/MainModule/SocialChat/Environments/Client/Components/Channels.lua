@@ -101,6 +101,8 @@ function ChannelMaster:Initialize(Setup : table)
     --// Events
     Network.EventSendMessage.OnClientEvent:Connect(function(Message : string, Destination : Channel | Player, Metadata : table?)
         local SpeakerData = ((Metadata and Metadata.Classic) or {});
+
+        print("NEW MESSAGE INTAKE:", Message, Destination);
         
         if (typeof(Destination) == "Instance" and Destination:IsA("Player")) then -- Private Message
             if ((TotalChannels >= 2) and (not Settings.HideChatFrame)) then -- Create the message in a new PRIVATE channel!
@@ -114,10 +116,10 @@ function ChannelMaster:Initialize(Setup : table)
                     end
                 end
 
-                PrivateChannel:CreateMessage(Message, SpeakerData);
+                PrivateChannel:Message(Message, SpeakerData);
             else -- Create the message in our current channel!
                 local CurrentChannel = self:GetFocus();
-                CurrentChannel:CreateMessage(Message, SpeakerData, true);
+                CurrentChannel:Message(Message, SpeakerData, true);
             end
         else -- Channel Mesage
             local DirectedChannel = self:Get(Destination.Name);
@@ -127,7 +129,8 @@ function ChannelMaster:Initialize(Setup : table)
                 return;
             end
 
-            DirectedChannel:CreateMessage(Message, SpeakerData);
+            print("CHANNEL FOUND! Sending...");
+            DirectedChannel:Message(Message, SpeakerData);
         end
     end);
 
@@ -161,6 +164,7 @@ end
 function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : table?, IsPrivate : boolean?) : Channel
     local Container = self.Presets.MessageContainer:Clone();
     Container.Name = Name.."_CONTAINER"
+    Container.Visible = false
 
     FunctUI.new("AdjustingCanvas", Container);
 
@@ -248,8 +252,8 @@ function ChannelMaster:SendMessage(Text : string, Receiver : Player?)
     Network.EventSendMessage:FireServer(Text, Receiver or FocusedChannel.Name);
 end
 
---- Creates a message for the current channel OR a specific channel (if provided)
-function ChannelMaster:CreateMessage(Message : string, Metadata : table?, Channel : Channel?)
+--- Creates a message to the currently focused channel OR a specified channel (if provided)
+function ChannelMaster:CreateSystemMessage(Message : string, Metadata : table?, Channel : Channel?)
     if (not self.Main) then -- Prevents race issues
         repeat
             task.wait();
@@ -258,7 +262,7 @@ function ChannelMaster:CreateMessage(Message : string, Metadata : table?, Channe
     end
 
     local ToChannel = (Channel or self:GetFocus());
-    ToChannel:CreateMessage(Message, Metadata);
+    ToChannel:Message(Message, Metadata);
 end
 
 --// Metamethods
@@ -302,7 +306,7 @@ function Channel:Focus()
 end
 
 --- Renders a message based on the specified parameters
-function Channel:CreateMessage(Message : string, Metadata : table?, IsPrivateMessage : boolean?) : table
+function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage : boolean?) : table
     local MainFrame = Instance.new("Frame");
 
     MainFrame.BackgroundTransparency = 1
@@ -429,9 +433,7 @@ function Channel:CreateMessage(Message : string, Metadata : table?, IsPrivateMes
     StringRenderer.BindSizeToContent = true
     StringRenderer:Update(); -- We need to update our renderer for setting updates
 
-    if (FocusedChannel == self) then
-        MainFrame.Parent = self.Container
-    end
+    MainFrame.Parent = self.Container
 
     --// Trash Collection & Finalization
     if (#self._cache >= Settings.MaxRenderableMessages) then

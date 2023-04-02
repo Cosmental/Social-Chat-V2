@@ -180,7 +180,7 @@ function ChannelManager:Get(Query : string) : Channel
 end
 
 --- Sends a new message to the specified recipient using the provided parameters
-function ChannelManager:Message(Author : Player, Message : string, Recipient : Player | Channel)
+function ChannelManager:Message(Author : Player | string, Message : string, Recipient : Player | Channel)
     local Speaker = Speakers:GetSpeaker(Author);
 
     if (not Speaker) then return; end
