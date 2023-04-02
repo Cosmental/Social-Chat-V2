@@ -501,11 +501,13 @@ function Channel:Destroy()
         end
     end
 
-    for _, Channel in pairs(Registry) do -- Since channels get registered with "string" keys, this is essentially our only way to ensure focus
-        if (Channel.__removing) then continue; end
-
-        Channel:Focus();
-        break;
+    if (FocusedChannel == self) then -- This doesn't need to run if this channel is not currently focused on
+        for _, Channel in pairs(Registry) do
+            if (Channel.__removing) then continue; end
+    
+            Channel:Focus(); -- Since channels get registered with "string" keys, this is essentially our only way to ensure focus
+            break;
+        end
     end
 
     Registry[self.Name] = nil
