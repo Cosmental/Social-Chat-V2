@@ -28,6 +28,7 @@ local Speakers
 --// Constants
 local ClientCooldowns = {};
 local SystemChannels = {};
+local MessageValidators = {};
 
 local BubbleChatEvent
 local DefaultChannel
@@ -184,9 +185,7 @@ end
 
 --- Sends a new message to the specified recipient using the provided parameters
 function ChannelAPI:Message(Speaker : Speaker, Message : string, Recipient : Player | Channel)
-    if (not Speaker) then print("No spekaer") return; end
-    --if (ChannelAPI.ProcessMessage and not ChannelAPI.ProcessMessage(Author, Message, Speaker)) then return; end
-
+    if (not Speaker) then return; end
     local Author = Speaker.Agent
 
     if (utf8.len(Message) > Settings.MaxMessageLength) then -- This message is ABOVE our message string limit!
@@ -199,6 +198,11 @@ function ChannelAPI:Message(Speaker : Speaker, Message : string, Recipient : Pla
 
         return;
     end
+
+    local DenyProcess : boolean? = IsInvalid(Speaker, Message, Recipient); -- If the any registered validator(s) deny the request, the API will be notified BUT the message wont send.
+
+    MessageEvent:Fire(Speaker, Message, Recipient, DenyProcess); -- API Event callback
+    if (DenyProcess) then return; end
     
     if (Speaker.IsPlayer) then -- This speaker is a Player! Make sure to rate-limit messages to prevent spam
     
@@ -278,8 +282,11 @@ function ChannelAPI:Message(Speaker : Speaker, Message : string, Recipient : Pla
     else -- Non-player Speakers may bypass most restrictions, but developers must be catious as to what gets passed through here as the content is NOT filtered!
         Network.EventSendMessage:FireAllClients(Message, Recipient, Speaker.Metadata);
     end
+end
 
-    MessageEvent:Fire(Speaker, Message, Recipient); -- API Event callback
+--- Adds a message validator to the ChannelAPI
+function ChannelAPI:AddValidator(Callback : callback)
+    table.insert(MessageValidators, Callback); -- weird bypass for OOP boundaries
 end
 
 --// Metamethods
@@ -316,10 +323,11 @@ end
 function Channel:Remove()
     assert(not self.IsMainChannel, "Failed to destroy Channel \""..(self.Name).."\". Destroying the game's main chat channel would result in bugs!");
 
-    for _, Member in pairs(self.Members) do
+    for Member : Player, _ : Speaker in pairs(self.Members) do
         self:Unsubscribe(Member);
     end
 
+    SystemChannels[self.Name] = nil
     self = nil
 end
 
@@ -351,7 +359,19 @@ function GetFilteredMessageForClient(FilterObject : Instance, Client : Player) :
     end
 end
 
-ChannelAPI.OnMessageSent = MessageEvent.Event -- function( Speaker : Speaker, Message : string, Recipient : Player | Channel ) [ NOTE: MESSAGE IS NOT FILTERED ]
-ChannelAPI.ProcessMessage = nil -- This can be set as a function that handles message processing! (can only be used by one thread) [doesnt work due to OOP boundaries]
+--- Processes the provided message by retreiving responses from validators! If any validator returns true, the message will fail to send.
+function IsInvalid(Speaker : Speaker, Message : string, Recipient : Player | Channel) : boolean?
+    if (not next(MessageValidators)) then return; end
 
+    local DeclineProcess : boolean?
+
+    for _, Validator : callback in pairs(MessageValidators) do
+        DeclineProcess = Validator(Speaker, Message, Recipient);
+        if (not DeclineProcess) then break; end
+    end
+
+    return DeclineProcess
+end
+
+ChannelAPI.OnMessageSent = MessageEvent.Event -- function( Speaker : Speaker, Message : string, Recipient : Player | Channel ) [ NOTE: MESSAGE IS NOT FILTERED ]
 return ChannelAPI
