@@ -106,7 +106,7 @@ function ChannelMaster:Initialize(Setup : table)
             if ((TotalChannels >= 2) and (not Settings.HideChatFrame)) then -- Create the message in a new PRIVATE channel!
                 local PrivateChannel = self:Get(Destination.Name);
                 
-                if (not PrivateChannel) then
+                if (not PrivateChannel) then -- Channel doesnt exist yet, so lets make one!
                     PrivateChannel = self:Create(Destination.Name, {Destination}, nil, true);
 
                     if (SpeakerData.UserId and SpeakerData.UserId == Player.UserId) then
@@ -140,6 +140,16 @@ function ChannelMaster:Initialize(Setup : table)
 
     Network.EventJoinChannel.OnClientEvent:Connect(function(Name : string, Members : table, History : table)
         self:Create(Name, Members, History);
+    end);
+
+    --// Private Channel cleanup
+    --\\ Sometimes SocialChat will make Private channels for players. However, when one private-player leaves, the channel must clean itself
+
+    game.Players.PlayerRemoving:Connect(function(Recipient : Player)
+        local PrivateChannel = self:Get(Recipient.Name);
+        if (not PrivateChannel) then return; end -- We were not privately dm'ing this user!
+
+        PrivateChannel:Destroy();
     end);
 
     return self
@@ -350,7 +360,7 @@ function Channel:CreateMessage(Message : string, Metadata : table?, IsPrivateMes
         Generate("FromWho",
             "{"
             ..(((Metadata.UserId and Metadata.UserId == Player.UserId) and "to") or "from").." "
-            ..(Metadata.Name).."}: ",
+            ..(Metadata.Username.Name).."}: ", -- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[][][][tg]t[4>>>>>>>>>>>
             {Color = Color3.fromRGB(255, 255, 255), Font = Settings.MessageFont},
             nil, true
         );
