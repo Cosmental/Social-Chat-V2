@@ -351,6 +351,14 @@ function InputBox:Initialize(Info : table) : metatable
             ChatBox:CaptureFocus();
         end);
 
+        --// Cursor Frame Flicker
+        RunService.RenderStepped:Connect(function()
+            if (((os.clock() - CursorTick) >= 0.5) and (ChatBox:IsFocused())) then
+                CursorTick = os.clock();
+                CursorFrame.Visible = not CursorFrame.Visible
+            end
+        end);
+
         ChatBox.TextStrokeTransparency = 1
         ChatBox.TextTransparency = 1
 
@@ -465,8 +473,10 @@ function InputBox:Initialize(Info : table) : metatable
     end);
 
     ChatBox.Focused:Connect(function()
-        PlaceholderLabel.Visible = false
-        CursorFrame.Visible = true
+        if (not IsMobile) then
+            PlaceholderLabel.Visible = false
+            CursorFrame.Visible = true
+        end
 
         if (#ChatBox.Text > 0) then
             self:Set(self._oldText);
@@ -478,6 +488,7 @@ function InputBox:Initialize(Info : table) : metatable
 
     SubmitButton.MouseButton1Click:Connect(function()
         self:Submit();
+        if (IsMobile) then return; end
 
         task.defer(function()
             PlaceholderLabel.Visible = (#ChatBox.Text == 0);
@@ -485,12 +496,14 @@ function InputBox:Initialize(Info : table) : metatable
     end);
 
     ChatBox.FocusLost:Connect(function(EnterPressed : boolean)
-        CursorFrame.Visible = false
-        FocusPoint = 0
+        if (not IsMobile) then
+            CursorFrame.Visible = false
+            FocusPoint = 0
 
-        task.defer(function()
-            PlaceholderLabel.Visible = (#ChatBox.Text == 0);
-        end, RunService.RenderStepped);
+            task.defer(function()
+                PlaceholderLabel.Visible = (#ChatBox.Text == 0);
+            end, RunService.RenderStepped);
+        end
 
         if (not EnterPressed) then -- Message was interrupted. Proceed with visuals
             self._oldText = ChatBox.Text
@@ -500,14 +513,6 @@ function InputBox:Initialize(Info : table) : metatable
             ));
         else -- Submit our message
             self:Submit();
-        end
-    end);
-
-    --// Cursor Frame Flicker
-    RunService.RenderStepped:Connect(function()
-        if (((os.clock() - CursorTick) >= 0.5) and (ChatBox:IsFocused())) then
-            CursorTick = os.clock();
-            CursorFrame.Visible = not CursorFrame.Visible
         end
     end);
 
@@ -572,9 +577,11 @@ function InputBox:Submit()
         );
     end
 
-    CursorFrame.Visible = false
+    if (not IsMobile) then
+        CursorFrame.Visible = false
+    end
+    
     self._oldText = nil
-
     ChatBox.Text = ""
     FocusPoint = 0
 end
