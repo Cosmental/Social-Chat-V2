@@ -73,12 +73,13 @@ function ChannelMaster:Initialize(Setup : table)
 
     --// Gradient Control
     for _, Info in pairs(TextStyles) do
-        Info.Color = ExtractKeypointData(Info.Gradient, math.abs(Info.Keypoints));
+        Info.Color = ExtractKeypointData(Info.Gradient, "Color", math.abs(Info.Keypoints));
+        Info.Transparency = ExtractKeypointData(Info.Gradient, "Transparency", math.abs(Info.Keypoints));
         Info.Duration = math.max(Info.Duration, 0.01); -- Durations are limited to 0.1 seconds! (anything less would be weird/un-needed)
     end
 
     local LastTick = os.clock(); -- We need to use operating UNIX timestamps to rate-limit our gradient stepper!
-
+    
     RunService.Heartbeat:Connect(function()
         if (not next(GradientLabels)) then return; end
         if ((os.clock() - LastTick) <= 1 / 60) then return; end -- 60 FPS Limit
@@ -93,7 +94,13 @@ function ChannelMaster:Initialize(Setup : table)
             GradientGroup.Index += 1
 
             for Index, Object in pairs(GradientGroup.Objects) do
-                Object.TextColor3 = GradientGroup.Style.Color[((Index + GradientGroup.Index) % GradientGroup.Style.Keypoints) + 1]
+                Object.TextColor3 = GradientGroup.Style.Color[((Index + GradientGroup.Index) % GradientGroup.Style.Keypoints) + 1];
+
+                local StrokeDifference = math.abs(Object.TextStrokeTransparency - Object.TextTransparency);
+                local TransValue = GradientGroup.Style.Transparency[((Index + GradientGroup.Index) % GradientGroup.Style.Keypoints) + 1];
+
+                Object.TextTransparency = TransValue
+                Object.TextStrokeTransparency = TransValue + StrokeDifference
             end
         end
     end);
@@ -518,42 +525,59 @@ end
 --// Functions
 
 --- Returns a set of color keypoints related to the provided ColorGraident!
-function ExtractKeypointData(Gradient : UIGradient, Numerations : number) : table
-    local Points = Gradient.Color.Keypoints
+function ExtractKeypointData(Gradient : UIGradient, Property : string, Numerations : number) : table
+    local Points = Gradient[Property].Keypoints
     local Data = {};
 
     for i = 1, Numerations do
         local Alpha = i / Numerations
         
-        local ClosestKeypoint, Index : ColorSequenceKeypoint?, number
+        local ClosestKeypoint : ColorSequenceKeypoint, Index : number?
         local BestOffset : number?
         
-        for i, Keypoint in pairs(Points) do
+        for ii, Keypoint in pairs(Points) do
             local Offset = math.abs(Alpha - Keypoint.Time);
             if (BestOffset and Offset > BestOffset) then continue; end
-            
+
             ClosestKeypoint = Keypoint
-            Index = i
+            Index = ii
             
             BestOffset = Offset
         end
         
-        local LerpedColor : Color3?
+        local LerpedValue : (Color3 | number)?
+        local IsColor = (Property == "Color");
         
-        if ((i == 1 or i == #Points) or (BestOffset == 0)) then
-            LerpedColor = ClosestKeypoint.Value
-        else
-            if (Index >= #Points) then
-                LerpedColor = Points[Index - 1].Value:Lerp(ClosestKeypoint.Value, Alpha);
-            else
-                LerpedColor = ClosestKeypoint.Value:Lerp(Points[Index + 1].Value, Alpha);
+        if (i == 1 or i == Numerations) then -- This is either the FIRST or LAST keypoint
+            LerpedValue = Points[
+                (i == 1 and 1)
+                or (i == Numerations and #Points)
+            ].Value
+        elseif (BestOffset == 0) then -- This keypoint aligns PERFECTLY with its closest keypoint (exact value case)
+            LerpedValue = ClosestKeypoint.Value
+        else -- This keypoint is in between 2 value points. We can lerp values to "tween" between
+            if (Index > 1) then -- This is NOT the first Keypoint index! (normal case)
+                LerpedValue = (
+                    (IsColor and Points[Index - 1].Value:Lerp(ClosestKeypoint.Value, Alpha))
+                    or Lerp(Points[Index - 1].Value, ClosestKeypoint.Value, Alpha)
+                );
+            else -- This is the FIRST index in our gradient property! (first case scenario)
+                LerpedValue = (
+                    (IsColor and ClosestKeypoint.Value:Lerp(Points[Index + 1].Value, Alpha))
+                    or Lerp(ClosestKeypoint.Value, Points[Index + 1].Value, Alpha)
+                );
             end
         end
 
-        table.insert(Data, LerpedColor);
+        table.insert(Data, LerpedValue);
     end
 
     return Data
+end
+
+--- Lerps two numbers
+function Lerp(Start : number, End : number, Alpha : number) : number
+    return (Start + (End - Start) * Alpha);
 end
 
 ChannelMaster.Registry = Registry

@@ -117,7 +117,13 @@ function BubbleChat:Initialize(Info : table) : metatable
             GradientGroup.Index += 1
 
             for Index, Object in pairs(GradientGroup.Objects) do
-                Object.TextColor3 = GradientGroup.Style.Color[((Index + GradientGroup.Index) % GradientGroup.Style.Keypoints) + 1]
+                Object.TextColor3 = GradientGroup.Style.Color[((Index + GradientGroup.Index) % GradientGroup.Style.Keypoints) + 1];
+
+                local StrokeDifference = math.abs(Object.TextStrokeTransparency - Object.TextTransparency);
+                local TransValue = GradientGroup.Style.Transparency[((Index + GradientGroup.Index) % GradientGroup.Style.Keypoints) + 1];
+
+                Object.TextTransparency = TransValue
+                Object.TextStrokeTransparency = TransValue + StrokeDifference
             end
         end
     end);
