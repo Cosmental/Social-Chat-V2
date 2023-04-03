@@ -38,7 +38,7 @@ function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?, Dominan
         ["ClassName"] = "AdjustingCanvas",
         ["PreviousSize"] = nil, -- number? : [ AbsoluteSize.DOMINANT_AXIS ]
 
-        ["NScale"] = Canvas.Size[DominantAxis or "Y"].Scale, -- number :: We must save the un-used Axis as it is probably useful in UX
+        ["Size"] = Canvas.Size, -- number :: We must save the un-used Axis as it is probably useful in UX
         ["Axis"] = (DominantAxis or "Y") -- string :: Our dominating canvas axis (default :: Y)
 
     }, AdjustingCanvas);
@@ -82,11 +82,11 @@ function AdjustingCanvas:Update()
 
     local Property = ((self.Canvas:IsA("ScrollingFrame") and "CanvasSize") or "Size");
     local CanvasSize = UDim2.new(
-        ((self.NScale == 0 and self.Canvas.AbsoluteSize.X) or 0),
-        ((self.Axis == "X") and (AbsoluteContentSize.X + 5)) or (self.NScale),
+        ((self.Axis ~= "X" and self.Size.X.Scale) or 0),
+        ((self.Axis == "X") and (AbsoluteContentSize.X + 5)) or 0,
 
-        ((self.NScale == 0 and self.Canvas.AbsoluteSize.Y) or 0),
-        ((self.Axis == "Y") and (AbsoluteContentSize.Y + 5)) or (self.NScale)
+        ((self.Axis ~= "Y" and self.Size.Y.Scale) or 0),
+        ((self.Axis == "Y") and (AbsoluteContentSize.Y + 5)) or 0
     );
 
     if (CanvasSize == self.Canvas.Size) then return; end -- No changes made to the canvas!
