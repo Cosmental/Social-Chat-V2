@@ -380,10 +380,18 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
     if (IsPrivateMessage) then -- Private Message!
         Generate("FromWho",
             "{"
-            ..(((Metadata.UserId and Metadata.UserId == Player.UserId) and "to") or "from").." "
-            ..(Metadata.Username.Name).."}: ", -- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>[][][][tg]t[4>>>>>>>>>>>
+            ..(((Metadata.UserId and Metadata.UserId == Player.UserId) and "to") or "from").." **"
+            ..(Metadata.Username.Name).."**}: ",
             {Color = Color3.fromRGB(255, 255, 255), Font = Settings.MessageFont},
-            nil, true
+            function()
+                if (not Metadata.UserId) then return; end
+                if (Metadata.UserId == Player.UserId) then return; end
+
+                local Client = game.Players:GetPlayerByUserId(Metadata.UserId);
+                if (not Client) then return; end
+
+                InputBox:Set("/w "..Client.Name.." ", true);
+            end, true
         );
     else -- Normal Message!
         
@@ -424,7 +432,7 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
                 },
                 function()
                     if (not Metadata.UserId) then return; end
-                    --if (Metadata.UserId == Player.UserId) then return; end -- We cant whisper to ourselves! (and... we're also using name strings because Metadata doesn't pass UserIds) [TEMP]
+                    if (Metadata.UserId == Player.UserId) then return; end -- We cant whisper to ourselves!
 
                     local Client = game.Players:GetPlayerByUserId(Metadata.UserId);
                     if (not Client) then return; end -- The client either left or isnt in the server anymore :(

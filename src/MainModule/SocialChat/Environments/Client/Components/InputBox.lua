@@ -54,7 +54,7 @@ local SystemWasTyping : boolean
 local IsControlHeld : boolean?
 
 local LastCursorPosition : number
-local FocusPoint : number = 0
+local FocusPoint : number = 0 -- A sub-index that tells us where our focus end-point is
 
 local CursorTick : number = os.clock();
 local CurrentEmoteTrack : AnimationTrack?
@@ -221,6 +221,8 @@ function InputBox:Initialize(Info : table) : metatable
     
     --- Updates our display label's position in a way that follows our cursor position
     local function UpdateDisplayPosition()
+        if (SystemWasTyping) then return; end
+
         local CursorPosition = ChatBox.CursorPosition
         if (CursorPosition == -1) then return; end -- Make sure we have a valid cursor position
     
@@ -233,10 +235,11 @@ function InputBox:Initialize(Info : table) : metatable
         --[[
     
             warn("-------------------------------------------------------------");
-            print("RIGHT OFF SCRN:", IsOffScreenOnRight);
-            print("LEFT OFF SCRN:", IsOffScreenOnLeft);
+            -- print("RIGHT OFF SCRN:", IsOffScreenOnRight);
+            -- print("LEFT OFF SCRN:", IsOffScreenOnLeft);
             print("FOCUS POINT:", FocusPoint);
             print("CURSOR #TXT:", CursorTextSize);
+            print("TEXT:", ChatBox.Text);
             
         ]]--
         
@@ -259,6 +262,8 @@ function InputBox:Initialize(Info : table) : metatable
             DisplayLabel.Size = UDim2.new(0, RelativeSizeX + math.max(DisplayLabel.TextBounds.X - RelativeSizeX, 0), 1, 0);
             DisplayLabel.Position = UDim2.new(0, RelativeSizeX - CursorTextSize, 0.5, 0);
         end
+
+        -- print("FINAL FPOINT:", FocusPoint)
     end
     
     --- Updates the selected text content!
@@ -507,10 +512,10 @@ function InputBox:Initialize(Info : table) : metatable
 
         if (not EnterPressed) then -- Message was interrupted. Proceed with visuals
             self._oldText = ChatBox.Text
-            self:Set(self.Highlighter:Highlight(
+            --[[self:Set(self.Highlighter:Highlight(
                 (Settings.AllowMarkdown and Markdown:Markup(ChatBox.Text)) or
                 ChatBox.Text
-            ));
+            ));]]
         else -- Submit our message
             self:Submit();
         end
@@ -550,7 +555,7 @@ function InputBox:Set(Content : string, captureClient : boolean?)
         end, ChatBox:GetPropertyChangedSignal("Text"));
     end
 
-    SystemWasTyping = not captureClient
+    SystemWasTyping = (not captureClient);
     ChatBox.Text = Content
     SystemWasTyping = false
 end
