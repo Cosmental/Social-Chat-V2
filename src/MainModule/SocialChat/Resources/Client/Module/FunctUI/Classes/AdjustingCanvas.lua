@@ -15,11 +15,13 @@ AdjustingCanvas.__index = AdjustingCanvas
 --// Main Methods
 
 --- Creates a new Adjusting Canvas
-function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?, SizeCoefficient : Vector2?) : AdjustingCanvas
+function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?, DominantAxis : string?, SizeCoefficient : Vector2?) : AdjustingCanvas
     assert(typeof(Canvas) == "Instance", "The provided 'Canvas' was not an Instance! (received "..(typeof(Canvas))..")");
     assert(Canvas:IsA("GuiObject"), "The provided Instance was not of ClassType \"GuiObject\". (received "..(Canvas.ClassName)..")");
     assert(not Container or typeof(Container) == "Instance", "The provided 'Container' was not an Instance! (received "..(typeof(Container))..")");
     assert(not Container or Container:IsA("GuiObject"), "The provided 'Container' was not of ClassType \"GuiObject\". (received "..((Container and Container.ClassName) or "nil")..")");
+    assert(not DominantAxis or type(DominantAxis) == "string", "The provided canvas axis was not a string! (got "..(type(DominantAxis))..")");
+    assert(not DominantAxis or (DominantAxis == "X" or DominantAxis == "Y"), "The provide axis was invalid! A scrolling axis can only be 'X' or 'Y' (case sensitive)");
     assert(not SizeCoefficient or typeof(SizeCoefficient) == "Vector2", "The provided 'SizeCoefficient' was not of type 'Vector2'! (received "..(typeof(SizeCoefficient))..")");
 
     local CanvasLayout = Canvas:FindFirstChildOfClass("UIListLayout");
@@ -34,18 +36,15 @@ function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?, SizeCoe
 
         --// DATA
         ["ClassName"] = "AdjustingCanvas",
-        ["PreviousSize"] = nil, -- number? : [ AbsoluteSize.Y ]
+        ["PreviousSize"] = nil, -- number? : [ AbsoluteSize.DOMINANT_AXIS ]
 
-        ["XScale"] = Canvas.Size.X.Scale,
+        ["NScale"] = Canvas.Size[DominantAxis or "Y"].Scale, -- number :: We must save the un-used Axis as it is probably useful in UX
+        ["Axis"] = (DominantAxis or "Y") -- string :: Our dominating canvas axis (default :: Y)
 
     }, AdjustingCanvas);
 
     --// Automatic Updates
-	local function UpdateCanvas()
-        self:Update(); -- The only reason this function exists is because 'self.FUNCTION' callbacks dont send metadata, hence the API would break
-	end
-	
-    local function ResizeChild(Child : GuiObject)
+	local function ResizeChild(Child : GuiObject)
         if (not SizeCoefficient) then return; end
         if (not Child:IsA("GuiObject")) then return; end
 
@@ -58,15 +57,20 @@ function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?, SizeCoe
         Child.Size = UDim2.fromOffset(Coefficient.X, Coefficient.Y);
     end
 
-    for _, Child in pairs(Canvas:GetChildren()) do
-        ResizeChild(Child);
-    end
+    local function UpdateCanvas()
+        for _, Child in pairs(Canvas:GetChildren()) do
+            ResizeChild(Child);
+        end
+
+        self:Update(); -- The only reason this function exists is because 'self.FUNCTION' callbacks dont send metadata, hence the API would break
+	end
+
+    UpdateCanvas(); -- Just in case our Canvas already has instances present!
 
     Canvas.ChildAdded:Connect(ResizeChild);
 	Canvas:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateCanvas);
 	CanvasLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas);
 
-    self:Update(); -- Just in case our Canvas already has instances present!
     return self
 end
 
@@ -78,10 +82,11 @@ function AdjustingCanvas:Update()
 
     local Property = ((self.Canvas:IsA("ScrollingFrame") and "CanvasSize") or "Size");
     local CanvasSize = UDim2.new(
-        self.XScale,
-        ((self.XScale == 0 and self.Canvas.AbsoluteSize.X) or 0),
-        0,
-        AbsoluteContentSize.Y + 5
+        ((self.NScale == 0 and self.Canvas.AbsoluteSize.X) or 0),
+        ((self.Axis == "X") and (AbsoluteContentSize.X + 5)) or (self.NScale),
+
+        ((self.NScale == 0 and self.Canvas.AbsoluteSize.Y) or 0),
+        ((self.Axis == "Y") and (AbsoluteContentSize.Y + 5)) or (self.NScale)
     );
 
     if (CanvasSize == self.Canvas.Size) then return; end -- No changes made to the canvas!
@@ -93,35 +98,37 @@ function AdjustingCanvas:Update()
     local CurrentCanvasSize = self:GetCanvasSize();
     local SizeOffset = ((self.PreviousSize and CurrentCanvasSize - self.PreviousSize) or 0);
 
-    if (self.Layout.VerticalAlignment == Enum.VerticalAlignment.Bottom) then -- Force to bottom
-        self.Canvas.CanvasPosition = Vector2.new(0, 9e9);
-    elseif (not self:IsScrolledDown()) then -- Maintain a constant position (not forced to bottom)
+    if (self.Layout.VerticalAlignment == Enum.VerticalAlignment.Bottom) then -- Force to max position
+        self.Canvas.CanvasPosition = Vector2.new(9e9, 9e9);
+    elseif (not self:IsFullyScrolled()) then -- Maintain a constant position (not forced to max position)
         self.Canvas.CanvasPosition = Vector2.new(
-            0, (self.Canvas.CanvasPosition.Y - SizeOffset));
+            ((self.Axis == "X") and (self.Canvas.CanvasPosition.X - SizeOffset)) or 0,
+            ((self.Axis == "Y") and (self.Canvas.CanvasPosition.Y - SizeOffset)) or 0
+        );
     end
 end
 
---- Returns the absolute CanvasSize based on the children found within the Canvas!
+--- Returns the absolute CanvasSize based on its children and dominant axis
 function AdjustingCanvas:GetCanvasSize() : number
-    if (not self.Canvas:IsA("ScrollingFrame")) then return self.Canvas.AbsoluteSize.Y; end
+    if (not self.Canvas:IsA("ScrollingFrame")) then return self.Canvas.AbsoluteSize[self.Axis]; end
 
-    local CanvasY = self.Canvas.CanvasSize.Y.Offset
-    local AbsoluteY = self.Canvas.AbsoluteSize.Y
+    local CanvasAbsolute = self.Canvas.CanvasSize[self.Axis].Offset
+    local CanvasSize = self.Canvas.AbsoluteSize[self.Axis];
     
-    return (CanvasY - AbsoluteY);
+    return (CanvasAbsolute - CanvasSize);
 end
 
 --- Returns a boolean that states whether the canvas is scrolled all the way down. This compensates for newly added instances!
-function AdjustingCanvas:IsScrolledDown() : boolean?
+function AdjustingCanvas:IsFullyScrolled() : boolean?
     if (not self.Canvas:IsA("ScrollingFrame")) then
-        warn("'IsScrolledDown()' is a method for ScrollingFrames only! (called Instance: "..(self.Canvas.Name)..") Please use a ScrollingFrame in order to use this method.");
+        warn("'IsFullyScrolled()' is a method for ScrollingFrames only! (called Instance: "..(self.Canvas.Name)..") Please use a ScrollingFrame in order to use this method.");
         return;
     end
 
     local AbsoluteCanvas = self:GetCanvasSize();
-    local CanvasY = self.Canvas.CanvasPosition.Y
+    local AxisPosition = self.Canvas.CanvasPosition[self.Axis];
     
-    local AbsoluteScroll = tonumber(string.format("%0.3f", CanvasY));
+    local AbsoluteScroll = tonumber(string.format("%0.3f", AxisPosition));
     local WasScrolledDown = (self.PreviousSize and (AbsoluteScroll + 2 >= tonumber(string.format("%0.3f", self.PreviousSize))));
     
     self.PreviousSize = AbsoluteCanvas

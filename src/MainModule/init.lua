@@ -59,7 +59,7 @@ local function CheckChatUI(Interface : ScreenGui)
 	local Chat = Validate(Interface, "Chat", {"Frame"});
 
 	local ChannelBar = Validate(Chat, "ChannelBar", {"Frame"});
-	Validate(ChannelBar, "Channels", {"Frame"});
+	Validate(ChannelBar, "Channels", {"Frame", "ScrollingFrame"});
 
 	local InputFrame = Validate(Chat, "Input", {"Frame"});
 	local InteractionBar = Validate(InputFrame, "InteractionBar", {"Frame"});

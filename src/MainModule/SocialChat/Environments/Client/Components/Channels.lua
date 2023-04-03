@@ -71,6 +71,8 @@ function ChannelMaster:Initialize(Setup : table)
     Network = self.Remotes.Channels
     Presets = self.Presets
 
+    FunctUI.new("AdjustingCanvas", ChannelFrame, nil, "X");
+
     --// Gradient Control
     for _, Info in pairs(TextStyles) do
         Info.Color = ExtractKeypointData(Info.Gradient, "Color", math.abs(Info.Keypoints));
@@ -167,7 +169,7 @@ end
 --- Creates a new channel using the provided parameters
 function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : table?, IsPrivate : boolean?) : Channel
     local Container = self.Presets.MessageContainer:Clone();
-    Container.Name = Name.."_CONTAINER"
+    Container.Name = "CHANNE_"..Name.."_CONTAINER"
     Container.Visible = false
 
     FunctUI.new("AdjustingCanvas", Container);
@@ -185,6 +187,7 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
         ["Container"] = Container, -- Prefabs -> MessageContainer
 
         ["Members"] = Members, -- table :: {Players...}
+        ["__unread"] = 0, -- number? :: Unread messages
         ["_cache"] = {} -- table :: {ChatInstances...}
         
     }, Channel);
@@ -196,26 +199,32 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
         ThisChannel:Focus();
     else -- Our client has multiple channels registered!
         local function CreateChannelButton(ForChannel : Channel)
-            local ChannelPrefab = Presets.ChannelPrefab:Clone();
+            local Preset = Presets.ChannelPrefab:Clone();
+            local RealSize : Vector2 = SmartText:GetTextSize(
+                ForChannel.Name,
+                Preset.Channel.TextSize,
+                Preset.Channel.Font,
+                Vector2.new(999999999, ChannelFrame.AbsoluteSize.Y)
+            );
 
-            ChannelPrefab.Name = ForChannel.Name
-            ChannelPrefab.Channel.Text = ForChannel.Name
+            Preset.Name = ForChannel.Name
+            Preset.Channel.Text = ForChannel.Name
+            Preset.Size = UDim2.new(0, RealSize.X + 45, 1, 0);
 
-            ForChannel.NavButton = ChannelPrefab
-            ChannelPrefab.Parent = ChannelFrame
-
-            ChannelPrefab.Channel.MouseButton1Click:Connect(function()
+            Preset.Channel.MouseButton1Click:Connect(function()
                 if (not ChatUIManager:IsEnabled()) then return; end -- Our ChatUI is not currently enabled! Channel switching is temporarily disabled
                 ForChannel:Focus();
             end);
+
+            ForChannel.NavButton = Preset
+            Preset.Parent = ChannelFrame
         end
 
         for _, RegisteredChannel in pairs(Registry) do
-            if (ChannelFrame:FindFirstChild(RegisteredChannel.Name)) then warn(RegisteredChannel.Name) continue; end -- Button already exists!
+            if (ChannelFrame:FindFirstChild(RegisteredChannel.Name)) then continue; end -- Button already exists!
             CreateChannelButton(RegisteredChannel);
         end
 
-        print("Registered SocialChat Channels: "..TotalChannels.." :: [ "..(Name).." ]");
         CreateChannelButton(ThisChannel);
 
         ChannelBar.Visible = (Settings.HideChatFrame ~= true);
@@ -232,6 +241,7 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
     Registry[Name] = ThisChannel
     TotalChannels += 1
 
+    print("Registered SocialChat Channel: "..TotalChannels.." :: [ "..(Name).." ]");
     Container.Parent = InputFrame
     return ThisChannel
 end
@@ -282,6 +292,9 @@ function Channel:Focus()
     self.Container.Visible = true
 
     if (self.NavButton) then
+        self.__unread = 0
+        self.NavButton.Notification.Visible = false
+
         TweenService:Create(self.NavButton, Settings.ChannelFocusTweenInfo, {
             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
             BackgroundTransparency = 0.2
@@ -436,6 +449,13 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
     StringRenderer.Container = MainFrame
     StringRenderer.BindSizeToContent = true
     StringRenderer:Update(); -- We need to update our renderer for setting updates
+
+    if ((FocusedChannel ~= self) and (self.NavButton)) then -- Notification Pinging
+        self.NavButton.Notification.Visible = true
+        self.__unread += 1
+
+        self.NavButton.Notification.Unread.Text = self.__unread
+    end
 
     MainFrame.Parent = self.Container
 

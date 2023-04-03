@@ -44,7 +44,7 @@ function Extensions:Init(Setup : table)
     Page = self.PanelUI.MainPanel.Extensions
     WidgetWindow = Page.Center.Installations
 
-    FunctUI.new("AdjustingCanvas", WidgetWindow, nil, Vector2.new(1, 0.5));
+    FunctUI.new("AdjustingCanvas", WidgetWindow, nil, nil, Vector2.new(1, 0.5));
 
     --// Extension Gateway
     --\\ We still need to know what extensions the SERVER has installed for crediting!
