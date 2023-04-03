@@ -329,7 +329,10 @@ function BubbleController:Chat(Message : string) : table
     local TextColor = ((Metadata and Metadata.TextColor) or Settings.Default.TextColor);
     local TextFont = ((Metadata and Metadata.Font) or Settings.Default.Font);
 
-    local FontSize = SmartText:GetBestFontSize(self.Object.AbsoluteSize, TextFont, 0, Settings.Default.TextSize);
+    local Size : UDim2 = self.Object:GetAttribute("ContainerSize"); -- Using attributes to bypass Roblox rendering issues
+    local Bounds = Vector2.new(Size.X.Offset, Size.Y.Offset);
+
+    local FontSize = SmartText:GetBestFontSize(Bounds, TextFont, 0, Settings.Default.TextSize);
     local TextRenderer = RichString.new({
         MarkdownEnabled = Settings.IsMarkdownEnabled
     });
@@ -340,7 +343,6 @@ function BubbleController:Chat(Message : string) : table
     };
 
     --// Dynamic Rendering
-    local Bounds = self.Object.AbsoluteSize
     local MovementX, MovementY = 0, 0
     local TextLines = {};
 
@@ -365,7 +367,7 @@ function BubbleController:Chat(Message : string) : table
                 TextObject.Text:gsub("<.->", ""),
                 FontSize,
                 TextFont,
-                self.Object.AbsoluteSize
+                Bounds
             );
 
             TextObject.Size = UDim2.fromOffset(TextBounds.X, TextBounds.Y);
