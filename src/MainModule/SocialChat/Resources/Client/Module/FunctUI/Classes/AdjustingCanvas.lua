@@ -24,9 +24,10 @@ function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?, Dominan
     assert(not DominantAxis or (DominantAxis == "X" or DominantAxis == "Y"), "The provide axis was invalid! A scrolling axis can only be 'X' or 'Y' (case sensitive)");
     assert(not SizeCoefficient or typeof(SizeCoefficient) == "Vector2", "The provided 'SizeCoefficient' was not of type 'Vector2'! (received "..(typeof(SizeCoefficient))..")");
 
-    local CanvasLayout = Canvas:FindFirstChildOfClass("UIListLayout");
-    assert(CanvasLayout, "The provided Canvas does not have a \"UIListLayout\"! (this is required for the functuality of an 'AdjustingCanvas'!)");
+    local CanvasLayout = (Canvas:FindFirstChildOfClass("UIListLayout") or Canvas:FindFirstChildOfClass("UIGridLayout"));
+    assert(CanvasLayout, "The provided Canvas does not have a \"UIListLayout\"! (this is required for the functuality of an 'AdjustingCanvas'!)\n\n"..(Canvas:GetFullName()));
 
+    local OnUpdatedCanvas = Instance.new("BindableEvent");
     local self = setmetatable({
 
         --// PROPERTIES
@@ -39,7 +40,11 @@ function AdjustingCanvas.new(Canvas : GuiObject, Container : GuiObject?, Dominan
         ["PreviousSize"] = nil, -- number? : [ AbsoluteSize.DOMINANT_AXIS ]
 
         ["Size"] = Canvas.Size, -- number :: We must save the un-used Axis as it is probably useful in UX
-        ["Axis"] = (DominantAxis or "Y") -- string :: Our dominating canvas axis (default :: Y)
+        ["Axis"] = (DominantAxis or "Y"), -- string :: Our dominating canvas axis (default :: Y)
+
+        --// EVENTS
+        ["__updateEvent"] = OnUpdatedCanvas,
+        ["OnUpdated"] = OnUpdatedCanvas.Event, -- Submits a Vector2 upon firing :: function(Size : Vector2) [NOTE: This is NOT the canvas size!]
 
     }, AdjustingCanvas);
 
@@ -90,7 +95,9 @@ function AdjustingCanvas:Update()
     );
 
     if (CanvasSize == self.Canvas.Size) then return; end -- No changes made to the canvas!
+
     self.Canvas[Property] = CanvasSize
+    self.__updateEvent:Fire(AbsoluteContentSize);
 
     --// Solve for scrolling
     if (not self.Canvas:IsA("ScrollingFrame")) then return; end -- The following is for ScrollingFrames ONLY!
