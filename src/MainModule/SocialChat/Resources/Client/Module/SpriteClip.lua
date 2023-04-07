@@ -1,6 +1,6 @@
 --[[
 	nooneisback's SpriteClip module
-	>> FPS Cap implemented by @CosRBX
+	>> FPS Cap & Garbage Collector implemented by @CosRBX
 	
 	A Roblox module for easy sprite animation. The only function it has is .new which returns a SpriteClip object.
 		
@@ -55,7 +55,7 @@ do
 		if ClipList[1] then
 			for animi=1,#ClipList do
 				local animv = ClipList[animi]
-				if animv.State then
+				if (animv and animv.State) then
 					local frametime = animv.FrameTime
 					if frame%frametime==0 then
 						animv:Advance(1)
@@ -104,13 +104,17 @@ do
 		local offx,offy = off.X,off.Y
 		local eoff = self.EdgeOffsetPixel
 		local countx = self.SpriteCountX
-		local count = self.SpriteCount
+		-- local count = self.SpriteCount
 		local x = (frame)%countx
 		local y = (frame-x)/countx
 		x=eoff.X+x*(sizex+offx)
 		y=eoff.Y+y*(sizey+offy)
 		local img = self.Adornee
 		img.ImageRectOffset = newVec2(x,y)
+
+		if (not img.Parent) then
+			self:Destroy(); -- Garbadge Collection
+		end
 	end
 
 	SpriteClip.new = function()
