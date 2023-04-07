@@ -256,12 +256,12 @@ function SmartStringObject:Update()
         --// Render Group Calculations
         --\\ We need to calculate the best size and position for our object groups!
 
-        for _, Object in pairs(RenderGroup.Objects) do
+        for _, Object : GuiObject in pairs(RenderGroup.Objects) do
 
             --// Other Cases
             --\\ In case of non-text instances being present, we should add some logic to handle it to the best of our ability!
-
-            if ((not Object:IsA("TextLabel")) and (not Object:IsA("TextButton")) and (not Object:IsA("TextBox"))) then
+            
+            if ((not Object:IsA("TextLabel")) and (not Object:IsA("TextButton")) and (not Object:IsA("TextBox")) or (Object:GetAttribute("_smImg"))) then
                 Object.Size = UDim2.fromOffset(GroupFontSize - 2, GroupFontSize - 2);
                 Object.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
                 TotalSizeX += GroupFontSize
@@ -291,7 +291,7 @@ function SmartStringObject:Update()
                 Object.Font,
                 self.Container.AbsoluteSize
             );
-            
+
             Object.Size = UDim2.fromOffset(GraphemeSize.X, GraphemeSize.Y);
             Object.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
 

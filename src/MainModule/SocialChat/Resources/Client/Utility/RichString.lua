@@ -77,7 +77,7 @@ function StringObject:Generate(Text : string, TextFont : Enum.Font, Callback : c
     local MarkdownInfo : table = ((self.MarkdownEnabled and Markdown:GetMarkdownData(Text, true)) or {});
     local HyperCases : table = GetHyperCases(Text);
 
-    local Labels = {};
+    local Objects = {};
 
     for Starts, Ends in utf8.graphemes(Text) do
         if (IsSpecialSyntax(Starts, MarkdownInfo, HyperCases)) then continue; end -- This is a markdown/hypertext syntax! (does NOT require instancing)
@@ -117,7 +117,7 @@ function StringObject:Generate(Text : string, TextFont : Enum.Font, Callback : c
                 end);
             end
 
-            table.insert(Labels, ReplacementObject);
+            table.insert(Objects, ReplacementObject);
 
             if (Callback) then
                 Callback(ReplacementObject);
@@ -143,7 +143,7 @@ function StringObject:Generate(Text : string, TextFont : Enum.Font, Callback : c
                 end);
             end
             
-            table.insert(Labels, NewTextObject);
+            table.insert(Objects, NewTextObject);
 
             if (Callback) then
                 Callback(NewTextObject);
@@ -151,7 +151,7 @@ function StringObject:Generate(Text : string, TextFont : Enum.Font, Callback : c
         end
     end
 
-    return Labels
+    return Objects
 end
 
 --// Functions

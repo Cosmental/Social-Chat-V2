@@ -360,9 +360,11 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
 
     --// Dynamic Rendering
     local function Generate(TextGroupName : string, Text : string, Properties : table, ButtonCallback : callback?, IsTag : boolean?)
-        local TextObjects : table = ContentRenderer:Generate(Text, Properties.Font, function(TextObject)
+        local Objects : table = ContentRenderer:Generate(Text, Properties.Font, function(Object : TextLabel | ImageButton)
+            if (not Object:IsA("TextLabel") and not Object:IsA("TextButton")) then return; end
             if (typeof(Properties.Color) ~= "Color3") then return; end
-            TextObject.TextColor3 = Properties.Color
+
+            Object.TextColor3 = Properties.Color
         end, ButtonCallback ~= nil, (IsTag or Settings.AllowMarkdown));
 
         local GradientData : table?
@@ -374,21 +376,21 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
                 ["LastTick"] = 0,
                 ["Index"] = 0,
 
-                ["Objects"] = TextObjects
+                ["Objects"] = Objects
             };
 
             table.insert(GradientLabels, GradientData);
             table.insert(Content.Gradients, GradientData);
         end
 
-        StringRenderer:AddGroup(TextGroupName, TextObjects, Properties.Font);
+        StringRenderer:AddGroup(TextGroupName, Objects, Properties.Font);
 
-        for _, TextObject in pairs(TextObjects) do
+        for _, Object : (TextLabel | ImageButton) in pairs(Objects) do
             if (ButtonCallback) then
-                TextObject.MouseButton1Click:Connect(ButtonCallback);
+                Object.MouseButton1Click:Connect(ButtonCallback);
             end
 
-            TextObject.Parent = MainFrame
+            Object.Parent = MainFrame
         end
     end
 
