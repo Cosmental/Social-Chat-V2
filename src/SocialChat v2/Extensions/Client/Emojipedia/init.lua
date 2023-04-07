@@ -1,45 +1,673 @@
 --[[
 
     Name: Mari
-    Date: 4/1/2023
+    Date: 4/6/2023
 
-    Description: ...
+    Description: Emojipedia is a standalone extension that provides Twemoji support into SocialChat for all devices! This should simulate
+                 Discord emoji behavior, and present emojis evenly within your chat system.
 
 ]]--
 
 --// Module
-local Extension = {};
+local Emojipedia = {};
 
-Extension.__index = Extension
-Extension.__meta = {
-    Name = "Example-Extension", -- Extesion Name
+Emojipedia.__index = Emojipedia
+Emojipedia.__meta = {
+    Name = "Emojipedia", -- Extesion Name
     CreatorId = 876817222, -- Creator's UserId
     Description = "This is the silliest extension of all time!", -- Extension Description
     IconId = "http://www.roblox.com/asset/?id=12293400310", -- Extension IconId (must be a decal Id such as "rbxassetid://ID-HERE")
     Version = "1.0" -- Extension version (will be displayed)
 };
 
+--// Services
+local UserInputService = game:GetService("UserInputService");
+local TweenService = game:GetService("TweenService");
+local TextService = game:GetService("TextService");
+local RunService = game:GetService("RunService");
+
+--// Imports
+local Channels : table < ChannelsAPI >
+local BubbleChat : table < BubbleChatAPI>
+
+local FunctUI : table < FunctUI >
+local Emojis : table < table < Emoji > > = {};
+
+--// Constants
+local Player = game.Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local Mouse = Player:GetMouse();
+
+local Categories : Folder
+local Presets : Folder
+
+local ChatUI : ScreenGui
+local InputFrame : Frame
+local InputBar : Frame
+local InputBox : TextBox
+
+local EmotePanel : Frame
+local SidePanel : Frame
+local EmoteBtn : ImageButton
+local EmojiMatch : Frame
+
+local EmojiBubbleCache : ScreenGui?
+local ButtonStates : table <string> = {
+    Active = {
+        "rbxassetid://11534391613", -- Star Struck Eyes
+        "rbxassetid://11534390823", -- Shocked
+        "rbxassetid://11534390228", -- Innocent
+        "rbxassetid://11534389488", -- Heart Eyes
+        "rbxassetid://11534388589", -- Blehhh
+        "rbxassetid://11534387838" -- Awkward
+    };
+    
+    Inactive = {
+        "rbxassetid://11534396890", -- Star Struck Eyes (BW)
+        "rbxassetid://11534396199", -- Shocked (BW)
+        "rbxassetid://11534395690", -- Innocent (BW)
+        "rbxassetid://11534394880", -- Heart Eyes (BW)
+        "rbxassetid://11534394020", -- Blehhh (BW)
+        "rbxassetid://11534393341" -- Awkward (BW)
+    };
+};
+
+--// States
+local CurrentSuggestion : table < Emoji >?
+
 --// Main
 
 --- The initialization method for our Extension. This will setup and initialize this extension indefinitely
-function Extension:Deploy(SocialChat : metatable)
-    local self = setmetatable(SocialChat, Extension);
+function Emojipedia:Deploy(SocialChat : metatable)
+    local self = setmetatable(SocialChat, Emojipedia);
 
+    Channels = self.Components.Channels
+    BubbleChat = self.Components.BubbleChat
+    FunctUI = self.Library.FunctUI
+
+    Categories = script.Categories
+    Presets = script.Presets
+
+    ChatUI = self.ChatUI
+    InputFrame = ChatUI.Chat.Input
+    InputBar = InputFrame.InteractionBar
+    InputBox = InputBar.InputBox
+
+    EmotePanel = script.Content.EmojiSearch
+    EmojiMatch = script.Content.EmojiMatch
+    SidePanel = EmotePanel.Panel.Shortcuts
+    EmoteBtn = script.Content.Emote
+
+    EmojiBubbleCache = Instance.new("ScreenGui");
+    EmojiBubbleCache.DisplayOrder = 1
+    EmojiBubbleCache.Name = "EmojiBubbleCache"
+    EmojiBubbleCache.ResetOnSpawn = false
+    EmojiBubbleCache.IgnoreGuiInset = true
+    EmojiBubbleCache.Parent = Player.PlayerGui
+
+    self.LayoutOrder = 0 -- State value that determines the order in which our buttons will move towards
+
+    --// UI Setup
+    InputBox.Size = UDim2.fromScale(0.838, 0.861);
+    EmojiMatch.Parent = InputFrame
+    EmotePanel.Parent = InputFrame
+    EmoteBtn.Parent = InputBar
+
+    FunctUI.new('AdjustingCanvas', EmotePanel.Search);
+    FunctUI.new('AdjustingCanvas', EmotePanel.Categories);
+    FunctUI.new('AdjustingCanvas', SidePanel, nil, nil, Vector2.new(1, .2));
+
+    --// Emoji States
+    local CurrentState : number = 1 -- NOTE: For every COLORED Active state, there must be a B&W counterpart in the SAME table position!
+
+    EmoteBtn.MouseEnter:Connect(function()
+        EmoteBtn.Image = ButtonStates.Active[CurrentState];
+    end);
+
+    EmoteBtn.MouseLeave:Connect(function()
+        CurrentState = math.random(#ButtonStates.Active);
+        EmoteBtn.Image = ButtonStates.Inactive[CurrentState];
+    end);
+
+    EmoteBtn.Image = ButtonStates.Inactive[CurrentState];
+
+    --// Panel Visibility
+    EmoteBtn.MouseButton1Click:Connect(function()
+        EmotePanel.Visible = (not EmotePanel.Visible);
+    end);
+
+    Mouse.Button1Down:Connect(function()
+        task.defer(function()
+            EmotePanel.Visible = false
+        end, RunService.RenderStepped);
+    end);
+
+    --// Category Setup
+
+    -- CreateSection(
+    --     "Favorites",
+    --     "rbxassetid://3926305904",
+    --     Vector2.new(24, 24),
+    --     Vector2.new(116, 4)
+    -- );
+
+    -- CreateSection(
+    --     "Recent",
+    --     "rbxassetid://3926307971",
+    --     Vector2.new(36, 36),
+    --     Vector2.new(604, 404)
+    -- );
+
+    for _, Category in pairs(Categories:GetDescendants()) do
+        if (not Category:IsA("Folder") or not Category:FindFirstChildOfClass("ModuleScript")) then continue; end
+        if (not Category:FindFirstChild("Meta") or not Category:FindFirstChild("IconData")) then
+            error(Category.Name.." is missing data! Each category must contain a 'Meta' ModuleScript and a 'IconData' ModuleScript.");
+            continue;
+        end
+
+        local Icon = require(Category.IconData);
+        local Meta = require(Category.Meta);
+
+        Emojis[Category.Name] = {
+            ["Icon"] = Icon,
+            ["Meta"] = Meta
+        };
+
+        self:CreateSection(Icon, Meta);
+    end
+
+    self.Components.InputBox.Highlighter:SetHandler(function(Phrase : string)
+        for _, Category : table in pairs(Emojis) do
+            for _, Emoji : table in pairs(Category.Meta) do
+                for _, Alias : string in pairs(Emoji.Aliases) do
+                    if ((":"..(Alias)..":") ~= Phrase) then continue; end
+                    return true, Color3.fromRGB(235, 255, 55); -- VERY NESTED YUCKY !! (but alas... simplest solution...)
+                end
+            end
+        end
+    end);
+
+    --// Query Searching
+    local function SetClearState(State : boolean)
+        if (State) then
+            EmotePanel.Input.Search.ImageColor3 = Color3.fromRGB(255, 255, 255);
+            EmotePanel.Input.Search.ImageRectOffset = Vector2.new(924, 724); -- Clear Image
+        else
+            EmotePanel.Input.Search.ImageColor3 = Color3.fromRGB(150, 150, 150);
+            EmotePanel.Input.Search.ImageRectOffset = Vector2.new(964, 324); -- Search Image
+        end
+    end
+
+    local HackyInput : table < Emoji >? -- Sadly had to resort to this hacky implementation that would beat any race-conditions when dealing with RunService. Have a better solution? Dm me!
+
+    EmotePanel.Input.Search.MouseButton1Click:Connect(function()
+        EmotePanel.Input.InputBox.Text = "" -- Clear Text
+        EmotePanel.Input.InputBox:CaptureFocus();
+    end);
+
+    EmotePanel.Input.InputBox.FocusLost:Connect(function()
+        EmotePanel.Input.InputBox.Text = ""
+
+        if (HackyInput) then
+            InputQuery(HackyInput);
+            HackyInput = nil
+        end
+    end);
+
+    EmotePanel.Input.InputBox:GetPropertyChangedSignal("Text"):Connect(function()
+        local Query : string = EmotePanel.Input.InputBox.Text
+
+        for _, Child in pairs(EmotePanel.Search:GetChildren()) do
+            if (Child:IsA("GuiObject")) then
+                local Bubble = EmojiBubbleCache:FindFirstChild("__SEARCH:"..Child.Name);
+
+                if (Bubble) then
+                    Bubble:Destroy();
+                end
+
+                Child:Destroy();
+            end
+        end
+
+        if (Query:len() < 1) then
+            SetClearState(false);
+            
+            EmotePanel.Search.Visible = false
+            EmotePanel.Categories.Visible = true
+
+            return;
+        end
+
+        SetClearState(true);
+        EmotePanel.Search.Visible = true
+        EmotePanel.Categories.Visible = false
+
+        --// Query Searching
+        local Matches : table = self:Match(Query);
+
+        for _, Match in ipairs(Matches) do
+            local Item, Bubble = RenderEmoji(Match.Meta);
+            if (not Item) then continue; end
+
+            Item.MouseEnter:Connect(function()
+                HackyInput = Match
+            end);
+
+            Item.MouseLeave:Connect(function()
+                HackyInput = nil
+            end);
+            
+            Bubble.Name = ("__SEARCH:"..Item.Name);
+            Item.Parent = EmotePanel.Search
+        end
+
+        EmotePanel.Search.CanvasPosition = Vector2.new(0, 0); -- Stay at top
+    end);
+
+    --// InputBox Query Suggestions
+    local SuggestCap : number = ( -- The number of suggested emojis that we can fit in our UI widget. This will dynamically scale based on platforms
+        (Camera.ViewportSize.Y <= 400 and 3)
+        or 5
+    );
+
+    local function ClearSuggestions()
+        for _, Child in pairs(EmojiMatch.Suggestions:GetChildren()) do
+            if (not Child:IsA("GuiObject")) then continue; end
+            Child:Destroy();
+        end
+
+        CurrentSuggestion = nil
+        EmojiMatch.Visible = false
+    end
+
+    local function Suggest()
+        local Query = InputBox.Text:gsub("	", ""); -- Remove tabulation utf-8 [9] keys.
+        ClearSuggestions();
+        
+        local Input = Query:split(" ")[#Query:split(" ")];
+        if (Input:sub(1, 1) ~= ":") then return; end -- Not an emoji! [END]
+
+        local Matches : table = self:Match(Input:sub(2), SuggestCap);
+        if (not next(Matches)) then return; end
+
+        for _, Match in ipairs(Matches) do
+            local Emoji = RenderEmoji(Match.Meta, true);
+            if (not Emoji) then continue; end -- No Emoji? [Silent-Error]
+            
+            local Item = Presets.EmojiMatchItem:Clone();
+            Emoji.AnchorPoint = Vector2.new(0, 0.5);
+            Emoji.Size = UDim2.fromScale(0.05, 0.75);
+            Emoji.Position = UDim2.fromScale(0.015, 0.5);
+            Emoji.Parent = Item
+
+            Item.InputBegan:Connect(function(Input : InputObject)
+                if (Input.UserInputType ~= Enum.UserInputType.MouseButton1) then return; end
+                InputQuery(Match);
+            end);
+
+            Item.InputBegan:Connect(function(Input : InputObject)
+                if (Input.UserInputType ~= Enum.UserInputType.MouseMovement) then return; end
+
+                TweenService:Create(Item, TweenInfo.new(.4), {BackgroundTransparency = 0}):Play();
+                CurrentSuggestion = Match
+            end);
+
+            Item.InputEnded:Connect(function(Input : InputObject)
+                if (Input.UserInputType ~= Enum.UserInputType.MouseMovement) then return; end
+
+                TweenService:Create(Item, TweenInfo.new(.2), {BackgroundTransparency = .5}):Play();
+                CurrentSuggestion = nil
+            end);
+
+            Item.Content.Text = Match.Meta.Aliases[1];
+            Item.Parent = EmojiMatch.Suggestions
+        end
+
+        CurrentSuggestion = Matches[1];
+        EmojiMatch.Search.Text = Input
+        EmojiMatch.Visible = true
+    end
+
+    InputBox:GetPropertyChangedSignal("Text"):Connect(Suggest);
+    InputBox.Focused:Connect(Suggest);
+    InputBox.FocusLost:Connect(function()
+        task.defer(ClearSuggestions, game:GetService("RunService").RenderStepped); -- Function must run on the next-frame operation due to Roblox EventHandler race-conditions with the emoji suggestion elements
+    end);
+
+    UserInputService.InputBegan:Connect(function(Input : Enum.KeyCode)
+        if (Input.KeyCode ~= Enum.KeyCode.Tab) then return; end
+        if (not CurrentSuggestion) then return; end
+
+        InputQuery(CurrentSuggestion);
+    end);
+
+    --// Reactive Emoji-Match UI
+    local Canvas = FunctUI.new('AdjustingCanvas', EmojiMatch.Suggestions);
+    
+    Canvas.OnUpdated:Connect(function(Size : Vector2)
+        local AnchorY : number = EmojiMatch.Search.AbsoluteSize.Y
+
+        TweenService:Create(EmojiMatch, TweenInfo.new(.5, Enum.EasingStyle.Exponential), {
+            Size = UDim2.new(.98, 0, 0, Size.Y + AnchorY + 15);
+        }):Play();
+
+        EmojiMatch.Suggestions.Position = UDim2.new(0.5, 0, 0, AnchorY + 5);
+    end);
+
+    Canvas:Update();
     return self
 end
 
 --// Methods
 
---- Example Method
-function Extension:Foo()
+--- Creates a new Emojipedia section that can hold emojis
+function Emojipedia:CreateSection(IconData : table, Emotes : table)
+    assert(type(IconData) == "table", "Parameter type mismatch. Expected 'IconData' to be of type 'table'. (got "..(type(IconData))..")");
+    assert(type(Emotes) == "table", "Parameter type mismatch. Expected 'Emotes' to be of type 'table'. (got "..(type(IconData))..")");
+    assert(IconData.Name, "The provided 'IconData' does not supply a 'Name'!");
+    assert(IconData.ImageId, "The provided 'IconData' does not supply an 'ImageId'!");
+
+    --// Emoji Setup
+    local Section = Presets.Section:Clone();
+
+    Section.Icon.ImageRectOffset = (IconData.ImageRectOffset or Vector2.new(0, 0));
+    Section.Icon.ImageRectSize = (IconData.ImageRectSize or Vector2.new(0, 0));
+    Section.Icon.Image = IconData.ImageId
+
+    Section.Name = IconData.Name.."_Section"
+    Section.Category.Text = IconData.Name
+
+    for _, Emoji in pairs(Emotes) do
+        local Item : ImageButton | TextButton = RenderEmoji(Emoji);
+        local Emote : string = Emoji.Aliases[1]; -- Each emoji should have at least ONE alias
+
+        if (not Item) then
+            warn("Failed to load emoji: "..(Emote)..". (missing visual data [ types: '.Image' <ImageId>, '.Character' <UTF8>, 'Tiles' <table> ])");
+            continue;
+        end
+
+        Item.MouseButton1Click:Connect(function()
+            if (not InputBox:IsFocused()) then
+                InputBox:CaptureFocus();
+            end
+
+            InputQuery(Emoji);
+            InputBox.CursorPosition = #InputBox.Text + 1
+        end);
+
+        for _, Alias : string in pairs(Emoji.Aliases) do -- All aliases must be formattable!
+            Channels:HandleRender(":"..Alias..":", function()
+                local Object = RenderEmoji(Emoji);
     
+                Object:SetAttribute("_smImg", true);
+                return Object
+            end);
+    
+            BubbleChat:HandleRender(":"..Alias..":", function()
+                local Object = RenderEmoji(Emoji, true);
+    
+                Object:SetAttribute("_smImg", true);
+                return Object
+            end);
+        end
+
+        Item.Parent = Section.Emojis
+    end
+
+    Section.LayoutOrder = self.LayoutOrder
+    Section.Parent = EmotePanel.Categories
+
+    --// Button Setup
+    local Button = CreateButton(
+        IconData.Name,
+        IconData.ImageId,
+        IconData.ImageRectSize,
+        IconData.ImageRectOffset
+    );
+
+    Button.LayoutOrder = self.LayoutOrder
+    Button.Icon.MouseButton1Click:Connect(function()
+        EmotePanel.Categories.CanvasPosition = Vector2.new(
+            0,
+            GetSectionPosition(Section)
+        );
+    end);
+    
+    --// Canvas Setup
+    local Canvas = FunctUI.new('AdjustingCanvas', Section.Emojis);
+    
+    Canvas.OnUpdated:Connect(function(Size : Vector2)
+        local AnchorY : number = Section.Category.AbsoluteSize.Y
+        Section.Size = UDim2.new(1, 0, 0, Size.Y + AnchorY);
+
+        EmotePanel.Categories.CanvasPosition = Vector2.new(0, 0);
+    end);
+
+    Section.Size = UDim2.fromScale(0, 0); -- Hacky bypass to AdjustingCanvas. Why does it work? I have no idea! It just does...
+    Canvas:Update();
+
+    self.LayoutOrder += 1
+end
+
+--- Determines if the provided content is a UTF8 emoji
+function Emojipedia:IsUTF8(Content : string) : boolean
+    assert(type(Content) == "string", "The provided UTF-8 content was not in the form of a string! Please provide a string to run this process.");
+    
+    for _, Category in pairs(Emojis) do
+        local Emotes = require(Category.Meta);
+
+        for _, Data in pairs(Emotes) do
+            if (not Data.Character) then continue; end
+            if (Data.Character ~= Content) then continue; end
+            
+            return true;
+        end
+    end
+end
+
+--- Returns a list of match items based on the provided query parameters [ Best Match --> Worst Match (descending) ]
+function Emojipedia:Match(Query : string, MaxItems : number?) : table < string >?
+    assert(type(Query) == "string", "The supplied 'Query' parameter for the requested Emojipedia match was not of type: 'string'. (got "..(type(Query))..")");
+    assert(not MaxItems or type(MaxItems) == "number", "The supplied 'MaxItems' parameter was not of type: 'number'. (got "..(type(MaxItems))..")");
+    assert(not MaxItems or MaxItems > 0, "The supplied 'MaxItems' parameter was not greater than zero! The minimum amount of items must be at least 1 or more.");
+
+    local Matches : table = {};
+
+    for _, Category : table in pairs(Emojis) do
+        for _, Emoji in pairs(Category.Meta) do
+            local BestWeight : number = 0
+
+            for _, Alias in pairs(Emoji.Aliases) do -- Scan through ALL aliases to find the best one!
+                local Likeliness : number = FuzzyMatch(Query, Alias);
+
+                if (Likeliness <= 0) then continue; end -- Does not match
+                if (Likeliness < BestWeight) then continue; end
+
+                BestWeight = Likeliness
+            end
+
+            if (BestWeight <= 0) then continue; end -- Does not match at all
+
+            table.insert(Matches, {
+                ["Weight"] = BestWeight,
+                ["Meta"] = Emoji
+            });
+        end
+    end
+
+    table.sort(Matches, function(a, b)
+        return a.Weight > b.Weight
+    end);
+
+    if (MaxItems and #Matches > MaxItems) then
+        for _ = MaxItems + 1, #Matches do
+            table.remove(Matches, #Matches); -- Since we order our items in a descending order, we can repeatedly just remove the n'th item
+        end
+    end
+
+    return Matches
 end
 
 --// Functions
 
---- Example Function
-function Bar()
-    
+--- Creates a Button for the emojipedia side panel
+function CreateButton(Name : string, ImageId : string, ImageRectSize : Vector2?, ImageRectOffset : Vector2?) : ImageButton
+    local Button = Presets.Button:Clone();
+
+    Button.Icon.ImageRectOffset = (ImageRectOffset or Vector2.new(0, 0));
+    Button.Icon.ImageRectSize = (ImageRectSize or Vector2.new(0, 0));
+    Button.Icon.Image = ImageId
+
+    FunctUI.new('Note', Button, " "..Name);
+
+    Button.Name = Name
+    Button.Parent = SidePanel
+
+    return Button
 end
 
-return Extension
+--- Renders an emoji-item based on the provided parameters
+function RenderEmoji(Emoji : table, NoBubble : boolean?) : ((TextButton | ImageButton) & GuiObject)?
+    local Alias : string = Emoji.Aliases[1]; -- Each emoji should have at least ONE alias
+    local Item : TextButton | ImageButton
+
+    if (Emoji.Character) then -- This Emoji will be displayed as a UTF8 item!
+        Item = Instance.new("TextButton");
+        Item.TextScaled = true
+        Item.Text = Emoji.Character
+    elseif (Emoji.Image) then -- This emoji is NOT a UTF8 emoji
+        Item = Instance.new("ImageButton");
+        Item.Image = Emoji.Image
+    elseif (Emoji.Tiles) then -- This emoji is a GIF
+        Item = Instance.new("ImageButton");
+        -- SpritClip usage here...
+    else
+        return; -- No data found! :(
+    end
+
+    Item.ZIndex = 10
+    Item.Name = Alias
+    Item.BackgroundTransparency = 1
+
+    return Item, (not NoBubble and AddBubble(Item, ":"..(Alias)..":"))
+end
+
+--- Adds a bubble over the displayed element
+function AddBubble(Element : GuiObject, Content : string) : GuiObject
+    local Bubble = Presets.Bubble:Clone();
+
+    Bubble.Size = UDim2.fromOffset(0, 0);
+    Bubble.Name = "BUBBLE_"..Content
+    Bubble.Content.Text = Content
+    Bubble.Parent = EmojiBubbleCache
+    
+    --// Position Control
+    local function UpdatePosition()
+        Bubble.Position = UDim2.fromOffset(
+            Element.AbsolutePosition.X + (Element.AbsoluteSize.X / 2) + 5,
+            Element.AbsolutePosition.Y - 5
+        );
+    end
+
+    UpdatePosition();
+    Element:GetPropertyChangedSignal("AbsolutePosition"):Connect(UpdatePosition);
+
+    --// Size Control
+    local ContentSize : Vector2 = TextService:GetTextSize(
+        Content,
+        32,
+        Bubble.Content.Font,
+        Camera.ViewportSize
+    );
+
+    Element.InputBegan:Connect(function(Input : InputObject)
+        if (Input.UserInputType ~= Enum.UserInputType.MouseMovement) then return; end
+
+        TweenService:Create(Bubble, TweenInfo.new(0.2), {
+            Size = UDim2.fromOffset(math.max(32, ContentSize.X), 32);
+        }):Play();
+
+        TweenService:Create(Bubble.Carrot, TweenInfo.new(0.1), {
+            Size = UDim2.fromOffset(24, 24);
+        }):Play();
+    end);
+
+    Element.InputEnded:Connect(function(Input : InputObject)
+        if (Input.UserInputType ~= Enum.UserInputType.MouseMovement) then return; end
+
+        TweenService:Create(Bubble, TweenInfo.new(0.1), {
+            Size = UDim2.fromOffset(0, 0);
+        }):Play();
+
+        TweenService:Create(Bubble.Carrot, TweenInfo.new(0.1), {
+            Size = UDim2.fromOffset(0, 0);
+        }):Play();
+    end);
+
+    return Bubble
+end
+
+--- Returns the CanvasPosition.Y of the provided Section Frame
+function GetSectionPosition(Query : Frame) : number
+    local Padding : number = EmotePanel.Categories:FindFirstChildOfClass("UIListLayout").Padding.Offset
+    local Position = 0
+
+    for _, Section in pairs(EmotePanel.Categories:GetChildren()) do
+        if (not Section:IsA("GuiObject")) then continue; end
+        if (Section.LayoutOrder >= Query.LayoutOrder) then continue; end
+
+        Position += Section.AbsoluteSize.Y
+    end
+
+    return (
+        (Position > 0 and Position + Padding)
+        or 0
+    );
+end
+
+--- Returns the likelihood of a string match between string A and string B
+function FuzzyMatch(ItemA : string, ItemB : string) : number
+    if (ItemA == ItemB) then return 100; end -- If both string match EXACTLY, this is clearly an exact match
+    local Likeliness = 0
+
+    for Start, End in utf8.graphemes(ItemA) do
+        local Character = ItemA:sub(Start, End);
+        if (utf8.codepoint(Character) == 32) then continue; end -- Whitespaces dont count
+
+        if (Character:lower() == ItemB:sub(Start, End):lower()) then -- Matches EXACT letter (eg. 'A' == 'a')
+            Likeliness += 3
+        else
+            break;
+        end
+    end
+
+    return Likeliness
+end
+
+--- Inputs the requested Emoji query into our textbox
+function InputQuery(Query : table < Emoji >)
+    if (not InputBox:IsFocused()) then
+        InputBox:CaptureFocus();
+    end
+
+    local EmoteName : string = (
+        (Query.Aliases and Query.Aliases[1])
+        or Query.Meta.Aliases[1]
+    );
+
+    local Input = InputBox.Text
+    local Split = Input:split(" ");
+
+    local PriorInput : string = ""
+
+    if (#Split > 1) then
+        PriorInput = table.concat(Split, " ", 1, #Split - 1); -- Collect previous text for good UX
+    end
+    
+    InputBox.Text = ((PriorInput) .. " " .. (":".. (EmoteName) .. ":") .. " ");
+    InputBox.CursorPosition = #InputBox.Text + 1
+
+    CurrentSuggestion = nil
+end
+
+return Emojipedia
