@@ -49,6 +49,8 @@ local TotalChannels = 0
 local FocusedChannel : string?
 local GradientLabels = {};
 
+local RenderHandlers : table < string > = {};
+
 --// Initialization
 
 function ChannelMaster:Initialize(Setup : table)
@@ -279,6 +281,15 @@ function ChannelMaster:CreateSystemMessage(Message : string, Metadata : table?, 
     ToChannel:Message(Message, Metadata);
 end
 
+--- Adds a new string replacement to Channel StringObject's
+function ChannelMaster:HandleRender(Keyword : string, Handler : Function)
+    assert(type(Keyword) == "string", "A string type was not passed for the \"Keyword\" parameter. (got "..(type(Keyword))..")");
+    assert(type(Handler) == "function", "The provided 'Handler' callback was not a function! (got "..(type(Handler))..")");
+    assert(not RenderHandlers[Keyword], "The provided 'Keyword' parameter \""..(Keyword).."\" is already in use!");
+
+    RenderHandlers[Keyword] = Handler
+end
+
 --// Metamethods
 
 --- Sets our client's channel focus on this channel
@@ -336,6 +347,10 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
     local ContentRenderer : StringObject = RichString.new({
         MarkdownEnabled = (Metadata and Metadata.BypassMarkdownSetting) or Settings.AllowMarkdown
     });
+
+    for Keyword : string, Handler : Function in pairs(RenderHandlers) do
+        ContentRenderer:Replace(Keyword, Handler);
+    end
     
     local Content = {
         ["SmartStringObject"] = StringRenderer,
