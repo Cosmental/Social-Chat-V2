@@ -28,7 +28,8 @@ local RunService = game:GetService("RunService");
 
 --// Imports
 local Channels : table < ChannelsAPI >
-local BubbleChat : table < BubbleChatAPI>
+local BubbleChat : table < BubbleChatAPI >
+local SpriteClip : table < SpriteClip >
 
 local FunctUI : table < FunctUI >
 local Emojis : table < table < Emoji > > = {};
@@ -83,6 +84,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
 
     Channels = self.Components.Channels
     BubbleChat = self.Components.BubbleChat
+    SpriteClip = self.Library.SpriteClip
     FunctUI = self.Library.FunctUI
 
     Categories = script.Categories
@@ -382,7 +384,7 @@ function Emojipedia:CreateSection(IconData : table, Emotes : table)
         local Emote : string = Emoji.Aliases[1]; -- Each emoji should have at least ONE alias
 
         if (not Item) then
-            warn("Failed to load emoji: "..(Emote)..". (missing visual data [ types: '.Image' <ImageId>, '.Character' <UTF8>, 'Tiles' <table> ])");
+            warn("Failed to load emoji: "..(Emote)..". (missing visual data [ types: '.Image' <ImageId : string>, '.Character' <UTF8 : string> ])");
             continue;
         end
 
@@ -538,11 +540,21 @@ function RenderEmoji(Emoji : table, NoBubble : boolean?) : ((TextButton | ImageB
     elseif (Emoji.Image) then -- This emoji is NOT a UTF8 emoji
         Item = Instance.new("ImageButton");
         Item.Image = Emoji.Image
-    elseif (Emoji.Tiles) then -- This emoji is a GIF
-        Item = Instance.new("ImageButton");
-        -- SpritClip usage here...
     else
         return; -- No data found! :(
+    end
+
+    if (Emoji.Animation) then
+        local Clip : SpriteClipObject = SpriteClip.new();
+
+        Clip.SpriteSizePixel = Emoji.Animation.SpriteSizePixel
+        Clip.SpriteCountX = Emoji.Animation.SpriteCountX
+        Clip.SpriteCount = Emoji.Animation.SpriteCount
+        Clip.FrameRate = Emoji.Animation.FrameRate
+
+        Clip.InheritSpriteSheet = true
+        Clip.Adornee = Item
+        Clip:Play();
     end
 
     Item.ZIndex = 10
