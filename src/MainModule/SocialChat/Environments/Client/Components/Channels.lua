@@ -132,7 +132,7 @@ function ChannelMaster:Initialize(Setup : table)
             local DirectedChannel = self:Get(Destination.Name);
 
             if (not DirectedChannel) then -- The desired channel for this message does not exist!
-                warn("SocialChatClient Channel Manager received a message from the server for a channel that the client has not registed! ( Channel: \""..(Destination).."\" || Message: \""..(Message).."\" )");
+                warn("SocialChatClient Channel Manager received a message from the server for a channel that the client has not registed! ( Channel: \""..(Destination.Name).."\" || Message: \""..(Message).."\" )");
                 return;
             end
 
