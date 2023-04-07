@@ -42,6 +42,8 @@ local GradientLabels = {};
 local IsActivelyTyping : boolean?
 local LastInput = os.clock();
 
+local RenderHandlers : table < string > = {};
+
 --// Initialization
 function BubbleChat:Initialize(Info : table) : metatable
     local self = setmetatable(Info, BubbleChat);
@@ -310,6 +312,15 @@ function BubbleChat:Configure(Configuration : string, Value : any?)
     Settings[Configuration] = Value
 end
 
+--- Adds a new string replacement to BubbleChat StringObject's
+function BubbleChat:HandleRender(Keyword : string, Handler : Function)
+    assert(type(Keyword) == "string", "A string type was not passed for the \"Keyword\" parameter. (got "..(type(Keyword))..")");
+    assert(type(Handler) == "function", "The provided 'Handler' callback was not a function! (got "..(type(Handler))..")");
+    assert(not RenderHandlers[Keyword], "The provided 'Keyword' parameter \""..(Keyword).."\" is already in use!");
+
+    RenderHandlers[Keyword] = Handler
+end
+
 --// Metamethods
 
 --- Renders a new chat bubble for the provided content
@@ -333,9 +344,13 @@ function BubbleController:Chat(Message : string) : table
     local Bounds = Vector2.new(Size.X.Offset, Size.Y.Offset);
 
     local FontSize = SmartText:GetBestFontSize(Bounds, TextFont, 0, Settings.Default.TextSize);
-    local TextRenderer = RichString.new({
+    local TextRenderer : StringObject = RichString.new({
         MarkdownEnabled = Settings.IsMarkdownEnabled
     });
+
+    for Keyword : string, Replacement : callback in pairs(RenderHandlers) do
+        TextRenderer:Replace(Keyword, Replacement);
+    end
 
     local Content = {
         ["Render"] = Bubble,
@@ -360,17 +375,23 @@ function BubbleController:Chat(Message : string) : table
 
     local TextObjects : table = TextRenderer:Generate(
         Message, TextFont,
-        function(TextObject)
-            TextObject.Parent = CurrentLine -- We need to parent our UI element before-hand in order for calculations to work!
+        function(ContentObject : TextLabel | ImageButton)
+            ContentObject.Parent = CurrentLine -- We need to parent our UI element before-hand in order for calculations to work!
+
+            if (not ContentObject:IsA("TextLabel")) then -- Non-Text objects require special handling!
+                ContentObject.Size = UDim2.fromOffset(FontSize, FontSize);
+                MovementX += FontSize
+                return;
+            end
 
             local TextBounds, MultiLine = SmartText:GetTextSize(
-                TextObject.Text:gsub("<.->", ""),
+                ContentObject.Text:gsub("<.->", ""),
                 FontSize,
                 TextFont,
                 Bounds
             );
 
-            TextObject.Size = UDim2.fromOffset(TextBounds.X, TextBounds.Y);
+            ContentObject.Size = UDim2.fromOffset(TextBounds.X, TextBounds.Y);
 
             if ((TextBounds.X + MovementX > (Bounds.X - Settings.BubblePadding.X)) or (MultiLine)) then
                 CurrentLine.Size = UDim2.new(1, 0, 0, TextBounds.Y);
@@ -380,13 +401,13 @@ function BubbleController:Chat(Message : string) : table
                 MovementX = 0
             end
             
-            TextObject.Position = UDim2.fromOffset(MovementX, 0);
-            TextObject.TextSize = FontSize
+            ContentObject.Position = UDim2.fromOffset(MovementX, 0);
+            ContentObject.TextSize = FontSize
 
-            TextObject.TextStrokeTransparency = 1
-            TextObject.TextTransparency = 1
+            ContentObject.TextStrokeTransparency = 1
+            ContentObject.TextTransparency = 1
 
-            TweenService:Create(TextObject, Settings.VisibilityTweenInfo, {
+            TweenService:Create(ContentObject, Settings.VisibilityTweenInfo, {
                 TextStrokeTransparency = 0.8,
                 TextTransparency = 0
             }):Play();
@@ -394,9 +415,9 @@ function BubbleController:Chat(Message : string) : table
             MovementX += TextBounds.X
 
             if (typeof(TextColor) ~= "Color3") then return; end
-            TextObject.TextColor3 = TextColor
+            ContentObject.TextColor3 = TextColor
         end,
-        false, Settings.IsMarkdownEnabled
+        false
     );
 
     local GradientData : table?
