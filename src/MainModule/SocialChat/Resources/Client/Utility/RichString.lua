@@ -118,6 +118,10 @@ function StringObject:Generate(Text : string, TextFont : Enum.Font, Callback : c
             end
 
             table.insert(Labels, ReplacementObject);
+
+            if (Callback) then
+                Callback(ReplacementObject);
+            end
         else
             local NewTextObject = CreateTextObject(
                 TextFont,
