@@ -73,8 +73,12 @@ local ButtonStates : table <string> = {
     };
 };
 
+local EventDataEntry : RemoteEvent
+local ExtensionData : table
+
 --// States
 local CurrentSuggestion : table < Emoji >?
+local Recent : table < Emojis >
 
 --// Main
 
@@ -107,6 +111,8 @@ function Emojipedia:Deploy(SocialChat : metatable)
     EmojiBubbleCache.IgnoreGuiInset = true
     EmojiBubbleCache.Parent = Player.PlayerGui
 
+    ExtensionData = (self.Data.Extensions.Emojipedia or require(script.__data));
+    EventDataEntry = self.Remotes.DataService.EventDataEntry
     self.LayoutOrder = 0 -- State value that determines the order in which our buttons will move towards
 
     --// UI Setup
@@ -144,22 +150,78 @@ function Emojipedia:Deploy(SocialChat : metatable)
         end, RunService.RenderStepped);
     end);
 
+    --// Recent Setup
+    local RecentData : table = (ExtensionData.Recent.Value or ExtensionData.Recent.Default);
+    local RecentSection = self:CreateSection({
+        Name = "Recent",
+        ImageId = "rbxassetid://3926307971",
+        ImageRectSize = Vector2.new(36, 36),
+        ImageRectOffset = Vector2.new(604, 404)
+    }, {});
+
+    Recent = setmetatable({__data = RecentData}, {
+        __newindex = function(_, Index : string, Value : any?)
+            if (Value == nil) then
+                local Item = RecentSection.Emojis:FindFirstChild(Index);
+
+                if (Item) then
+                    Item:Destroy();
+                end
+
+                rawset(Recent.__data, Index, nil);
+            end
+
+            rawset(Recent.__data, Index, Value);
+            RecentSection.Visible = false
+
+            local TotalItems : number = 0
+
+            for _, _ in pairs(Recent.__data) do
+                RecentSection.Visible = true
+                TotalItems += 1
+                
+                if (TotalItems > 20) then
+                    local OldestTime : number = math.huge
+                    local OldestItem : string?
+
+                    for Name : string, Data : table in pairs(Recent.__data) do
+                        if (OldestTime < Data.LastUsed) then continue; end
+                        
+                        OldestTime = Data.LastUsed
+                        OldestItem = Name
+                    end
+
+                    Recent[OldestItem] = nil
+                    break;
+                end
+            end
+
+            if (type(Value) ~= "table") then return; end
+            if (RecentSection.Emojis:FindFirstChild(Value.Meta.Aliases[1])) then return; end
+
+            local Item : ImageButton | TextButton = RenderEmoji(Value.Meta);
+
+            Item.MouseButton1Click:Connect(function()
+                if (not InputBox:IsFocused()) then
+                    InputBox:CaptureFocus();
+                end
+
+                InputQuery(Value.Meta);
+                InputBox.CursorPosition = #InputBox.Text + 1
+            end);
+
+            Item.Parent = RecentSection.Emojis
+            EventDataEntry:FireServer("Extensions/Emojipedia/Recent", Recent.__data);
+        end
+    });
+
+    RecentSection.Visible = false
+
+    for Index : string, Value : table in pairs(RecentData) do
+        Recent[Index] = Value
+    end
+
     --// Category Setup
-
-    -- CreateSection(
-    --     "Favorites",
-    --     "rbxassetid://3926305904",
-    --     Vector2.new(24, 24),
-    --     Vector2.new(116, 4)
-    -- );
-
-    -- CreateSection(
-    --     "Recent",
-    --     "rbxassetid://3926307971",
-    --     Vector2.new(36, 36),
-    --     Vector2.new(604, 404)
-    -- );
-
     for _, Category in pairs(Categories:GetDescendants()) do
         if (not Category:IsA("Folder") or not Category:FindFirstChildOfClass("ModuleScript")) then continue; end
         if (not Category:FindFirstChild("Meta") or not Category:FindFirstChild("IconData")) then
@@ -363,7 +425,7 @@ end
 --// Methods
 
 --- Creates a new Emojipedia section that can hold emojis
-function Emojipedia:CreateSection(IconData : table, Emotes : table)
+function Emojipedia:CreateSection(IconData : table, Emotes : table) : Frame
     assert(type(IconData) == "table", "Parameter type mismatch. Expected 'IconData' to be of type 'table'. (got "..(type(IconData))..")");
     assert(type(Emotes) == "table", "Parameter type mismatch. Expected 'Emotes' to be of type 'table'. (got "..(type(IconData))..")");
     assert(IconData.Name, "The provided 'IconData' does not supply a 'Name'!");
@@ -449,6 +511,7 @@ function Emojipedia:CreateSection(IconData : table, Emotes : table)
     Canvas:Update();
 
     self.LayoutOrder += 1
+    return Section
 end
 
 --- Determines if the provided content is a UTF8 emoji
@@ -678,6 +741,11 @@ function InputQuery(Query : table < Emoji >)
     
     InputBox.Text = ((PriorInput) .. " " .. (":".. (EmoteName) .. ":") .. " ");
     InputBox.CursorPosition = #InputBox.Text + 1
+
+    Recent[EmoteName] = {
+        ["LastUsed"] = os.time(),
+        ["Meta"] = Query
+    };
 
     CurrentSuggestion = nil
 end
