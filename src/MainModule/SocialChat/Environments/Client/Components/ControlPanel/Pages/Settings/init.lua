@@ -95,7 +95,7 @@ function SettingsPage:Init(Setup : table)
 
             API.ValueChanged:Connect(function(Value : any?)
                 Option.OnUpdated(Value);
-                Network.EventDataEntry:FireServer("Settings", DataSet, Value);
+                Network.EventDataEntry:FireServer("Settings/"..(DataSet), Value);
             end);
         end
     end

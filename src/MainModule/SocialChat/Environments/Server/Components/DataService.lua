@@ -15,7 +15,7 @@ DataService.__index = DataService
 
 --// Services
 local DataStoreService = game:GetService("DataStoreService");
-local DataStore = DataStoreService:GetDataStore("SocialChatData", "_test-4");
+local DataStore = DataStoreService:GetDataStore("SocialChatData", "_test-10");
 
 --// Constants
 local MAX_CLIENT_YIELD_TIME = 3
@@ -31,7 +31,7 @@ function DataService:Initialize(Setup : table)
     Network = self.Remotes.DataService
     
     --// Data Setup
-    local Structure = GetStructure(self.Settings);
+    local Structure : table = GetDefaultStructure(self.Settings, self.__extensionData);
 
     local function Setup(Player : Player)
         local Success, Response = pcall(function()
@@ -78,19 +78,20 @@ function DataService:Initialize(Setup : table)
     game.Players.PlayerRemoving:Connect(OnPlayerRemoved);
 
     --// Events
-    Network.EventDataEntry.OnServerEvent:Connect(function(Player : Player, Category : string, Entry : string, Data : any?)
+    Network.EventDataEntry.OnServerEvent:Connect(function(Player : Player, Path : string, Data : any?)
         if (not self:GetData(Player)) then return; end
         
-        assert(type(Category) == "string", Player.Name.." attempted to request a data category that wasn't via of type 'string'. (received \""..(type(Category)).."\")");
-        assert(type(Entry) == "string", Player.Name.." requested an entry key that wasn't of type 'string'. (received \""..(type(Entry)).."\")");
+        local TreeItem : any = UserData[Player];
 
-        assert(UserData[Player][Category], Player.Name.." requested non-existant category \""..(Category).."\".");
-        assert(UserData[Player][Category][Entry], Player.Name.." submitted data to a non-existing entry \""..(Entry).."\" for category \""..(Category).."\".");
+        for _, Trace in pairs(Path:split("/")) do
+            TreeItem = TreeItem[Trace]; -- Keep digging for our value! If it doesnt exist, this will error
+        end
+
+        local ValidEntryType = typeof((TreeItem.Default) or (TreeItem.StrictType));
+        if (ValidEntryType == 'nil') then return; end -- This isnt an existing entry type and/or doesn't follow the proper structure!
+        assert(typeof(Data) == ValidEntryType, Player.Name.." submitted a type mismatch for path: '"..(Path).."'! (this TreeItem requires a value type of '"..(ValidEntryType).."')");
         
-        local ValidEntryType = (typeof((UserData[Player][Category][Entry].Default) or (UserData[Player][Category][Entry].StrictType)));
-        assert(typeof(Data) == ValidEntryType, Player.Name.." submitted a type mismatch for entry \""..(Entry).."\" in category \""..(Category).."\"! (this entry requires a value type of '"..(ValidEntryType).."')");
-
-        UserData[Player][Category][Entry]["Value"] = Data
+        TreeItem["Value"] = Data
     end);
 
     Network.EventReplicateData.OnServerInvoke = function(Player : Player)
@@ -122,11 +123,11 @@ end
 --// Functions
 
 --- This is a function simply because I don't want to read all of this within the 'Initialization' Method
-function GetStructure(Settings : table)
+function GetDefaultStructure(Settings : table, ExtensionData : table?)
     local BubbleChatDefaults = Settings.BubbleChat
     local ClientChannels = Settings.Client.Channels
 
-    return {
+    local Structure = {
 
         ["Settings"] = {
 
@@ -170,7 +171,15 @@ function GetStructure(Settings : table)
 
         };
 
+        ["Extensions"] = {}; -- SOLELY FOR EXTENSIONS! DO NOT USE OTHERWISE
+
     };
+
+    for Extension : string, Data : table in pairs(ExtensionData) do
+        Structure.Extensions[Extension] = Data
+    end
+
+    return Structure
 end
 
 return DataService

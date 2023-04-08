@@ -60,6 +60,24 @@ local function Initialize(Setup : table)
 
     ServerComponents = Extract(script.Components);
 
+    --// Extension Data Support
+    --\\ We must provide support from DataService to Extensions. Extensions with a "__data" module will be used as their structure
+
+    local ExtensionStructures = {};
+
+    local function GetDataStructures(Container : Instance)
+        for _, SubModule in pairs(Container:GetChildren()) do
+            if (not SubModule:IsA("ModuleScript")) then continue; end
+            if (not SubModule:FindFirstChild("__data")) then continue; end
+
+            ExtensionStructures[SubModule.Name] = require(SubModule.__data);
+        end
+    end
+
+    GetDataStructures(game.ServerStorage.ServerChatExtensions);
+    GetDataStructures(game.ReplicatedStorage.SharedChatExtensions);
+    GetDataStructures(game.ReplicatedFirst:WaitForChild("ClientChatExtensions"));
+
     --// Secure Initialization
     --\\ We must securely initialize ALL of our components using programming standards that assist us in debugging.
 
@@ -98,7 +116,9 @@ local function Initialize(Setup : table)
                     ["Library"] = Library,
     
                     ["Remotes"] = Network,
-                    ["Src"] = ServerComponents
+                    ["Src"] = ServerComponents,
+
+                    ["__extensionData"] = ExtensionStructures
                 });
             end);
 
