@@ -20,6 +20,36 @@ Emojipedia.__meta = {
     Version = "1.0" -- Extension version (will be displayed)
 };
 
+local ConfigurationMeta : table = { -- Visual Metadata for our configurations menu
+    Button = {
+        ["Active"] = {
+            StrokeColor = Color3.fromRGB(255, 255, 255),
+            ButtonColor = Color3.fromRGB(255, 245, 120),
+            
+            StrokeTransparency = 0,
+            ButtonTransparency = 0
+        };
+
+        ["Inactive"] = {
+            StrokeColor = Color3.fromRGB(255, 255, 255),
+            ButtonColor = Color3.fromRGB(255, 245, 120),
+            
+            StrokeTransparency = 0.5,
+            ButtonTransparency = 0.5
+        };
+
+        ["Tween"] = {
+            Speed = 0.5,
+            EasingStyle = Enum.EasingStyle.Exponential
+        }
+    };
+
+    ["Slider"] = {
+        SocketColor = Color3.fromRGB(255, 255, 255),
+        SliderColor = Color3.fromRGB(210, 210, 210),
+    };
+};
+
 --// Services
 local UserInputService = game:GetService("UserInputService");
 local TweenService = game:GetService("TweenService");
@@ -29,9 +59,10 @@ local RunService = game:GetService("RunService");
 --// Imports
 local Channels : table < ChannelsAPI >
 local BubbleChat : table < BubbleChatAPI >
-local SpriteClip : table < SpriteClip >
+local ControlPanel : table < ControlPanelAPI >
 
 local FunctUI : table < FunctUI >
+local SpriteClip : table < SpriteClip >
 local Emojis : table < table < Emoji > > = {};
 
 --// Constants
@@ -75,6 +106,7 @@ local ButtonStates : table <string> = {
 
 local EventDataEntry : RemoteEvent
 local ExtensionData : table
+local Settings : table
 
 --// States
 local CurrentSuggestion : table < Emoji >?
@@ -88,6 +120,8 @@ function Emojipedia:Deploy(SocialChat : metatable)
 
     Channels = self.Components.Channels
     BubbleChat = self.Components.BubbleChat
+    ControlPanel = self.Components.ControlPanel
+
     SpriteClip = self.Library.SpriteClip
     FunctUI = self.Library.FunctUI
 
@@ -115,6 +149,8 @@ function Emojipedia:Deploy(SocialChat : metatable)
     EventDataEntry = self.Remotes.DataService.EventDataEntry
     self.LayoutOrder = 0 -- State value that determines the order in which our buttons will move towards
 
+    Settings = (ExtensionData.Settings.Value or ExtensionData.Settings.Default);
+
     --// UI Setup
     InputBox.Size = UDim2.fromScale(0.838, 0.861);
     EmojiMatch.Parent = InputFrame
@@ -141,7 +177,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
 
     --// Panel Visibility
     EmoteBtn.MouseButton1Click:Connect(function()
-        EmotePanel.Visible = (not EmotePanel.Visible);
+        EmotePanel.Visible = (Settings.DisableEmojiPanel.Value or (not EmotePanel.Visible));
     end);
 
     Mouse.Button1Down:Connect(function()
@@ -152,7 +188,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
 
     --// Recent Setup
     local RecentData : table = (ExtensionData.Recent.Value or ExtensionData.Recent.Default);
-    local RecentSection = self:CreateSection({
+    local RecentSection : Frame, RecentButton : ImageButton = self:CreateSection({
         Name = "Recent",
         ImageId = "rbxassetid://3926307971",
         ImageRectSize = Vector2.new(36, 36),
@@ -172,12 +208,15 @@ function Emojipedia:Deploy(SocialChat : metatable)
             end
 
             rawset(Recent.__data, Index, Value);
+
+            RecentButton.Visible = false
             RecentSection.Visible = false
 
             local TotalItems : number = 0
 
             for _, _ in pairs(Recent.__data) do
                 RecentSection.Visible = true
+                RecentButton.Visible = true
                 TotalItems += 1
                 
                 if (TotalItems > 20) then
@@ -216,6 +255,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
     });
 
     RecentSection.Visible = false
+    RecentButton.Visible = false
 
     for Index : string, Value : table in pairs(RecentData) do
         Recent[Index] = Value
@@ -314,7 +354,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
             if (not Item) then continue; end
 
             Item.MouseEnter:Connect(function()
-                HackyInput = Match
+                HackyInput = Match.Meta
             end);
 
             Item.MouseLeave:Connect(function()
@@ -389,7 +429,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
 
         CurrentSuggestion = Matches[1];
         EmojiMatch.Search.Text = Input
-        EmojiMatch.Visible = true
+        EmojiMatch.Visible = (Settings.DisableSuggestions.Value ~= true and true);
     end
 
     InputBox:GetPropertyChangedSignal("Text"):Connect(Suggest);
@@ -402,7 +442,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
         if (Input.KeyCode ~= Enum.KeyCode.Tab) then return; end
         if (not CurrentSuggestion) then return; end
 
-        InputQuery(CurrentSuggestion);
+        InputQuery(CurrentSuggestion.Meta);
     end);
 
     --// Reactive Emoji-Match UI
@@ -419,13 +459,44 @@ function Emojipedia:Deploy(SocialChat : metatable)
     end);
 
     Canvas:Update();
+
+    --// Control Panel
+    local PanelSettings : table < ControlPanelSettings > = (ControlPanel:GetPages().Settings);
+    local Category : table < CategoryAPI > = PanelSettings.CategoryAPI
+
+    local ConfigurationData : table = (ExtensionData.Settings.Value or ExtensionData.Settings.Default);
+    local ExtensionSettings : table < CategoryPanel > = Category.new(Emojipedia.__meta.Name, {
+        ImageId = Emojipedia.__meta.IconId
+    });
+
+    for Configuration : string, Data : table in pairs(ConfigurationData) do
+        Data.Metadata = ConfigurationMeta[Data.Type];
+
+        local Interactable : GuiObject, API : table < CategoryAPI > = ExtensionSettings:Create(Data);
+        local InitVal : any? = (if (Data.Value ~= nil) then Data.Value else Data.Default);
+        
+        FunctUI.new("Note", Interactable.Configuration, Data.Info);
+        Data.Metadata = nil -- Prevent DataStores from saving Metadata [Due to not being UTF-8]
+
+        API.Value = (InitVal);
+        API:SetEnabled(Data.Locked);
+
+        API.ValueChanged:Connect(function(Value : any?)
+            self:__handleChange(Configuration, Value);
+            ConfigurationData[Configuration].Value = Value
+            EventDataEntry:FireServer("Extensions/Emojipedia/Settings", ConfigurationData);
+        end);
+
+        self:__handleChange(Configuration, InitVal);
+    end
+    
     return self
 end
 
 --// Methods
 
 --- Creates a new Emojipedia section that can hold emojis
-function Emojipedia:CreateSection(IconData : table, Emotes : table) : Frame
+function Emojipedia:CreateSection(IconData : table, Emotes : table) : Frame & ImageButton
     assert(type(IconData) == "table", "Parameter type mismatch. Expected 'IconData' to be of type 'table'. (got "..(type(IconData))..")");
     assert(type(Emotes) == "table", "Parameter type mismatch. Expected 'Emotes' to be of type 'table'. (got "..(type(IconData))..")");
     assert(IconData.Name, "The provided 'IconData' does not supply a 'Name'!");
@@ -511,7 +582,7 @@ function Emojipedia:CreateSection(IconData : table, Emotes : table) : Frame
     Canvas:Update();
 
     self.LayoutOrder += 1
-    return Section
+    return Section, Button
 end
 
 --- Determines if the provided content is a UTF8 emoji
@@ -571,6 +642,15 @@ function Emojipedia:Match(Query : string, MaxItems : number?) : table < string >
     end
 
     return Matches
+end
+
+--// Private Methods
+
+--- Handles the specified a configuration change [PRIVATE]
+function Emojipedia:__handleChange(Query : string, Value : any?)
+    if (Query == "DisableEmojiPanel") then -- Do I regret doing nesting like this? Yes, I do...
+        EmoteBtn.Visible = (not Value);
+    end
 end
 
 --// Functions
@@ -657,6 +737,7 @@ function AddBubble(Element : GuiObject, Content : string) : GuiObject
 
     Element.InputBegan:Connect(function(Input : InputObject)
         if (Input.UserInputType ~= Enum.UserInputType.MouseMovement) then return; end
+        if (Settings.DisplayEmojiNameOnHover and Settings.DisplayEmojiNameOnHover.Value == false) then return; end
 
         TweenService:Create(Bubble, TweenInfo.new(0.2), {
             Size = UDim2.fromOffset(math.max(32, ContentSize.X), 32);

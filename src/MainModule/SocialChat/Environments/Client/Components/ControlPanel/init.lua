@@ -22,6 +22,10 @@ local TopbarButton
 local PanelFrame
 local MainPanel
 
+--// States
+local Pages : table < Page > = {};
+local API : table < table > = {};
+
 --// Initialization
 function ControlPanel:Initialize(Setup : table)
     local self = setmetatable(Setup, ControlPanel);
@@ -48,9 +52,6 @@ function ControlPanel:Initialize(Setup : table)
     end);
 
     --// SidePanel Setup
-    local API = {};
-    self.Pages = {};
-
     for _, Module in pairs(script.API:GetChildren()) do
         if (not Module:IsA("ModuleScript")) then continue; end
         API[Module.Name] = require(Module);
@@ -64,13 +65,13 @@ function ControlPanel:Initialize(Setup : table)
         end);
 
         if (Success) then
-            self.Pages[Page.Name] = Response
+            Pages[Page.Name] = Response
         else
             error("SocialChat Control-Panel Error: Failed to require page \""..(Page.Name).."\"! (response: "..(Response)..")");
         end
     end
 
-    for Name, Page in pairs(self.Pages) do
+    for Name, Page in pairs(Pages) do
         local Success, Response = pcall(function()
             local Button = Navigator.new(Page.ButtonData.PageName, MainPanel[Page.ButtonData.PageName], Page.ButtonData.Priority);
 
@@ -99,7 +100,7 @@ function ControlPanel:Initialize(Setup : table)
         end);
 
         if (Success) then
-            self.Pages[Name] = Response
+            Pages[Name] = Response
         else
             error("SocialChat Control-Panel Error: Failed to initialize page \""..(Name).."\"! (response: "..(Response)..")");
         end
@@ -117,13 +118,23 @@ function ControlPanel:SetEnabled(IsEnabled : boolean?)
 
 	if (IsEnabled) then
 		PanelFrame.Visible = true
-        self.Pages.Home.Button:Select();
+        Pages.Home.Button:Select();
 	end
 
 	if (IsEnabled) then return; end
 
-    self.Pages.Home.Button:Deselect();
+    Pages.Home.Button:Deselect();
 	PanelFrame.Visible = false
+end
+
+--- Returns a list of registered ControlPanel Sub-API modules
+function ControlPanel:GetAPI() : table?
+    return API
+end
+
+--- Returns a list of registered ControlPanel pages
+function ControlPanel:GetPages() : table?
+    return Pages
 end
 
 return ControlPanel

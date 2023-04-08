@@ -87,7 +87,7 @@ function SettingsPage:Init(Setup : table)
                 continue;
             end
 
-            local Interactable, API = Element:Create(DataSet, Option);
+            local Interactable, API = Element:Create(Option);
             FunctUI.new("Note", Interactable.Configuration, Option.Info);
 
             API.Value = (if (Data.Value ~= nil) then Data.Value else Data.Default);
@@ -207,9 +207,8 @@ function Category.new(Name : string, IconSettings : table) : Category
 end
 
 --- Adds a new interactable configuration based on the queried request
-function Category:Create(Query : string, Details : table) : Instance & table
-    assert(type(Query) == "string", "Failed to create new Interactable because 'Query' was not a string! (received: "..(type(Query))..")");
-    assert(type(Details) == "table", "Failed to create Interactable '"..(Query).."' because 'Details' was not a table! (received: "..(type(Details))..")");
+function Category:Create(Details : table) : Instance & table
+    assert(type(Details) == "table", "The provided 'Details' parameter was not a table! (received: "..(type(Details))..")");
     
     local Preset = Presets.Settings[Details.Type]:Clone();
     Preset.Configuration.Text = Details.Name
