@@ -136,21 +136,20 @@ local SystemChannelSettings = {
 
     --// CHAT SYSTEM SETTINGS \\--
 
-    ["DefaultChannel"] = "General", -- This will be the DEFAULT chat system channel that processes player messages! (this is REQUIRED)
+    ["DefaultChannel"] = "General", -- The default chat channel that processes player messages.
+    ["MaxMessagesPerChannel"] = 50, -- The maximum number of messages that can be stored in each chat channel.
+    ["MaxMessageLength"] = 200, -- The maximum utf-8 length of a single chat message.
+    ["MessageRate"] = 10, -- The maximum number of messages a player can send within a 10 second period.
     
-    ["MaxMessagesPerChannel"] = 50, -- Determines the max amount of messages that can be stored in each channel
-    ["MaxMessageLength"] = 200, -- Determines the maximum string length for a single message
-    
-    ["UseDisplayNames"] = false, -- Determines if player usernames OR display-names will be displayed in chat when sending messages
-    ["MessageRate"] = 10, -- Determines the maximum amount of messages a player can send every 10 seconds
+    ["UseDisplayNames"] = false, -- Determines whether player usernames or display names will be used in chat messages.
 
     --// METADATA \\--
 
-    ["ApplyTeamColors"] = true, -- Determines if a player recieve's their current team (if any) color as their username color
+    ["ApplyRandomColorAsDefault"] = true, -- Determines if the chat will assign a random color to players' usernames when they join the game.
+    ["ApplyTeamColors"] = true, -- Determines whether to apply a player's team color to their username in chat messages.
     
-    ["ApplyRandomColorAsDefault"] = true, -- If true, a random username color will be given to players upon joining
-
-    ["UsernameColors"] = { -- These colors will be used and given out to players who join the server randomly (opt.) [Must be a Color3]
+    ["ServerErrorColor"] = Color3.fromRGB(255, 80, 80), -- This will be the color used to send server error messages to clients
+    ["UsernameColors"] = { -- A list of preset colors that can be randomly assigned to players' usernames. Each value must be in Color3!
         Color3.fromRGB(255, 80, 80),
         Color3.fromRGB(100, 100, 255),
         Color3.fromRGB(70, 255, 100),
@@ -162,7 +161,7 @@ local SystemChannelSettings = {
         Color3.fromRGB(255, 150, 210)
     };
 
-    ["ServerTagData"] = { -- This will be the TagData used for our Server whenever we need to make a server message! [TagName: 'SERVER']
+    ["ServerTagData"] = { -- The TagData used for the server when sending messages.
         ["Classic"] = {
             ["Username"] = {
                 ["Color"] = Color3.fromRGB(255, 100, 100)
@@ -174,11 +173,9 @@ local SystemChannelSettings = {
         };
     };
 
-    ["ServerErrorColor"] = Color3.fromRGB(255, 80, 80), -- This will be the color used to send server error messages to clients
-
     --// BEHAVIOR \\--
 
-    ["SystemAlerts"] = { -- A list of system alerts that can be enabled/disabled
+    ["SystemAlerts"] = { -- A list of system alerts that can be enabled or disabled.
         
         --// FRIENDS
 
