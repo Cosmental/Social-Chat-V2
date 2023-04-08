@@ -15,8 +15,8 @@ Emojipedia.__index = Emojipedia
 Emojipedia.__meta = {
     Name = "Emojipedia", -- Extesion Name
     CreatorId = 876817222, -- Creator's UserId
-    Description = "This is the silliest extension of all time!", -- Extension Description
-    IconId = "http://www.roblox.com/asset/?id=12293400310", -- Extension IconId (must be a decal Id such as "rbxassetid://ID-HERE")
+    Description = "Welcome to emojipedia! This extension provides additional support for emojis through SocialChat.", -- Extension Description
+    IconId = "rbxassetid://12933511174", -- Extension IconId (must be a decal Id such as "rbxassetid://ID-HERE")
     Version = "1.0" -- Extension version (will be displayed)
 };
 
