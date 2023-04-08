@@ -15,7 +15,7 @@ DataService.__index = DataService
 
 --// Services
 local DataStoreService = game:GetService("DataStoreService");
-local DataStore = DataStoreService:GetDataStore("SocialChatData", "_test-10");
+local DataStore = DataStoreService:GetDataStore("SocialChatData", "_test-22");
 
 --// Constants
 local MAX_CLIENT_YIELD_TIME = 3
