@@ -23,9 +23,9 @@ return {
                 Order = 2
             };
 
-            ["EmoticonsToEmoji"] = {
-                Name = "Convert Emoticons to Emojis",
-                Info = "If true, this will automatically convert your emojitcons into emojis.\n\n<b>Example:</b>\n:D -> 😀",
+            ["DisplayEmojiNameOnHover"] = {
+                Name = "Hover Emoji Name",
+                Info = "Determines whether the name of an emoji will display in a bubble when hovered over.",
                 Type = "Button",
                 Order = 3
             };
