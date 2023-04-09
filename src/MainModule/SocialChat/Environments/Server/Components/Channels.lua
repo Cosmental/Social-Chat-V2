@@ -25,6 +25,8 @@ local Settings
 local ChatTags
 local Speakers
 
+local Trace : table < TraceAPI >
+
 --// Constants
 local ClientCooldowns = {};
 local SystemChannels = {};
@@ -46,6 +48,7 @@ function ChannelAPI:Initialize(Setup : table)
 
     Speakers = self.Src.Speakers
     ChatTags = self.Settings.ChatTags
+    Trace = self.Trace
 
     Settings = self.Settings.Channels
     BubbleChatSettings = self.Settings.BubbleChat
@@ -105,14 +108,14 @@ function ChannelAPI:Initialize(Setup : table)
         if (AlertType == "__example") then continue; end -- This event is the example event! (skip)
         if (not Info.Enabled) then continue; end -- This event is not active! (skip)
 
-        assert(Info.Event, "SocialChat Channel Settings Misconfiguration: \'"..(AlertType).."\' is not connected to any Events! This message will never submit itself without an event!");
+        Trace:Assert(Info.Event, "SocialChat Channel Settings Misconfiguration: \'"..(AlertType).."\' is not connected to any Events! This message will never submit itself without an event!");
 
         local Signal : callback? = ((Info.Event.Signal) or (AlertEvents[Info.Event.HookTo].Signal));
         local TagData : table? = (ChatTags[Info.Tag] or {["Classic"] = {}});
         TagData.BypassMarkdownSetting = true
 
-        assert(Signal, "SocialChat Channel Settings Misconfiguration: \'"..(AlertType).."\' does not have a signal to connect to!");
-        assert(Info.Event.Trigger, "SocialChat Channel Settings Misconfiguration: \'"..(AlertType).."\' does not have a 'trigger' to fire from!");
+        Trace:Assert(Signal, "SocialChat Channel Settings Misconfiguration: \'"..(AlertType).."\' does not have a signal to connect to!");
+        Trace:Assert(Info.Event.Trigger, "SocialChat Channel Settings Misconfiguration: \'"..(AlertType).."\' does not have a 'trigger' to fire from!");
         
         local function SendMessage(Recipients : table, Parameters : table)
             local Message = Info.Message
@@ -157,8 +160,8 @@ end
 
 --- Creates a new Channel
 function ChannelAPI.new(Name : string) : Channel
-    assert(type(Name) == "string", "Expected a \"string\" to use as a channel name. Received \""..(type(Name)).."\" instead!");
-    assert(not SystemChannels[Name], "A channel with the name \""..(Name).."\" already exists!");
+    Trace:Assert(type(Name) == "string", "Expected a \"string\" to use as a channel name. Received \""..(type(Name)).."\" instead!");
+    Trace:Assert(not SystemChannels[Name], "A channel with the name \""..(Name).."\" already exists!");
 
     local NewSystemChannel = setmetatable({
 
@@ -179,7 +182,7 @@ end
 
 --- Returns the requested channel based on it's name ( NOTE: THIS IS CASE SENSITIVE )
 function ChannelAPI:Get(Query : string) : Channel
-    assert(type(Query) == "string", "Expected a \"string\" to use as a channel query. Received \""..(type(Query)).."\" instead!");
+    Trace:Assert(type(Query) == "string", "Expected a \"string\" to use as a channel query. Received \""..(type(Query)).."\" instead!");
     return SystemChannels[Query];
 end
 
@@ -276,7 +279,7 @@ function ChannelAPI:Message(Speaker : Speaker, Message : string, Recipient : Pla
                 ServerErrorMetadata
             );
 
-            error("Failed to filter message for \""..(Author.Name).."\"! (Response: \""..(Response or "No response provided.").."\")");
+            Trace:Error("Failed to filter message for \""..(Author.Name).."\"! (Response: \""..(Response or "No response provided.").."\")");
         end
 
     else -- Non-player Speakers may bypass most restrictions, but developers must be catious as to what gets passed through here as the content is NOT filtered!
@@ -293,8 +296,8 @@ end
 
 --- Adds the specified member into the channel
 function Channel:Subscribe(Player : Player)
-    assert(typeof(Player) == "Instance", "Expected an \"Instance\" as a valid member! (received \""..(typeof(Player)).."\")");
-    assert(Player:IsA("Player"), "The provided Instance was not of class \"Player\". Got \""..(Player.ClassName).."\" instead");
+    Trace:Assert(typeof(Player) == "Instance", "Expected an \"Instance\" as a valid member! (received \""..(typeof(Player)).."\")");
+    Trace:Assert(Player:IsA("Player"), "The provided Instance was not of class \"Player\". Got \""..(Player.ClassName).."\" instead");
 
     local Speaker = Speakers:Get(Player);
     if (self.Members[Player]) then return; end -- This client is already in this channel
@@ -307,8 +310,8 @@ end
 
 --- Removes the specified member from the channel
 function Channel:Unsubscribe(Player : Player)
-    assert(typeof(Player) == "Instance", "Expected an \"Instance\" as a valid member! ( received \""..(typeof(Player)).."\" )");
-    assert(Player:IsA("Player"), "The provided Instance was not of class \"Player\". Got \""..(Player.ClassName).."\" instead");
+    Trace:Assert(typeof(Player) == "Instance", "Expected an \"Instance\" as a valid member! ( received \""..(typeof(Player)).."\" )");
+    Trace:Assert(Player:IsA("Player"), "The provided Instance was not of class \"Player\". Got \""..(Player.ClassName).."\" instead");
 
     local Speaker = Speakers:Get(Player);
     if (not self.Members[Player]) then return; end -- This client isnt even in this channel! (we can just cancel the request here)
@@ -321,7 +324,7 @@ end
 
 --- Removes the requested Channel
 function Channel:Remove()
-    assert(not self.IsMainChannel, "Failed to destroy Channel \""..(self.Name).."\". Destroying the game's main chat channel would result in bugs!");
+    Trace:Assert(not self.IsMainChannel, "Failed to destroy Channel \""..(self.Name).."\". Destroying the game's main chat channel would result in bugs!");
 
     for Member : Player, _ : Speaker in pairs(self.Members) do
         self:Unsubscribe(Member);
@@ -355,7 +358,7 @@ function GetFilteredMessageForClient(FilterObject : Instance, Client : Player) :
     if (FilterSuccess) then
         return FilterResponse
     else
-        error("Failed to process filter for \""..(Client.Name).."\"! ( Response: \""..(FilterResponse or "No response was given").."\" )");
+        Trace:Error("Failed to process filter for \""..(Client.Name).."\"! ( Response: \""..(FilterResponse or "No response was given").."\" )");
     end
 end
 

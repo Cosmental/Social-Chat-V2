@@ -65,6 +65,8 @@ local FunctUI : table < FunctUI >
 local SpriteClip : table < SpriteClip >
 local Emojis : table < table < Emoji > > = {};
 
+local Trace : table < TraceAPI >
+
 --// Constants
 local Player = game.Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -124,6 +126,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
 
     SpriteClip = self.Library.SpriteClip
     FunctUI = self.Library.FunctUI
+    Trace = self.Trace
 
     Categories = script.Categories
     Presets = script.Presets
@@ -265,7 +268,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
     for _, Category in pairs(Categories:GetDescendants()) do
         if (not Category:IsA("Folder") or not Category:FindFirstChildOfClass("ModuleScript")) then continue; end
         if (not Category:FindFirstChild("Meta") or not Category:FindFirstChild("IconData")) then
-            error(Category.Name.." is missing data! Each category must contain a 'Meta' ModuleScript and a 'IconData' ModuleScript.");
+            Trace:Error(Category.Name.." is missing data! Each category must contain a 'Meta' ModuleScript and a 'IconData' ModuleScript.");
             continue;
         end
 
@@ -497,10 +500,10 @@ end
 
 --- Creates a new Emojipedia section that can hold emojis
 function Emojipedia:CreateSection(IconData : table, Emotes : table) : Frame & ImageButton
-    assert(type(IconData) == "table", "Parameter type mismatch. Expected 'IconData' to be of type 'table'. (got "..(type(IconData))..")");
-    assert(type(Emotes) == "table", "Parameter type mismatch. Expected 'Emotes' to be of type 'table'. (got "..(type(IconData))..")");
-    assert(IconData.Name, "The provided 'IconData' does not supply a 'Name'!");
-    assert(IconData.ImageId, "The provided 'IconData' does not supply an 'ImageId'!");
+    Trace:Assert(type(IconData) == "table", "Parameter type mismatch. Expected 'IconData' to be of type 'table'. (got "..(type(IconData))..")");
+    Trace:Assert(type(Emotes) == "table", "Parameter type mismatch. Expected 'Emotes' to be of type 'table'. (got "..(type(IconData))..")");
+    Trace:Assert(IconData.Name, "The provided 'IconData' does not supply a 'Name'!");
+    Trace:Assert(IconData.ImageId, "The provided 'IconData' does not supply an 'ImageId'!");
 
     --// Emoji Setup
     local Section = Presets.Section:Clone();
@@ -587,7 +590,7 @@ end
 
 --- Determines if the provided content is a UTF8 emoji
 function Emojipedia:IsUTF8(Content : string) : boolean
-    assert(type(Content) == "string", "The provided UTF-8 content was not in the form of a string! Please provide a string to run this process.");
+    Trace:Assert(type(Content) == "string", "The provided UTF-8 content was not in the form of a string! Please provide a string to run this process.");
     
     for _, Category in pairs(Emojis) do
         local Emotes = require(Category.Meta);
@@ -603,9 +606,9 @@ end
 
 --- Returns a list of match items based on the provided query parameters [ Best Match --> Worst Match (descending) ]
 function Emojipedia:Match(Query : string, MaxItems : number?) : table < string >?
-    assert(type(Query) == "string", "The supplied 'Query' parameter for the requested Emojipedia match was not of type: 'string'. (got "..(type(Query))..")");
-    assert(not MaxItems or type(MaxItems) == "number", "The supplied 'MaxItems' parameter was not of type: 'number'. (got "..(type(MaxItems))..")");
-    assert(not MaxItems or MaxItems > 0, "The supplied 'MaxItems' parameter was not greater than zero! The minimum amount of items must be at least 1 or more.");
+    Trace:Assert(type(Query) == "string", "The supplied 'Query' parameter for the requested Emojipedia match was not of type: 'string'. (got "..(type(Query))..")");
+    Trace:Assert(not MaxItems or type(MaxItems) == "number", "The supplied 'MaxItems' parameter was not of type: 'number'. (got "..(type(MaxItems))..")");
+    Trace:Assert(not MaxItems or MaxItems > 0, "The supplied 'MaxItems' parameter was not greater than zero! The minimum amount of items must be at least 1 or more.");
 
     local Matches : table = {};
 

@@ -85,58 +85,52 @@ local function Initialize(Setup : table)
         local StartTick = os.clock();
         local ProcessFinished : boolean?
 
-        --// Initialization of our module
-        --\\ Wrapped in a seperate thread function for simultaneous startup
+        --// Infinite Yield Warning
+        --\\ A warning for truly strange cases that fetch no errors
 
         coroutine.wrap(function()
+            local WarningFired : boolean? -- We only want to send an infinite yield warning ONCE!
 
-            --// Infinite Yield Warning
-            --\\ A warning for truly strange cases that fetch no errors
-
-            coroutine.wrap(function()
-                local WarningFired : boolean? -- We only want to send an infinite yield warning ONCE!
-
-                repeat
-                    if ((not WarningFired) and ((os.clock() - StartTick) >= 5)) then
-                        WarningFired = true
-                        warn("Infinite Yield Possible on SocialChat Server Component \""..(Name).."\". (this process has exceeded the intended initialization time)");
-                    end
-                    
-                    task.wait();
-                until
-                (ProcessFinished or WarningFired);
-            end)();
-
-            --// Pcall Handling
-            --\\ Implemented for proper error catching
-
-            local Success, Response = pcall(function()
-                return Component:Initialize({
-                    ["Settings"] = Settings,
-                    ["Library"] = Library,
-    
-                    ["Remotes"] = Network,
-                    ["Src"] = ServerComponents,
-
-                    ["__extensionData"] = ExtensionStructures
-                });
-            end);
-
-            ProcessFinished = true -- This should only run when our pcall finishes
-    
-            if (Success) then
-                ServerComponents[Name] = Response
-            elseif (not Success) then
-                error("Failed to initialize SocialChat Server component \""..(Name).."\". ( "..(Response or "No error response indicated!").." )");
-            end
-
+            repeat
+                if ((not WarningFired) and ((os.clock() - StartTick) >= 5)) then
+                    WarningFired = true
+                    warn("Infinite Yield Possible on SocialChat Server Component \""..(Name).."\". (this process has exceeded the intended initialization time)");
+                end
+                
+                task.wait();
+            until
+            (ProcessFinished or WarningFired);
         end)();
+
+        --// Pcall Handling
+        --\\ Implemented for proper error catching
+
+        local Success, Response = pcall(function()
+            return Component:Initialize({
+                ["Settings"] = Settings,
+                ["Library"] = Library,
+
+                ["Remotes"] = Network,
+                ["Src"] = ServerComponents,
+
+                ["__extensionData"] = ExtensionStructures,
+                ["Trace"] = Setup.Trace
+            });
+        end);
+
+        ProcessFinished = true -- This should only run when our pcall finishes
+
+        if (Success) then
+            ServerComponents[Name] = Response
+        elseif (not Success) then
+            error(Response, 1);
+        end
     end
 
     --// Extension Setup
     --\\ This will initialize and return a list of registered extensions on our server!
     
-    for Name, API in pairs(Extensions) do
+    for _, API in pairs(Extensions) do
         local Success, Response = pcall(function()
             return API:Deploy({
                 ["Settings"] = Settings,
@@ -149,7 +143,7 @@ local function Initialize(Setup : table)
         end);
 
         if (not Success) then
-            error("Failed to start extension \""..(Name).."\"! ("..(Response or "No response indicated")..")");
+            error(Response, 1);
         end
     end
 

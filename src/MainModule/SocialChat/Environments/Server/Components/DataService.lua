@@ -21,6 +21,9 @@ local DataStore = DataStoreService:GetDataStore("SocialChatData", "_test-22");
 local MAX_CLIENT_YIELD_TIME = 3
 local Network
 
+--// Imports
+local Trace : table < TraceAPI >
+
 --// States
 local UserData = {};
 
@@ -29,6 +32,7 @@ function DataService:Initialize(Setup : table)
     local self = setmetatable(Setup, DataService);
 
     Network = self.Remotes.DataService
+    Trace = self.Trace
     
     --// Data Setup
     local Structure : table = GetDefaultStructure(self.Settings, self.__extensionData);
@@ -89,7 +93,7 @@ function DataService:Initialize(Setup : table)
 
         local ValidEntryType = typeof((TreeItem.Default) or (TreeItem.StrictType));
         if (ValidEntryType == 'nil') then return; end -- This isnt an existing entry type and/or doesn't follow the proper structure!
-        assert(typeof(Data) == ValidEntryType, Player.Name.." submitted a type mismatch for path: '"..(Path).."'! (this TreeItem requires a value type of '"..(ValidEntryType).."')");
+        Trace:Assert(typeof(Data) == ValidEntryType, Player.Name.." submitted a type mismatch for path: '"..(Path).."'! (this TreeItem requires a value type of '"..(ValidEntryType).."')");
         
         TreeItem["Value"] = Data
     end);
@@ -114,8 +118,8 @@ end
 
 --- Returns the requested data for the specified player (if any)
 function DataService:GetData(Player : Player) : table?
-    assert(typeof(Player) == "Instance", "The provided 'Player' was not of type \"Instance\". (received \""..(typeof(Player)).."\")");
-    assert(Player:IsA("Player"), "The provided Instance was not of class 'Player'! (received \""..(Player.ClassName).."\")");
+    Trace:Assert(typeof(Player) == "Instance", "The provided 'Player' was not of type \"Instance\". (received \""..(typeof(Player)).."\")");
+    Trace:Assert(Player:IsA("Player"), "The provided Instance was not of class 'Player'! (received \""..(Player.ClassName).."\")");
 
     return UserData[Player]; -- NOTE: This can be nil if the server didn't properly load the players data!
 end

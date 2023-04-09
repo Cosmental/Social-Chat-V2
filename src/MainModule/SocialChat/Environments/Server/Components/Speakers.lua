@@ -25,6 +25,8 @@ local ChatTags
 local TextStyles
 local Channels
 
+local Trace : table < TraceAPI >
+
 --// Constants
 local SpeakerAdded = Instance.new("BindableEvent");
 local Network
@@ -42,6 +44,8 @@ function SpeakerMaster:Initialize(Setup : table)
 
     Network = self.Remotes.Speakers
     Channels = self.Src.Channels
+
+    Trace = self.Trace
 
     --// Setup
     local function onSocialChatReady(Player : Player)
@@ -67,8 +71,8 @@ end
 
 --- Creates a new Chat speaker
 function SpeakerMaster.new(Agent : BasePart | Player | string, TagData : table?) : Speaker
-    assert(type(Agent) == "string" or typeof(Agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(Agent)).."\" )");
-    assert(type(Agent) == "string" or Agent:IsA("Player") or Agent:IsA("BasePart"), "The provided agent Instance was not of class \"Player\" or \"BasePart\"!");
+    Trace:Assert(type(Agent) == "string" or typeof(Agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(Agent)).."\" )");
+    Trace:Assert(type(Agent) == "string" or Agent:IsA("Player") or Agent:IsA("BasePart"), "The provided agent Instance was not of class \"Player\" or \"BasePart\"!");
     VerifyMetadata(Agent, TagData);
 
     if (ChatSpeakers[Agent]) then
@@ -136,8 +140,8 @@ end
 
 --- Returns the speaker object for the requested agent
 function SpeakerMaster:Get(Agent : string | Player) : Speaker
-    assert(type(Agent) == "string" or typeof(Agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(Agent)).."\" )");
-    assert(type(Agent) == "string" or Agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"! ( got \""..tostring(Agent.ClassName).."\" instead )");
+    Trace:Assert(type(Agent) == "string" or typeof(Agent) == "Instance", "The provided speaker agent was not of type \"string\" or \"Instance\"! ( received type: \""..(typeof(Agent)).."\" )");
+    Trace:Assert(type(Agent) == "string" or Agent:IsA("Player"), "The provided agent Instance was not of class \"Player\"! ( got \""..tostring(Agent.ClassName).."\" instead )");
     
     return ChatSpeakers[Agent];
 end
@@ -213,20 +217,20 @@ end
 function VerifyMetadata(Agent : string | Player, Metadata : table) : boolean?
     if (not Metadata) then return; end
 
-    assert(type(Metadata) == "table", "The provided metadata was not of type \"table\", but as type \""..(type(Metadata)).."\". Metadata can only be read as a table.");
-    assert(next(Metadata), "The provided metadata is an empty array. Metadata needs to hold at least one value.");
-    assert(type(Metadata.Classic) == "table" or type(Metadata.Bubble) == "table", "The provided metadata does not hold any readable information! You must provide at least a \"Classic\" array OR a \"Bubble\" array with your data!");
+    Trace:Assert(type(Metadata) == "table", "The provided metadata was not of type \"table\", but as type \""..(type(Metadata)).."\". Metadata can only be read as a table.");
+    Trace:Assert(next(Metadata), "The provided metadata is an empty array. Metadata needs to hold at least one value.");
+    Trace:Assert(type(Metadata.Classic) == "table" or type(Metadata.Bubble) == "table", "The provided metadata does not hold any readable information! You must provide at least a \"Classic\" array OR a \"Bubble\" array with your data!");
     
     local function AnalyzeStructure(structureSet : string, fromTable : table, isForPlayer : boolean?)
         if (not fromTable) then return; end
 
-        assert(not fromTable.Color or (typeof(fromTable.Color) == "Color3" or type(fromTable.Color) == "string")
+        Trace:Assert(not fromTable.Color or (typeof(fromTable.Color) == "Color3" or type(fromTable.Color) == "string")
         , "The provided \"Color\" Value for \""..(structureSet).."\" was not a \"string\" or \"Color3\"! (received "..(typeof(fromTable.Color))..")");
         
-        assert(not fromTable.Color or typeof(fromTable.Color) == "Color3" or (type(fromTable.Color) == "string" and TextStyles[fromTable.Color])
+        Trace:Assert(not fromTable.Color or typeof(fromTable.Color) == "Color3" or (type(fromTable.Color) == "string" and TextStyles[fromTable.Color])
         , "The requested color TextStyle \""..(tostring(fromTable.Color)).."\" does not exist! (are you sure you typed the name correctly? This is CASE-SENSITIVE!)");
 
-        assert(typeof(fromTable.Font) ~= "EnumItem" or table.find(Enum.Font:GetEnumItems(), fromTable.Font)
+        Trace:Assert(typeof(fromTable.Font) ~= "EnumItem" or table.find(Enum.Font:GetEnumItems(), fromTable.Font)
         , "The provided EnumItem was not a valid item of \"Font\"! Please set this value as a valid \"Enum.Font\" value!");
 
         if (isForPlayer and fromTable.Name) then
@@ -237,13 +241,13 @@ function VerifyMetadata(Agent : string | Player, Metadata : table) : boolean?
     if (Metadata.Classic) then
         if (Metadata.Classic.Tag and Metadata.Classic.Tag.Icon) then
             local Icon = Metadata.Classic.Tag.Icon
-            assert(type(tonumber(Icon)) == "number"
+            Trace:Assert(type(tonumber(Icon)) == "number"
             , "The requested Icon ImageId was not a number! Please provide the asset id of your requested Icon image! (received "..(type(Icon))..")");
             
             local ProductInfo = MarketplaceService:GetProductInfo(Icon);
 
             if (ProductInfo.AssetTypeId ~= Enum.AssetType.Decal.Value) then
-                error("The provided Icon AssetId ("..(Icon)..") was not a valid Decal asset! Are you sure this Asset was uploaded as an image?");
+                Trace:Error("The provided Icon AssetId ("..(Icon)..") was not a valid Decal asset! Are you sure this Asset was uploaded as an image?");
             end
         end
 

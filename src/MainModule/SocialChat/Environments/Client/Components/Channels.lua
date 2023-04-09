@@ -28,6 +28,7 @@ local TextStyles
 local InputBox
 
 local FunctUI
+local Trace : table < TraceAPI >
 
 --// Constants
 local OnMessageRendered = Instance.new("BindableEvent");
@@ -67,6 +68,7 @@ function ChannelMaster:Initialize(Setup : table)
     SmartText = self.Library.SmartText
     FunctUI = self.Library.FunctUI
     InputBox = self.Src.InputBox
+    Trace = self.Trace
 
     ChatUIManager = self.Src.ChatUIManager
     TextStyles = self.Settings.Styles
@@ -76,12 +78,6 @@ function ChannelMaster:Initialize(Setup : table)
     FunctUI.new("AdjustingCanvas", ChannelFrame, nil, "X");
 
     --// Gradient Control
-    for _, Info in pairs(TextStyles) do
-        Info.Color = ExtractKeypointData(Info.Gradient, "Color", math.abs(Info.Keypoints));
-        Info.Transparency = ExtractKeypointData(Info.Gradient, "Transparency", math.abs(Info.Keypoints));
-        Info.Duration = math.max(Info.Duration, 0.01); -- Durations are limited to 0.1 seconds! (anything less would be weird/un-needed)
-    end
-
     local LastTick = os.clock(); -- We need to use operating UNIX timestamps to rate-limit our gradient stepper!
     
     RunService.Heartbeat:Connect(function()
@@ -250,7 +246,7 @@ end
 
 -- Returns the requested channel
 function ChannelMaster:Get(Query : string) : Channel?
-    assert(type(Query) == "string", "The provided query was not of type \"string\"! ( received \""..(type(Query)).."\" instead )");
+    Trace:Assert(type(Query) == "string", "The provided query was not of type \"string\"! ( received \""..(type(Query)).."\" instead )");
     return Registry[Query];
 end
 
@@ -261,9 +257,9 @@ end
 
 --- Sends a new message to our currently focused channel OR a receiver (if provided) [DOES NOT REQUIRE CHANNEL INPUT]
 function ChannelMaster:SendMessage(Text : string, Receiver : Player?)
-    assert(type(Text) == "string", "The provided message content was not of type \"string\"! ( received \""..(type(Text)).."\" instead )");
-    assert(not Receiver or typeof(Receiver) == "Instance", "The requested recipient was not of type \"Instance\". ( received \""..(typeof(Receiver)).."\" instead )");
-    assert(not Receiver or Receiver:IsA("Player"), "The provided recipient was not of class \"Player\". Only players can recieve private messages!");
+    Trace:Assert(type(Text) == "string", "The provided message content was not of type \"string\"! ( received \""..(type(Text)).."\" instead )");
+    Trace:Assert(not Receiver or typeof(Receiver) == "Instance", "The requested recipient was not of type \"Instance\". ( received \""..(typeof(Receiver)).."\" instead )");
+    Trace:Assert(not Receiver or Receiver:IsA("Player"), "The provided recipient was not of class \"Player\". Only players can recieve private messages!");
 
     Network.EventSendMessage:FireServer(Text, Receiver or FocusedChannel.Name);
 end
@@ -283,9 +279,9 @@ end
 
 --- Adds a new string replacement to Channel StringObject's
 function ChannelMaster:HandleRender(Keyword : string, Handler : Function)
-    assert(type(Keyword) == "string", "A string type was not passed for the \"Keyword\" parameter. (got "..(type(Keyword))..")");
-    assert(type(Handler) == "function", "The provided 'Handler' callback was not a function! (got "..(type(Handler))..")");
-    assert(not RenderHandlers[Keyword], "The provided 'Keyword' parameter \""..(Keyword).."\" is already in use!");
+    Trace:Assert(type(Keyword) == "string", "A string type was not passed for the \"Keyword\" parameter. (got "..(type(Keyword))..")");
+    Trace:Assert(type(Handler) == "function", "The provided 'Handler' callback was not a function! (got "..(type(Handler))..")");
+    Trace:Assert(not RenderHandlers[Keyword], "The provided 'Keyword' parameter \""..(Keyword).."\" is already in use!");
 
     RenderHandlers[Keyword] = Handler
 end
@@ -531,7 +527,7 @@ end
 
 --- Removes this channel from our client's channel list and prevents our client from receiving further message events for this channel
 function Channel:Destroy()
-    assert(TotalChannels > 1, "You may not destroy this channel as it is the last remaining channel on this client! Please create another channel before deleting this one.");
+    Trace:Assert(TotalChannels > 1, "You may not destroy this channel as it is the last remaining channel on this client! Please create another channel before deleting this one.");
 
     for _, Content in pairs(self._cache) do
         for _, GradientArray in pairs(Content.Gradients) do
@@ -565,64 +561,6 @@ function Channel:Destroy()
     Registry[self.Name] = nil
     self.Container:Destroy();
     self = nil
-end
-
---// Functions
-
---- Returns a set of color keypoints related to the provided ColorGraident!
-function ExtractKeypointData(Gradient : UIGradient, Property : string, Numerations : number) : table
-    local Points = Gradient[Property].Keypoints
-    local Data = {};
-
-    for i = 1, Numerations do
-        local Alpha = i / Numerations
-        
-        local ClosestKeypoint : ColorSequenceKeypoint, Index : number?
-        local BestOffset : number?
-        
-        for ii, Keypoint in pairs(Points) do
-            local Offset = math.abs(Alpha - Keypoint.Time);
-            if (BestOffset and Offset > BestOffset) then continue; end
-
-            ClosestKeypoint = Keypoint
-            Index = ii
-            
-            BestOffset = Offset
-        end
-        
-        local LerpedValue : (Color3 | number)?
-        local IsColor = (Property == "Color");
-        
-        if (i == 1 or i == Numerations) then -- This is either the FIRST or LAST keypoint
-            LerpedValue = Points[
-                (i == 1 and 1)
-                or (i == Numerations and #Points)
-            ].Value
-        elseif (BestOffset == 0) then -- This keypoint aligns PERFECTLY with its closest keypoint (exact value case)
-            LerpedValue = ClosestKeypoint.Value
-        else -- This keypoint is in between 2 value points. We can lerp values to "tween" between
-            if (Index > 1) then -- This is NOT the first Keypoint index! (normal case)
-                LerpedValue = (
-                    (IsColor and Points[Index - 1].Value:Lerp(ClosestKeypoint.Value, Alpha))
-                    or Lerp(Points[Index - 1].Value, ClosestKeypoint.Value, Alpha)
-                );
-            else -- This is the FIRST index in our gradient property! (first case scenario)
-                LerpedValue = (
-                    (IsColor and ClosestKeypoint.Value:Lerp(Points[Index + 1].Value, Alpha))
-                    or Lerp(ClosestKeypoint.Value, Points[Index + 1].Value, Alpha)
-                );
-            end
-        end
-
-        table.insert(Data, LerpedValue);
-    end
-
-    return Data
-end
-
---- Lerps two numbers
-function Lerp(Start : number, End : number, Alpha : number) : number
-    return (Start + (End - Start) * Alpha);
 end
 
 ChannelMaster.Registry = Registry

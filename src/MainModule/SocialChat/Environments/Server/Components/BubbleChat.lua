@@ -43,8 +43,8 @@ end
 
 --- Sends a client-request to instance a Chat Bubble over the provided Agent
 function BubbleChat:Chat(Speaker : Speaker, Message : string)
-    assert(type(Speaker) == "table", "The provided Agent parameter was not of type \"table\"! Please provide a Speaker Object to render from!");
-    assert(type(Message) == "string", "The provided 'Message' was not of type \"string\"! (got "..(type(Message))..")");
+    self.Trace:Assert(type(Speaker) == "table", "The provided Agent parameter was not of type \"table\"! Please provide a Speaker Object to render from!");
+    self.Trace:Assert(type(Message) == "string", "The provided 'Message' was not of type \"string\"! (got "..(type(Message))..")");
 
     local Author = Speaker.Agent
 

@@ -22,7 +22,9 @@ local Resources = script.Resources
 
 local Server = ((IsServer) and (require(Environments.Server)));
 local Client = ((not IsServer) and (require(Environments.Client)));
+
 local VERSION = require(script.VERSION);
+local Trace = require(script.Trace);
 
 --// States
 local ChatServer : table?
@@ -97,6 +99,8 @@ function GetSocialChat()
             Server()({
                 ["Library"] = Library,
                 ["Settings"] = Configurations,
+
+                ["Trace"] = Trace,
                 ["VERSION"] = VERSION
             });
 
@@ -130,6 +134,8 @@ function GetSocialChat()
             Client()({
                 ["Library"] = Library,
                 ["Settings"] = Configurations,
+
+                ["Trace"] = Trace,
                 ["VERSION"] = VERSION
             });
 

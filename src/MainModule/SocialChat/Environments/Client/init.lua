@@ -40,6 +40,71 @@ local function Initialize(Setup : table)
 
     ChatToggleButton = TopbarPlus.new();
 
+    --// Gradient Setup
+    --\\ Our Chat gradients must be setup prior to initialization
+
+    --- Lerps two numbers
+    local function Lerp(Start : number, End : number, Alpha : number) : number
+        return (Start + (End - Start) * Alpha);
+    end
+
+    --- Returns a set of color keypoints related to the provided ColorGraident!
+    local function ExtractKeypointData(Gradient : UIGradient, Property : string, Numerations : number) : table
+        local Points = Gradient[Property].Keypoints
+        local Data = {};
+    
+        for i = 1, Numerations do
+            local Alpha = i / Numerations
+            
+            local ClosestKeypoint : ColorSequenceKeypoint, Index : number?
+            local BestOffset : number?
+            
+            for ii, Keypoint in pairs(Points) do
+                local Offset = math.abs(Alpha - Keypoint.Time);
+                if (BestOffset and Offset > BestOffset) then continue; end
+    
+                ClosestKeypoint = Keypoint
+                Index = ii
+                
+                BestOffset = Offset
+            end
+            
+            local LerpedValue : (Color3 | number)?
+            local IsColor = (Property == "Color");
+            
+            if (i == 1 or i == Numerations) then -- This is either the FIRST or LAST keypoint
+                LerpedValue = Points[
+                    (i == 1 and 1)
+                    or (i == Numerations and #Points)
+                ].Value
+            elseif (BestOffset == 0) then -- This keypoint aligns PERFECTLY with its closest keypoint (exact value case)
+                LerpedValue = ClosestKeypoint.Value
+            else -- This keypoint is in between 2 value points. We can lerp values to "tween" between
+                if (Index > 1) then -- This is NOT the first Keypoint index! (normal case)
+                    LerpedValue = (
+                        (IsColor and Points[Index - 1].Value:Lerp(ClosestKeypoint.Value, Alpha))
+                        or Lerp(Points[Index - 1].Value, ClosestKeypoint.Value, Alpha)
+                    );
+                else -- This is the FIRST index in our gradient property! (first case scenario)
+                    LerpedValue = (
+                        (IsColor and ClosestKeypoint.Value:Lerp(Points[Index + 1].Value, Alpha))
+                        or Lerp(ClosestKeypoint.Value, Points[Index + 1].Value, Alpha)
+                    );
+                end
+            end
+    
+            table.insert(Data, LerpedValue);
+        end
+    
+        return Data
+    end
+
+    for _, Info in pairs(Settings.Styles.TextStyles) do
+        Info.Color = ExtractKeypointData(Info.Gradient, "Color", math.abs(Info.Keypoints));
+        Info.Transparency = ExtractKeypointData(Info.Gradient, "Transparency", math.abs(Info.Keypoints));
+        Info.Duration = math.max(Info.Duration, 0.01); -- Durations are limited to 0.1 seconds! (anything less would be weird/un-needed)
+    end
+
     --// Data Initiation
     --\\ This will request Data from the server whenever it is called!
 
@@ -163,7 +228,9 @@ local function Initialize(Setup : table)
                 ["ChatUI"] = ChatUI,
                 
                 ["Data"] = SocialChatData,
-                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
+                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully,
+
+                ["Trace"] = Setup.Trace
             });
         end);
 
@@ -172,7 +239,7 @@ local function Initialize(Setup : table)
         if (Success) then
             UIComponents[Name] = Response
         elseif (not Success) then
-            error("Failed to initialize SocialChat component: \""..(Name).."\". ("..(Response).." )");
+            error(Response, 1);
         end
     end
 
@@ -203,11 +270,12 @@ local function Initialize(Setup : table)
     --// Extension Setup
     --\\ This is where we setup all of our extensions!
 
-    for Name, API in pairs(Extensions) do
+    for _, API in pairs(Extensions) do
         local Success, Response = pcall(function()
             return API:Deploy({
                 ["Settings"] = Settings,
                 ["Library"] = Library,
+                ["Trace"] = Setup.Trace,
                 
                 ["Presets"] = script.Presets,
                 ["Remotes"] = Network,
@@ -223,7 +291,7 @@ local function Initialize(Setup : table)
         end);
 
         if (not Success) then
-            error("Failed to start extension \""..(Name).."\"! ("..(Response or "No response indicated")..")");
+            error(Response, 1);
         end
     end
 

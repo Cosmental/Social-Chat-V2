@@ -1,4 +1,3 @@
-local TweenService = game:GetService("TweenService")
 --[[
 
     Name: Mari
@@ -17,6 +16,8 @@ ControlPanel.__index = ControlPanel
 local Navigator = require(script.API.Navigator);
 local TopbarPlus
 
+local Trace : table < TraceAPI >
+
 --// Constants
 local TopbarButton
 local PanelFrame
@@ -32,6 +33,8 @@ function ControlPanel:Initialize(Setup : table)
 
     TopbarPlus = self.Library.TopbarPlus
     TopbarButton = TopbarPlus.new();
+    
+    Trace = self.Trace
 
     PanelFrame = self.ChatUI.ControlPanel
     MainPanel = PanelFrame.MainPanel
@@ -67,7 +70,7 @@ function ControlPanel:Initialize(Setup : table)
         if (Success) then
             Pages[Page.Name] = Response
         else
-            error("SocialChat Control-Panel Error: Failed to require page \""..(Page.Name).."\"! (response: "..(Response)..")");
+            Trace:Error("Failed to setup page \""..(Page.Name).."\"! (response: "..(Response)..")");
         end
     end
 
@@ -102,7 +105,7 @@ function ControlPanel:Initialize(Setup : table)
         if (Success) then
             Pages[Name] = Response
         else
-            error("SocialChat Control-Panel Error: Failed to initialize page \""..(Name).."\"! (response: "..(Response)..")");
+            Trace:Error("Failed to initialize page \""..(Name).."\"! (response: "..(Response)..")");
         end
     end
 
