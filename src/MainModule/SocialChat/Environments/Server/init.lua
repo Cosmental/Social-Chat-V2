@@ -48,7 +48,7 @@ local function Initialize(Setup : table)
     end
 
     local ServerExtensions = Extract(game.ServerStorage:WaitForChild("ServerChatExtensions"));
-    local SharedExtensions = Extract(game.ReplicatedStorage:WaitForChild("SharedChatExtensions"));
+    local SharedExtensions = Extract(game.ReplicatedStorage:WaitForChild("ChatExtensions"):WaitForChild("Shared"));
 
     for Name, Module in pairs(ServerExtensions) do
         Extensions[Name] = Module
@@ -75,8 +75,8 @@ local function Initialize(Setup : table)
     end
 
     GetDataStructures(game.ServerStorage.ServerChatExtensions);
-    GetDataStructures(game.ReplicatedStorage.SharedChatExtensions);
-    GetDataStructures(game.ReplicatedFirst:WaitForChild("ClientChatExtensions"));
+    GetDataStructures(game.ReplicatedStorage.ChatExtensions.Shared);
+    GetDataStructures(game.ReplicatedStorage.ChatExtensions.Client);
 
     --// Secure Initialization
     --\\ We must securely initialize ALL of our components using programming standards that assist us in debugging.

@@ -7,12 +7,20 @@
 
 ]]--
 
+--// Services
+local InsertService = game:GetService("InsertService");
+
+--// Constants
 local ErrorTypes = {
 	[1] = "The instance '%s' was missing! This is a required instance that must exist in order for SocialChat to work properly!\n\nPlease create an instance of type: %s named '%s' under the path:\n%s",
 	[2] = "'%s' can not be of class '%s'!\n'%s' must either be a %s!\n\nPath: %s",
 	[3] = "'%s' does not have a '%s' within it! Please add an Instance of class '%s' within the path:\n%s"
 };
 
+--// States
+local IsSystemReady : boolean?
+
+--// Debuggers
 local function Error(ErrorType : number, ... : any?) : string
 	local Params = table.pack(...);
 	Params['n'] = nil
@@ -67,6 +75,7 @@ local function CheckChatUI(Interface : ScreenGui)
 	Validate(InteractionBar, "InputBox", {"TextBox"});
 end
 
+--// Main
 return function(Configurations : Folder, Extensions : Folder?)
 	assert(game:GetService("RunService"):IsServer(), "SocialChat MainModule Error: The SocialChat main module can only be preloaded by a \"Server\" Script. (callback cancelation error)");
 	assert(game:GetService("RunService"):IsRunning(), "SocialChat can only be initialized in an active game!");
@@ -96,15 +105,43 @@ return function(Configurations : Folder, Extensions : Folder?)
 	if (Extensions) then
 		local ServerExtensions = Extensions.Server
 		ServerExtensions.Name = "ServerChatExtensions"
-		ServerExtensions.Parent = game.ServerStorage
-		
-		local ClientExtensions = Extensions.Client
-		ClientExtensions.Name = "ClientChatExtensions"
-		ClientExtensions.Parent = game.ReplicatedFirst
 
-		local SharedExtensions = Extensions.Shared
-		SharedExtensions.Name = "SharedChatExtensions"
-		SharedExtensions.Parent = game.ReplicatedStorage
+		local ChatExtensions : Folder = Instance.new("Folder");
+		ChatExtensions.Name = "ChatExtensions"
+
+		local Shared : Folder = Instance.new("Folder");
+		Shared.Name = "Shared"
+		Shared.Parent = ChatExtensions
+
+		local Client : Folder = Instance.new("Folder");
+		Client.Name = "Client"
+		Client.Parent = ChatExtensions
+
+		--// Automatic Installations
+		--\\ These extensions will install automatically using their AssetIds!
+
+		if (Extensions:FindFirstChild("AutoInstall")) then
+			for Name : string, Category : table in pairs(require(Extensions.AutoInstall)) do
+				for _, AssetId : number in pairs(Category) do
+					local Success, Response = pcall(function()
+						return InsertService:LoadAsset(AssetId);
+					end);
+	
+					if (Success) then
+						Response:FindFirstChildOfClass("ModuleScript").Parent = (
+							(Name == "Server" and ServerExtensions) or
+							(Name == "Shared" and Shared) or
+							Client
+						);
+					else
+						warn("Failed to install "..(Name).." extension with Id '"..(AssetId).."'!");
+					end
+				end
+			end
+		end
+
+		ChatExtensions.Parent = game.ReplicatedStorage -- Q: "Why not ReplicatedFirst?" || A: ReplicatedFirst creates a race-condition where IF the instances are not yet parented by the time our client joins, THEN those instances won't be replicated
+		ServerExtensions.Parent = game.ServerStorage
 		
 		Extensions:Destroy();
 	end
@@ -112,11 +149,19 @@ return function(Configurations : Folder, Extensions : Folder?)
 	--// Finalization
 	SocialChat.Parent = game.ReplicatedStorage
 	require(SocialChat);
+	IsSystemReady = true
 	
 	--// Player Handling
 	local function HandlePlayer(Player : Player)
 		local Container = Player:WaitForChild("PlayerGui");
 		local SocialChatClient = script.SocialChatClient:Clone();
+
+		if (not IsSystemReady) then
+			repeat
+				task.wait();
+			until
+			IsSystemReady
+		end
 		
 		SocialChatClient.Parent = Container
 		SocialChatClient.Disabled = false

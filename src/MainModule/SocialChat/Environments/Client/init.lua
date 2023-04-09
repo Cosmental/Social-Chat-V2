@@ -99,7 +99,7 @@ local function Initialize(Setup : table)
         return Data
     end
 
-    for _, Info in pairs(Settings.Styles.TextStyles) do
+    for _, Info in pairs(Settings.Styles) do
         Info.Color = ExtractKeypointData(Info.Gradient, "Color", math.abs(Info.Keypoints));
         Info.Transparency = ExtractKeypointData(Info.Gradient, "Transparency", math.abs(Info.Keypoints));
         Info.Duration = math.max(Info.Duration, 0.01); -- Durations are limited to 0.1 seconds! (anything less would be weird/un-needed)
@@ -162,8 +162,9 @@ local function Initialize(Setup : table)
 
     UIComponents = Extract(script.Components);
     
-    local ClientExtensions = Extract(game.ReplicatedFirst:WaitForChild("ClientChatExtensions"));
-    local SharedExtensions = Extract(game.ReplicatedStorage:WaitForChild("SharedChatExtensions"));
+    local ExtensionDirectory = game.ReplicatedStorage:WaitForChild("ChatExtensions");
+    local ClientExtensions = Extract(ExtensionDirectory:WaitForChild("Client"));
+    local SharedExtensions = Extract(ExtensionDirectory:WaitForChild("Shared"));
 
     for Name, Module in pairs(ClientExtensions) do
         Extensions[Name] = Module
