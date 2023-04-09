@@ -213,7 +213,7 @@ local function Initialize(Setup : table)
 
         --// Initialization
         
-        Module:Initialize({
+        UIComponents[Name] = Module:Initialize({
             ["Settings"] = Settings,
             ["Library"] = Library,
             ["Cache"] = CacheFolder,
@@ -233,12 +233,6 @@ local function Initialize(Setup : table)
         });
 
         ContentReady = true
-
-        if (Success) then
-            UIComponents[Name] = Response
-        elseif (not Success) then
-            error(Response, 1);
-        end
     end
 
     --// TopbarPlus Control

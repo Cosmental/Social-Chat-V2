@@ -17,14 +17,8 @@ local CollectionService = game:GetService("CollectionService");
 local IsServer = game:GetService("RunService"):IsServer();
 
 --// Imports
-local Environments = script.Environments
-local Resources = script.Resources
-
-local Server = ((IsServer) and (require(Environments.Server)));
-local Client = ((not IsServer) and (require(Environments.Client)));
-
-local VERSION = require(script.VERSION);
-local Trace = require(script.Trace);
+local VERSION = require(script:WaitForChild("VERSION"));
+local Trace = require(script:WaitForChild("Trace"));
 
 --// States
 local ChatServer : table?
@@ -35,6 +29,13 @@ local wasInitialized : boolean
 --// Initializer
 function GetSocialChat()
     if (not wasInitialized) then
+
+        --// Sub-Imports
+        local Environments = script.Environments
+        local Resources = script.Resources
+
+        local Server = ((IsServer) and (require(Environments.Server)));
+        local Client = ((not IsServer) and (require(Environments.Client)));
 
         --// Module Collection
         local Library = {};
