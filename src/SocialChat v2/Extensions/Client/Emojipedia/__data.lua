@@ -27,7 +27,9 @@ return {
                 Name = "Hover Emoji Name",
                 Info = "Determines whether the name of an emoji will display in a bubble when hovered over.",
                 Type = "Button",
-                Order = 3
+                Order = 3,
+
+                Value = true
             };
         };
     };
