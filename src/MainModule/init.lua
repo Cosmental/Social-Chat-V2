@@ -140,6 +140,18 @@ return function(Configurations : Folder, Extensions : Folder?)
 			end
 		end
 
+		--// Manual Installations
+		--\\ Some modules aren't automatically installed because of configurations and/or other reasons!
+
+		local function Push(Container : Folder, Destination : Folder)
+			for _, Child in pairs(Container:GetChildren()) do
+				Child.Parent = Destination
+			end
+		end
+
+		Push(Extensions.Client, Client);
+		Push(Extensions.Shared, Shared);
+
 		ChatExtensions.Parent = game.ReplicatedStorage -- Q: "Why not ReplicatedFirst?" || A: ReplicatedFirst creates a race-condition where IF the instances are not yet parented by the time our client joins, THEN those instances won't be replicated
 		ServerExtensions.Parent = game.ServerStorage
 		

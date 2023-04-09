@@ -211,29 +211,26 @@ local function Initialize(Setup : table)
             (ContentReady or WarningFired);
         end)();
 
-        --// Pcall Handling
-        --\\ Implemented for proper error catching
+        --// Initialization
+        
+        Module:Initialize({
+            ["Settings"] = Settings,
+            ["Library"] = Library,
+            ["Cache"] = CacheFolder,
+            
+            ["Presets"] = script.Presets,
+            ["Remotes"] = Network,
+            ["Src"] = UIComponents,
+            ["Extensions"] = Extensions,
 
-        local Success, Response = pcall(function()
-            return Module:Initialize({
-                ["Settings"] = Settings,
-                ["Library"] = Library,
-                ["Cache"] = CacheFolder,
-                
-                ["Presets"] = script.Presets,
-                ["Remotes"] = Network,
-                ["Src"] = UIComponents,
-                ["Extensions"] = Extensions,
+            ["ChatButton"] = ChatToggleButton,
+            ["ChatUI"] = ChatUI,
+            
+            ["Data"] = SocialChatData,
+            ["FFLAG_DataFailure"] = DidDataLoadSuccessfully,
 
-                ["ChatButton"] = ChatToggleButton,
-                ["ChatUI"] = ChatUI,
-                
-                ["Data"] = SocialChatData,
-                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully,
-
-                ["Trace"] = Setup.Trace
-            });
-        end);
+            ["Trace"] = Setup.Trace
+        });
 
         ContentReady = true
 
@@ -271,29 +268,23 @@ local function Initialize(Setup : table)
     --// Extension Setup
     --\\ This is where we setup all of our extensions!
 
-    for _, API in pairs(Extensions) do
-        local Success, Response = pcall(function()
-            return API:Deploy({
-                ["Settings"] = Settings,
-                ["Library"] = Library,
-                ["Trace"] = Setup.Trace,
-                
-                ["Presets"] = script.Presets,
-                ["Remotes"] = Network,
-                ["Src"] = Extensions,
-                ["Components"] = UIComponents,
-    
-                ["ChatButton"] = ChatToggleButton,
-                ["ChatUI"] = ChatUI,
-                
-                ["Data"] = SocialChatData,
-                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
-            });
-        end);
+    for _, API : table in pairs(Extensions) do
+        API:Deploy({
+            ["Settings"] = Settings,
+            ["Library"] = Library,
+            ["Trace"] = Setup.Trace,
+            
+            ["Presets"] = script.Presets,
+            ["Remotes"] = Network,
+            ["Src"] = Extensions,
+            ["Components"] = UIComponents,
 
-        if (not Success) then
-            error(Response, 1);
-        end
+            ["ChatButton"] = ChatToggleButton,
+            ["ChatUI"] = ChatUI,
+            
+            ["Data"] = SocialChatData,
+            ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
+        });
     end
 
     --// Client Setup

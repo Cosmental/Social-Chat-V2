@@ -102,49 +102,34 @@ local function Initialize(Setup : table)
             (ProcessFinished or WarningFired);
         end)();
 
-        --// Pcall Handling
-        --\\ Implemented for proper error catching
+        --// Initialization
 
-        local Success, Response = pcall(function()
-            return Component:Initialize({
-                ["Settings"] = Settings,
-                ["Library"] = Library,
+        ServerComponents[Name] = Component:Initialize({
+            ["Settings"] = Settings,
+            ["Library"] = Library,
 
-                ["Remotes"] = Network,
-                ["Src"] = ServerComponents,
+            ["Remotes"] = Network,
+            ["Src"] = ServerComponents,
 
-                ["__extensionData"] = ExtensionStructures,
-                ["Trace"] = Setup.Trace
-            });
-        end);
+            ["__extensionData"] = ExtensionStructures,
+            ["Trace"] = Setup.Trace
+        });
 
         ProcessFinished = true -- This should only run when our pcall finishes
-
-        if (Success) then
-            ServerComponents[Name] = Response
-        elseif (not Success) then
-            error(Response, 1);
-        end
     end
 
     --// Extension Setup
     --\\ This will initialize and return a list of registered extensions on our server!
     
     for _, API in pairs(Extensions) do
-        local Success, Response = pcall(function()
-            return API:Deploy({
-                ["Settings"] = Settings,
-                ["Library"] = Library,
-                ["Remotes"] = Network,
+        API:Deploy({
+            ["Settings"] = Settings,
+            ["Library"] = Library,
+            ["Remotes"] = Network,
 
-                ["Src"] = Extensions,
-                ["Components"] = ServerComponents
-            });
-        end);
-
-        if (not Success) then
-            error(Response, 1);
-        end
+            ["Src"] = Extensions,
+            ["Components"] = ServerComponents
+        });
     end
 
     Network.ExtensionGateway.OnServerInvoke = function()
