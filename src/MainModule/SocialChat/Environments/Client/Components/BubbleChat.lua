@@ -26,6 +26,8 @@ local Settings
 local SmartText
 local RichString
 
+local Trace : table < TraceAPI >
+
 --// Constants
 local Player = game.Players.LocalPlayer
 local SpeakerEvents
@@ -51,6 +53,7 @@ function BubbleChat:Initialize(Info : table) : metatable
     Settings = self.Settings.BubbleChat
     TextStyles = self.Settings.Styles
     Channels = self.Src.Channels
+    Trace = self.Trace
 
     SpeakerEvents = self.Remotes.Speakers
     Network = self.Remotes.BubbleChat
@@ -207,9 +210,9 @@ end
 
 --- Creates a new BubbleController that can be handled via it's various API methods
 function BubbleChat.new(Agent : BasePart | Player, Metadata : table?) : BubbleController
-    assert(typeof(Agent) == "Instance", "Expected \"Instance\" as a valid OverheadContainer Agent. (got \""..(typeof(Agent)).."\")");
-    assert(Agent:IsA("BasePart") or Agent:IsA("Player"), "The provided Instance was not of class \"BasePart\" or \"Player\"! (got \""..(Agent.ClassName).."\")");
-    assert(not Metadata or type(Metadata) == "table", "The provided BubbleChat metadata was not of type \"table\"! (got \""..(type(Metadata)).."\")");
+    Trace:Assert(typeof(Agent) == "Instance", "Expected \"Instance\" as a valid OverheadContainer Agent. (got \""..(typeof(Agent)).."\")");
+    Trace:Assert(Agent:IsA("BasePart") or Agent:IsA("Player"), "The provided Instance was not of class \"BasePart\" or \"Player\"! (got \""..(Agent.ClassName).."\")");
+    Trace:Assert(not Metadata or type(Metadata) == "table", "The provided BubbleChat metadata was not of type \"table\"! (got \""..(type(Metadata)).."\")");
 
     local OverheadUI = Presets.BubbleChatContainer:Clone();
 
@@ -249,10 +252,10 @@ function BubbleChat.new(Agent : BasePart | Player, Metadata : table?) : BubbleCo
             if (Controller[Index]) then
                 rawset(Controller, Index, Value);
             elseif (Index == "Thinking") then
-                assert(type(Value) == "boolean" or Value == nil, "BubbleChat Error: Attempt to set thinking state to a non-boolean value! (got "..(type(Value))..")");
+                Trace:Assert(type(Value) == "boolean" or Value == nil, "BubbleChat Error: Attempt to set thinking state to a non-boolean value! (got "..(type(Value))..")");
                 Controller:__setThinking(Value);
             elseif (Index == "Enabled") then
-                assert(type(Value) == "boolean" or Value == nil, "BubbleChat Error: Attempt to set enabled state to a non-boolean value! (got "..(type(Value))..")");
+                Trace:Assert(type(Value) == "boolean" or Value == nil, "BubbleChat Error: Attempt to set enabled state to a non-boolean value! (got "..(type(Value))..")");
                 Controller:__setActive(Value);
             end
         end,
@@ -306,17 +309,17 @@ end
 
 --- Adjusts major configurable settings (not intended for API usage) [SCOPE-BYPASSER]
 function BubbleChat:Configure(Configuration : string, Value : any?)
-    assert(type(Configuration) == "string", "Attempt to query replacement value with internal BubbleChat settings with a non-string type. (received "..(type(Configuration))..")");
-    assert(Settings[Configuration], "Requested BubbleChat configurable adjustment \""..(Configuration).."\" does not exist!");
+    Trace:Assert(type(Configuration) == "string", "Attempt to query replacement value with internal BubbleChat settings with a non-string type. (received "..(type(Configuration))..")");
+    Trace:Assert(Settings[Configuration], "Requested BubbleChat configurable adjustment \""..(Configuration).."\" does not exist!");
     
     Settings[Configuration] = Value
 end
 
 --- Adds a new string replacement to BubbleChat StringObject's
 function BubbleChat:HandleRender(Keyword : string, Handler : Function)
-    assert(type(Keyword) == "string", "A string type was not passed for the \"Keyword\" parameter. (got "..(type(Keyword))..")");
-    assert(type(Handler) == "function", "The provided 'Handler' callback was not a function! (got "..(type(Handler))..")");
-    assert(not RenderHandlers[Keyword], "The provided 'Keyword' parameter \""..(Keyword).."\" is already in use!");
+    Trace:Assert(type(Keyword) == "string", "A string type was not passed for the \"Keyword\" parameter. (got "..(type(Keyword))..")");
+    Trace:Assert(type(Handler) == "function", "The provided 'Handler' callback was not a function! (got "..(type(Handler))..")");
+    Trace:Assert(not RenderHandlers[Keyword], "The provided 'Keyword' parameter \""..(Keyword).."\" is already in use!");
 
     RenderHandlers[Keyword] = Handler
 end
