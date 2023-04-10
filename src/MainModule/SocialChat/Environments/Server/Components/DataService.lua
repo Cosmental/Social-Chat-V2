@@ -33,6 +33,15 @@ function DataService:Initialize(Setup : table)
 
     Network = self.Remotes.DataService
     Trace = self.Trace
+
+    --// API-Access Enabled verification
+    --\\ Roblox disables this by default, hence why we have to pass a value onto the developer in-case if they forget
+    
+    local DataStoresEnabled : boolean? = IsAPIEnabled();
+
+    if (not DataStoresEnabled) then
+        warn("DataStores are not currently enabled! This will not allow any data to be stored, and users must configure SocialChat upon joining everytime.\n\t\t\t\t\t\t\t\t\tYou can enable this feature in 'Game Settings -> Security -> Enable Studio Access to API Services'.")
+    end
     
     --// Data Setup
     local Structure : table = GetDefaultStructure(self.Settings, self.__extensionData);
@@ -47,7 +56,7 @@ function DataService:Initialize(Setup : table)
         if (Success) then -- NOTE: If Data fails to load, the System will NOT store the user's data. This is to prevent changes in case of Roblox Servers being down and potentially losing data due to corruption
             Data = (Response or Structure);
             UserData[Player] = Data
-        else
+        elseif (DataStoresEnabled) then
             warn("SocialChat DataService Failed to preload data for user \""..(Player.Name).."\"! (Server Response: "..(Response)..")");
         end
     end
@@ -108,7 +117,7 @@ function DataService:Initialize(Setup : table)
         until
         ((self:GetData(Player)) or (TimedOut));
 
-        return (self:GetData(Player) or Structure), TimedOut -- In case of data loading failure, SocialChat will resort to it's default data!
+        return (self:GetData(Player) or Structure), (TimedOut or not DataStoresEnabled) -- In case of data loading failure, SocialChat will resort to it's default data!
     end
 
     return self
@@ -125,6 +134,19 @@ function DataService:GetData(Player : Player) : table?
 end
 
 --// Functions
+
+--- This tells us if API-Access is enabled or not
+function IsAPIEnabled() : boolean?
+	local Success, Response = pcall(function()
+		return DataStoreService:GetDataStore("__API-ENABLED-TEST"):SetAsync("__API-TEST", true);
+	end);
+	
+	if (not Success and Response:find("403")) then
+		return false
+	else
+		return true;
+	end
+end
 
 --- This is a function simply because I don't want to read all of this within the 'Initialization' Method
 function GetDefaultStructure(Settings : table, ExtensionData : table?)
