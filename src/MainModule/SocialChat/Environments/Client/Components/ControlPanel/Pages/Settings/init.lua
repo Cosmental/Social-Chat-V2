@@ -101,7 +101,7 @@ function SettingsPage:Init(Setup : table)
     end
 
     --// Visual Appearance
-    local Elements = PageAPI:GetVisibleElements(Page, {Page.DataFailureProtocol, Page.Categories});
+    local Elements = PageAPI:GetVisibleElements(Page, {Page.Categories});
     local ProtocolInfo = Elements[Page.DataFailureProtocol];
 
     Page.DataFailureProtocol.Visible = false
