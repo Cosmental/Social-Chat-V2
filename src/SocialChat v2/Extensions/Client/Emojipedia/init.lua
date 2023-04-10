@@ -405,6 +405,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
             Emoji.AnchorPoint = Vector2.new(0, 0.5);
             Emoji.Size = UDim2.fromScale(0.05, 0.75);
             Emoji.Position = UDim2.fromScale(0.015, 0.5);
+            Emoji.ZIndex = 20
             Emoji.Parent = Item
 
             Item.InputBegan:Connect(function(Input : InputObject)
