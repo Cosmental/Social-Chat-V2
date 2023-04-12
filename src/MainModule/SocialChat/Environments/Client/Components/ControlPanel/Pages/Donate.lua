@@ -44,16 +44,16 @@ function DonatePage:Init(Setup : table)
     --// Product setup
     local Elements = PageAPI:GetVisibleElements(Page);
     local DonationIds = { -- Please do not change these! SocialChat heavily relies on the support gained from these products. Changing these Ids will harm the resource and myself :(
-        ["Charity"] = 1380704904,
-        ["Donator"] = 1380705132,
-        ["Supporter"] = 1380705438,
-        ["Generous"] = 1380705592,
-        ["Selfless"] = 1380705807,
-        ["Respected"] = 1380705946,
-        ["Investor"] = 1380706123,
-        ["Developer"] = 1380706280,
-        ["Entrepreneur"] = 1380706439,
-        ["Philanthropist"] = 1380706696
+		["Charity"] = 1518618208,
+		["Donator"] = 1518618843,
+		["Supporter"] = 1518618991,
+		["Generous"] = 1518619148,
+		["Selfless"] = 1518619277,
+		["Respected"] = 1518619425,
+		["Investor"] = 1518619578,
+		["Developer"] = 1518619686,
+		["Entrepreneur"] = 1518619832,
+		["Philanthropist"] = 1518620075
     };
 
     for _, Button in pairs(Page.Options.Products:GetChildren()) do
