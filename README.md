@@ -1,8 +1,8 @@
 ![SocialChat-#1-Green](https://user-images.githubusercontent.com/52884117/231453362-ba148352-84be-4ea1-8221-d6369120a5a1.png)
 
 <p align="center">        
-  <a href="https://discord.gg/4BVYecFEzA"><img src="https://img.shields.io/discord/1069771843411652688?color=%236e5dde&label=Disc"/></a>
-  <a href="https://github.com/Cosmental/Social-Chat-V2/releases/latest"><img src="https://img.shields.io/github/downloads/Cosmental/Social-Chat-V2/total?color=%2332d961&label=Downloads"/></a>
+  <a href="https://discord.gg/4BVYecFEzA"><img src="https://img.shields.io/discord/1069771843411652688?color=%232a0e75&label=Chat&logo=Discord&logoColor=%23edeef2"/></a>
+  <a href="https://github.com/Cosmental/Social-Chat-V2/releases/latest"><img src="https://img.shields.io/github/downloads/Cosmental/Social-Chat-V2/total?color=%23108f4b&label=Downloads&logo=github"/></a>
   <a href="https://twitter.com/CosRBX"><img src="https://img.shields.io/twitter/follow/CosRBX?logoColor=%235ddede"/></a>
 </p>
 
