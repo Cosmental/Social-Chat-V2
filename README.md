@@ -2,7 +2,7 @@
 
 <p align="center">        
   <a href="https://discord.gg/4BVYecFEzA"><img src="https://img.shields.io/discord/1069771843411652688?color=%236e5dde&label=Disc"/></a>
-  <a href="https://github.com/Cosmental/Social-Chat-V2/releases/latest"><img src="https://img.shields.io/github/downloads/Cosmental/Social-Chat-V2/total?label=Installations"/></a>
+  <a href="https://github.com/Cosmental/Social-Chat-V2/releases/latest"><img src="https://img.shields.io/github/downloads/Cosmental/Social-Chat-V2/total?color=%2332d961&label=Downloads"/></a>
   <a href="https://twitter.com/CosRBX"><img src="https://img.shields.io/twitter/follow/CosRBX?logoColor=%235ddede"/></a>
 </p>
 
