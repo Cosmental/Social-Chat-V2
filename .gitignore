@@ -14,3 +14,7 @@ aftman.toml
 .vscode
 concepts
 assets
+
+# SocialChat-Developer Assets
+src/SocialChatv2/Extensions/AutoInstall.lua
+src/SocialChatv2/Extensions/Client/Emojipedia
