@@ -10,7 +10,7 @@
 Welcome to your next <b>innovation</b>! Social Chat aims to maximize interactivity by replacing Roblox's default Chat System in exchange for added features, extension
 support, developer usage, and more!
 
-Ready to get started? Run the command below to install SocialChat's **Source Code** built for **developers**!
+Ready to get started? Run the following command in Roblox Studio's command bar to install SocialChat's **Source Code**!
 
 ```lua
 loadstring(game:GetService("HttpService"):GetAsync("https://pastebin.com/raw/ddVNfyrZ"))();
