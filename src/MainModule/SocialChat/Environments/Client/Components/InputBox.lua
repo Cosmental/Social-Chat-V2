@@ -401,7 +401,10 @@ function InputBox:Initialize(Info : table) : metatable
                 self.ChatButton:select();
             end
     
-            task.defer(ChatBox.CaptureFocus, ChatBox);
+            task.wait(0.05); -- 0.05 seconds should be enough time
+            RunService.RenderStepped:Wait(); -- Wait until the next frame JUST in case
+
+            ChatBox:CaptureFocus();
         elseif (IsControlHeld and SyntaxEmbed and ChatBox:IsFocused() and SelectedText and Settings.AllowMarkdown) then -- Special Markdown syntaxing!
             local SelectionA, SelectionB = SelectedText.Cursor.Starts, SelectedText.Cursor.Ends
             local Text = SelectedText.Text
