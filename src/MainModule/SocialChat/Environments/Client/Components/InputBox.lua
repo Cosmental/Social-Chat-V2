@@ -15,6 +15,7 @@ InputBox.__index = InputBox
 local UserInputService = game:GetService("UserInputService");
 local TextService = game:GetService("TextService");
 local RunService = game:GetService("RunService");
+local StarterGui = game:GetService("StarterGui")
 
 --// Imports
 local HighlightUtil
@@ -762,9 +763,17 @@ function HandleMessage(Message : string) : boolean
         local Channel = Channels:GetFocus();
         if (not Channel) then return true; end
 
-        Channel:Render("Here's a list of chat commands: \n\n **/help** - Provides a list of chat commands \n **/e {emote}** - Plays the provided emote (must be valid) \n **/w {player}** - Allows you to send a private message to the request player. (must use their FULL username)", {
+        Channel:Render("Here's a list of chat commands: \n\n **/help** - Provides a list of chat commands \n **/e {emote}** - Plays the provided emote (must be valid) \n **/w {player}** - Allows you to send a private message to the request player. (must use their FULL username)\n **/console** - Opens the developer console for debugging", {
             ["BypassMarkdownSetting"] = true
         });
+        return true;
+    elseif ((#Words == 1) and (Words[1] == "/console" or Words[1] == "/newconsole")) then
+		local success, isEnabled = pcall(StarterGui.GetCore, StarterGui, "DevConsoleVisible")
+
+		if success then
+			xpcall(StarterGui.SetCore, warn, StarterGui, "DevConsoleVisible", not isEnabled)
+		end
+
         return true;
     end
 end
