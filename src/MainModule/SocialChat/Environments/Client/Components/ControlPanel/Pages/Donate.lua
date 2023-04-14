@@ -24,6 +24,7 @@ DonatePage.ButtonData = {
 --// Services
 local MarketplaceService = game:GetService("MarketplaceService");
 local TweenService = game:GetService("TweenService");
+local RunService = game:GetService("RunService");
 
 --// Imports
 local PageAPI
@@ -41,29 +42,101 @@ function DonatePage:Init(Setup : table)
     FunctUI = self.Library.FunctUI
     Page = self.PanelUI.MainPanel.Donate
 
+    --// Info Frame Setup
+    local InfoFrame : Frame = Instance.new("Frame");
+    
+    InfoFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0);
+    InfoFrame.BackgroundTransparency = 0.1
+
+    InfoFrame.Position = UDim2.fromScale(.035, .57);
+    InfoFrame.Size = UDim2.fromScale(.589, .39);
+
+    InfoFrame.Name = "Info"
+    InfoFrame.Visible = false
+    InfoFrame.Parent = Page
+
+    local Content : TextLabel = Instance.new("TextLabel");
+
+    Content.Position = UDim2.fromScale(.028, .276);
+    Content.Size = UDim2.fromScale(.94, .449);
+    Content.Font = Enum.Font.SourceSans
+    Content.BackgroundTransparency = 1
+
+    Content.TextColor3 = Color3.fromRGB(255, 255, 255);
+    Content.TextScaled = true
+    Content.RichText = true
+
+    Content.Name = "Content"
+    Content.Parent = InfoFrame
+
     --// Product setup
-    local Elements = PageAPI:GetVisibleElements(Page);
     local DonationIds = { -- Please do not change these! SocialChat heavily relies on the support gained from these products. Changing these Ids will harm the resource and myself :(
-		["Charity"] = 1518618208,
-		["Donator"] = 1518618843,
-		["Supporter"] = 1518618991,
-		["Generous"] = 1518619148,
-		["Selfless"] = 1518619277,
-		["Respected"] = 1518619425,
-		["Investor"] = 1518619578,
-		["Developer"] = 1518619686,
-		["Entrepreneur"] = 1518619832,
-		["Philanthropist"] = 1518620075
+		["Charity"] = 162922985,
+		["Donator"] = 162923445,
+		["Supporter"] = 162923771,
+		["Generous"] = 162924110,
+		["Selfless"] = 162924806,
+		["Respected"] = 162925110,
+		["Investor"] = 162925392,
+		["Developer"] = 162925642,
+		["Entrepreneur"] = 162925918,
+		["Philanthropist"] = 162926154
     };
 
-    for _, Button in pairs(Page.Options.Products:GetChildren()) do
-        if (not Button:IsA("TextButton")) then continue; end
-
-        Button.MouseButton1Click:Connect(function()
-            MarketplaceService:PromptProductPurchase(Player, DonationIds[Button.Name]);
-        end);
+    if (RunService:IsStudio() and false) then -- Purchases dont work in studio!
+        Content.Text = "<font color=\"rgb(0, 125, 255)\"><b>MarketPlaceService</b></font> does not work in <b>Studio</b>. If you would like to <font color=\"rgb(0,255,185)\"><b>donate</b></font>, please go in game!"
+        InfoFrame.Visible = true
+    else
+        for _, Button : TextButton in pairs(Page.Options.Products:GetChildren()) do
+            if (not Button:IsA("TextButton")) then continue; end
+    
+            local AssetId : number = DonationIds[Button.Name];
+            
+            if (MarketplaceService:UserOwnsGamePassAsync(Player.UserId, AssetId) and false) then
+                Button.Amount.TextColor3 = Color3.fromRGB(10, 58, 22);
+                Button.Role.TextColor3 = Color3.fromRGB(65, 65, 65);
+    
+                Button.Amount.RichText = true
+                Button.Amount.Text = "<s>"..Button.Amount.Text.."</s>"
+            else
+                Button.MouseButton1Click:Connect(function()
+                    MarketplaceService:PromptGamePassPurchase(Player, DonationIds[Button.Name]);
+                end);
+    
+                Button.MouseEnter:Connect(function()
+                    TweenService:Create(Button, TweenInfo.new(.25), {
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                        BackgroundTransparency = 0
+                    }):Play();
+        
+                    TweenService:Create(Button.Amount, TweenInfo.new(.3), {
+                        TextColor3 = Color3.fromRGB(239, 255, 92),
+                    }):Play();
+        
+                    TweenService:Create(Button.Role, TweenInfo.new(.3), {
+                        TextColor3 = Color3.fromRGB(0, 0, 0),
+                    }):Play();
+                end);
+        
+                Button.MouseLeave:Connect(function()
+                    TweenService:Create(Button, TweenInfo.new(.25), {
+                        BackgroundColor3 = Color3.fromRGB(17, 17, 17),
+                        BackgroundTransparency = 0.5
+                    }):Play();
+        
+                    TweenService:Create(Button.Amount, TweenInfo.new(.3), {
+                        TextColor3 = Color3.fromRGB(85, 255, 127),
+                    }):Play();
+        
+                    TweenService:Create(Button.Role, TweenInfo.new(.3), {
+                        TextColor3 = Color3.fromRGB(255, 255, 255),
+                    }):Play();
+                end);
+            end
+        end
     end
 
+    local Elements = PageAPI:GetVisibleElements(Page);
     FunctUI.new("AdjustingCanvas", Page.Options.Products);
     
     self.Button.OnClicked = function()
