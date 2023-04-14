@@ -83,7 +83,7 @@ function DonatePage:Init(Setup : table)
 		["Philanthropist"] = 162926154
     };
 
-    if (RunService:IsStudio() and false) then -- Purchases dont work in studio!
+    if (RunService:IsStudio()) then -- Purchases dont work in studio!
         Content.Text = "<font color=\"rgb(0, 125, 255)\"><b>MarketPlaceService</b></font> does not work in <b>Studio</b>. If you would like to <font color=\"rgb(0,255,185)\"><b>donate</b></font>, please go in game!"
         InfoFrame.Visible = true
     else
@@ -92,7 +92,7 @@ function DonatePage:Init(Setup : table)
     
             local AssetId : number = DonationIds[Button.Name];
             
-            if (MarketplaceService:UserOwnsGamePassAsync(Player.UserId, AssetId) and false) then
+            if (MarketplaceService:UserOwnsGamePassAsync(Player.UserId, AssetId)) then
                 Button.Amount.TextColor3 = Color3.fromRGB(10, 58, 22);
                 Button.Role.TextColor3 = Color3.fromRGB(65, 65, 65);
     
