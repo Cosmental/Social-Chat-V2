@@ -541,6 +541,7 @@ function InputBox:Initialize(Info : table) : metatable
 
     ChatBox:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateFontSize);
     ChatBox.Font = Settings.MessageFont
+	InputBox.VERSION = self.VERSION
 
     return self
 end
@@ -763,19 +764,28 @@ function HandleMessage(Message : string) : boolean
         local Channel = Channels:GetFocus();
         if (not Channel) then return true; end
 
-        Channel:Render("Here's a list of chat commands: \n\n **/help** - Provides a list of chat commands \n **/e {emote}** - Plays the provided emote (must be valid) \n **/w {player}** - Allows you to send a private message to the request player. (must use their FULL username)\n **/console** - Opens the developer console for debugging", {
+        Channel:Render("Here's a list of chat commands: \n\n **/help** - Provides a list of chat commands \n **/e {emote}** - Plays the provided emote (must be valid) \n **/w {player}** - Allows you to send a private message to the request player. (must use their FULL username)\n **/console** - Opens the developer console for debugging\n **/version** - Display the version of the chat system being used", {
             ["BypassMarkdownSetting"] = true
         });
         return true;
-    elseif ((#Words == 1) and (Words[1] == "/console" or Words[1] == "/newconsole")) then
+	elseif ((#Words == 1) and (Words[1] == "/console" or Words[1] == "/newconsole")) then
 		local success, isEnabled = pcall(StarterGui.GetCore, StarterGui, "DevConsoleVisible")
 
 		if success then
 			xpcall(StarterGui.SetCore, warn, StarterGui, "DevConsoleVisible", not isEnabled)
 		end
 
-        return true;
-    end
+		return true;
+	elseif ((#Words == 1) and (Words[1] == "/version") or (string.sub(Message, 1, 9) == "/version ")) then
+		local Channel = Channels:GetFocus();
+		if (not Channel) then return true; end
+
+		Channel:Render(string.format("Currently using Social Chat version: %s", InputBox.VERSION or "UNKNOWN VERSION"), {
+			["BypassMarkdownSetting"] = true
+		});
+
+		return true;
+	end
 end
 
 return InputBox
