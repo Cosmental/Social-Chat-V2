@@ -141,6 +141,21 @@ function GetSocialChat()
             });
 
             ChatClient = Client(); -- We need to update this value because its state returns a new value
+
+            --// Crediting
+            --\\ Please do not remove this section!
+
+            if ((game.Players.LocalPlayer.UserId ~= game.CreatorId) and (not game:GetService("RunService"):IsStudio())) then
+                warn("--------------------------------------------------");
+                print("💬 This game uses SocialChat v2 💬");
+                print("🎆 Developed by @Cosmental 🎆");
+                print();
+                print("Check us out on the DevForums!");
+                print("https://devforum.roblox.com/t/social-chat-v2-robloxs-1-open-sourced-chatting-resource/2290658");
+                print();
+                print(VERSION);
+                warn("--------------------------------------------------");
+            end
         end
 
         wasInitialized = true
