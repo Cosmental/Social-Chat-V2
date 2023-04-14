@@ -231,7 +231,7 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
     --// Instance registration
     if (ThisChannel.History) then
         for _, Info in ipairs(ThisChannel.History) do
-            ThisChannel:Render(Info.Message, ThisChannel.Members[Info.Author].Metadata.Classic);
+            ThisChannel:Message(Info.Message, ThisChannel.Members[Info.Author].Metadata.Classic);
         end
     end
 

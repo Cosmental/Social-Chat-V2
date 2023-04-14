@@ -15,6 +15,7 @@ InputBox.__index = InputBox
 local UserInputService = game:GetService("UserInputService");
 local TextService = game:GetService("TextService");
 local RunService = game:GetService("RunService");
+local StarterGui = game:GetService("StarterGui");
 
 --// Imports
 local HighlightUtil
@@ -49,6 +50,8 @@ local SyntaxEmbeds = {
     [Enum.KeyCode.U] = "__"
 };
 
+local VERSION : string
+
 --// States
 local SystemWasTyping : boolean
 local IsControlHeld : boolean?
@@ -78,6 +81,7 @@ function InputBox:Initialize(Info : table) : metatable
     ChatBox = InteractionBar.InputBox
 
     LastCursorPosition = ChatBox.CursorPosition
+    VERSION = self.Version
 
     self.Highlighter = HighlightUtil.new(
         Settings.SystemHighlights.Color,
@@ -730,7 +734,7 @@ function HandleMessage(Message : string) : boolean
             local Channel = Channels:GetFocus();
             if (not Channel) then return true; end
 
-            Channel:Render("The emote \'"..(Words[2]).."\' does not exist!");
+            Channel:Message("The emote \'"..(Words[2]).."\' does not exist!");
             return true;
         end
 
@@ -758,14 +762,39 @@ function HandleMessage(Message : string) : boolean
         end);
 
         return true;
-    elseif ((#Words == 1) and (Words[1] == "/help")) then
-        local Channel = Channels:GetFocus();
-        if (not Channel) then return true; end
+    elseif (#Words == 1) then
+        local Phrase = Words[1]:sub(2);
 
-        Channel:Render("Here's a list of chat commands: \n\n **/help** - Provides a list of chat commands \n **/e {emote}** - Plays the provided emote (must be valid) \n **/w {player}** - Allows you to send a private message to the request player. (must use their FULL username)", {
-            ["BypassMarkdownSetting"] = true
-        });
-        return true;
+        local IsSlashCommand = (Phrase:sub(1, 1) ~= "/");
+        if (not IsSlashCommand) then return; end
+
+        if (Phrase == "help") then
+            local Channel = Channels:GetFocus();
+            if (not Channel) then return true; end
+
+            Channel:Message("Here's a list of chat commands: \n\n **/help** - Provides a list of chat commands \n **/e {emote}** - Plays the provided emote (must be valid) \n **/w {player}** - Allows you to send a private message to the request player. (must use their FULL username)\n**/console** - Opens the developer console for debugging\n**/version** - Retrieves the current version of SocialChat", {
+                ["BypassMarkdownSetting"] = true
+            });
+
+            return true;
+        elseif (Phrase == "console" or Phrase == "newconsole") then
+            local success, isEnabled = pcall(StarterGui.GetCore, StarterGui, "DevConsoleVisible");
+
+            if (success) then
+                xpcall(StarterGui.SetCore, warn, StarterGui, "DevConsoleVisible", not isEnabled);
+            end
+
+            return true;
+        elseif (Phrase == "version") then
+            local Channel = Channels:GetFocus();
+            if (not Channel) then return true; end
+
+            Channel:Message("**SocialChat**: ".."__"..VERSION.."__", {
+                ["BypassMarkdownSetting"] = true
+            });
+
+            return true;
+        end
     end
 end
 
