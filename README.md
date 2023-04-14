@@ -1,12 +1,16 @@
+<div align="center">
+
 ![SocialChat-#1-Green](https://user-images.githubusercontent.com/52884117/231453362-ba148352-84be-4ea1-8221-d6369120a5a1.png)
 
-<p align="center">        
-  <a href="https://discord.gg/4BVYecFEzA"><img src="https://img.shields.io/discord/1069771843411652688?color=%232a0e75&label=Chat&logo=Discord&logoColor=%23edeef2"/></a>
-  <a href="https://github.com/Cosmental/Social-Chat-V2/releases/latest"><img src="https://img.shields.io/github/downloads/Cosmental/Social-Chat-V2/total?color=%23108f4b&label=Downloads&logo=github"/></a>
-  <a href="https://twitter.com/CosRBX"><img src="https://img.shields.io/twitter/follow/CosRBX?logoColor=%235ddede"/></a>
-</p>
+# Social Chat V2
 
-# Introduction 💡
+[![Discord server](https://img.shields.io/discord/1069771843411652688?color=%232a0e75&label=Chat&logo=Discord&logoColor=%23edeef2)](https://discord.gg/4BVYecFEzA) [![Releases](https://img.shields.io/github/downloads/Cosmental/Social-Chat-V2/total?color=%23108f4b&label=Downloads&logo=github)](https://github.com/Cosmental/Social-Chat-V2/releases/latest) [![Twitter](https://img.shields.io/twitter/follow/CosRBX?logoColor=%235ddede)](https://twitter.com/CosRBX)
+</div>
+
+---
+
+## Introduction 💡
+
 Welcome to your next <b>innovation</b>! Social Chat aims to maximize interactivity by replacing Roblox's default Chat System in exchange for added features, extension
 support, developer usage, and more!
 
@@ -16,11 +20,10 @@ Ready to get started? Run the following command in Roblox Studio's command bar t
 loadstring(game:GetService("HttpService"):GetAsync("https://pastebin.com/raw/ddVNfyrZ"))();
 ```
 
-Or... alternatively, you may install SocialChat [**here**](https://create.roblox.com/marketplace/asset/13067763504/Social-Chat-v2)!
+Or... alternatively, you may [**install SocialChat**](https://create.roblox.com/marketplace/asset/13067763504/Social-Chat-v2)!
 
 
-Features ✨
---
+## Features ✨
 
 SocialChat's **built-in API** allows developers to fully maximize their usage without having to worry about Chat limitations. Social Chat provides developers
 with **full control** over their chat system!
@@ -34,10 +37,9 @@ with **full control** over their chat system!
 
 ...and more!
 
-Want to request your own features? Make a request [**here**](https://github.com/Cosmental/Social-Chat-V2/issues/new)!
+Want to request your own features? [**Make a feature request**](https://github.com/Cosmental/Social-Chat-V2/issues/new)!
 
-FAQ ❔
---
+## FAQ ❔
 
 **Q: Where is the Emoji support?**
 > A: Social Chat v1 previously integrated Emoji support by default. However, this is not longer the case and developers are expected to **install** [**Emojipedia**](https://create.roblox.com/marketplace/asset/13055356554/Emojipedia) in order to regain access to this feature! This is solely done to keep Social-Chat as general as possible.
@@ -46,19 +48,17 @@ FAQ ❔
 > A: You can report bug reports [here](https://github.com/Cosmental/Social-Chat-V2/issues/new) or you may join our [**support**](discord.gg/4BVYecFEzA) server! Please note that you **must be 13+** to join our Discord Community. This is a rule with NO EXCEPTIONS.
 
 **Q: Where can I find documentation?**
-> A: Currently (as of 4/12/2023), there is no official documentation of this resource. However, you can find useful material on the official [DevForum]() post!
+> A: Currently (as of 4/12/2023), there is no official documentation of this resource. However, you can find useful material on the official [DevForum](https://devforum.roblox.com/t/social-chat-v2-robloxs-1-open-sourced-chatting-resource/2290658) post!
 
-Developer Notes 📜
---
+## Developer Notes 📜
 
 I once again appreciate all the support that Social Chat has recieved! I would love to see what creations you innovate with Social Chat! (tag me on Twitter if you do!)
-If you have any additional feature requests or bug reports, feel free to reach me on discord at **Cos#5658** or create a new issue [**here**](https://github.com/Cosmental/Social-Chat/issues/new) (issues are more likely to be seen than direct messages)
+If you have any additional feature requests or bug reports, feel free to reach me on discord at **Cos#5658** or [**create a new issue**](https://github.com/Cosmental/Social-Chat/issues/new) (issues are more likely to be seen than direct messages)
 
 Crediting is prefered but not required! However, you are **not allowed to sell this resource** as your own OR **remove the SocialChat branding** found within
 the system itself. This is my only method of growing my brand and doing so will harm my goals which prevents me from creating more **FREE** content on Roblox.
 
-Credits 😄
---
+## Credits 😄
 
 Make sure to thank these individuals for making SocialChat possible! 🎉
 
