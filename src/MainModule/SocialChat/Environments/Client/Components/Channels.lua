@@ -170,8 +170,6 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
     Container.Name = "CHANNE_"..Name.."_CONTAINER"
     Container.Visible = false
 
-    FunctUI.new("AdjustingCanvas", Container);
-
     local ThisChannel = setmetatable({
 
         --// PROPERTIES \\--
@@ -183,6 +181,7 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
         --// PROGRAMMABLE \\--
 
         ["Container"] = Container, -- Prefabs -> MessageContainer
+        ["Canvas"] = FunctUI.new("AdjustingCanvas", Container), -- FunctUI :: AdjustingCanvas ( API < table > )
 
         ["Members"] = Members, -- table :: {Players...}
         ["__unread"] = 0, -- number? :: Unread messages
@@ -478,6 +477,9 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
         self.NavButton.Notification.Unread.Text = self.__unread
     end
 
+    local OriginalCanvasPosition : Vector2 = self.Container.CanvasPosition
+    local OriginalCanvasSize : number = self.Canvas:GetCanvasSize();
+
     MainFrame.Parent = self.Container
 
     --// Trash Collection & Finalization
@@ -519,6 +521,15 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
             TextStrokeTransparency = BaseStrokeTransparency,
             TextTransparency = 0
         }):Play();
+    end
+
+    local IsAtTop : boolean = (self.Container.UIListLayout.VerticalAlignment == Enum.VerticalAlignment.Top); -- Whether or not our messages start at the top
+
+    if ( (IsAtTop) and (( self.Container.CanvasPosition.Y <= 5 ) or ( OriginalCanvasPosition.Y >= OriginalCanvasSize ))) then
+        self.Container.CanvasPosition = Vector2.new(
+            0,
+            self.Canvas:GetCanvasSize() + self.Container.AbsoluteSize.Y
+        );
     end
 
     OnMessageRendered:Fire(Message, Metadata, self, IsPrivateMessage);
