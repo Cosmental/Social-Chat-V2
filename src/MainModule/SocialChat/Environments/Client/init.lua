@@ -229,7 +229,8 @@ local function Initialize(Setup : table)
             ["Data"] = SocialChatData,
             ["FFLAG_DataFailure"] = DidDataLoadSuccessfully,
 
-            ["Trace"] = Setup.Trace
+            ["Trace"] = Setup.Trace,
+            ["Version"] = Setup.VERSION
         });
 
         ContentReady = true
