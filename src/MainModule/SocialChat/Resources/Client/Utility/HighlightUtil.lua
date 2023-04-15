@@ -23,8 +23,9 @@ local HighlightFormat = "<font color=\"rgb(%s, %s, %s)\">%s</font>"
 function HighlightAPI.new(Color : Color3, Phrases : table, StartingCaseMode : boolean?) : Highlighter
     return setmetatable({
        ["Color"] = Color, -- Color3
-       ["Phrases"] = Phrases, -- table => { string }
+       ["Phrases"] = Phrases, -- table < string >
        
+       ["PhraseHandlers"] = {}, -- table < Function >
        ["OnlyAtStart"] = StartingCaseMode, -- TRUE :: Phrase must be at start of string || FALSE :: any find
     }, Highlighter);
 end
@@ -34,7 +35,7 @@ end
 --- Adds a custom highlighter handler function that can be used to handle special conditions. [Fires before highlighter finishes]
 function Highlighter:SetHandler(Callback : callback)
     assert(type(Callback) == "function", "The provided highlighter handler callback was not a function! (received '"..(type(Callback)).."')");
-    self.__OnPhrasePassed = Callback
+    table.insert(self.PhraseHandlers, Callback);
 end
 
 --- Returns a RichText embedded string based on the Highlighter's current highlighting protocols!
@@ -49,8 +50,9 @@ function Highlighter:Highlight(Content : string) : string
     for i, Word in ipairs(Words) do
         local CanHighlight, GColor : (boolean & Color3)?
 
-        if (self.__OnPhrasePassed) then -- Bypass condition
-            CanHighlight, GColor = self.__OnPhrasePassed(Word);
+        for _, Callback : Function in pairs(self.PhraseHandlers) do
+            CanHighlight, GColor = Callback(Word);
+            if (CanHighlight) then break; end -- A function already returned true! [STOP]
         end
 
         if ((self.OnlyAtStart and i ~= 1) and (not CanHighlight)) then continue; end -- Highlights for this group only work with the FIRST word!
