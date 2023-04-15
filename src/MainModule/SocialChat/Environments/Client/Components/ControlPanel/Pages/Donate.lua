@@ -91,8 +91,11 @@ function DonatePage:Init(Setup : table)
             if (not Button:IsA("TextButton")) then continue; end
     
             local AssetId : number = DonationIds[Button.Name];
+            local Success : boolean, Response : (boolean | string)? = pcall(function()
+                return MarketplaceService:UserOwnsGamePassAsync(Player.UserId, AssetId);
+            end);
             
-            if (MarketplaceService:UserOwnsGamePassAsync(Player.UserId, AssetId)) then
+            if (Success and Response) then
                 Button.Amount.TextColor3 = Color3.fromRGB(10, 58, 22);
                 Button.Role.TextColor3 = Color3.fromRGB(65, 65, 65);
     

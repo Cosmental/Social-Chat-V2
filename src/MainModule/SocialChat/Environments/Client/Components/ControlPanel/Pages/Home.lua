@@ -63,7 +63,11 @@ function HomePage:Init(Setup : table)
         GetFrame.Button.Text = "Owned"
     end
 
-    if (not MarketplaceService:PlayerOwnsAsset(Player, SocialChat_ASSET)) then
+    local Success : boolean, Response : (boolean | string)? = pcall(function()
+        return MarketplaceService:PlayerOwnsAsset(Player, SocialChat_ASSET);
+    end);
+
+    if (not Success or not Response) then
         GetFrame.Button.MouseButton1Click:Connect(function()
             MarketplaceService:PromptPurchase(Player, SocialChat_ASSET);
         end);
