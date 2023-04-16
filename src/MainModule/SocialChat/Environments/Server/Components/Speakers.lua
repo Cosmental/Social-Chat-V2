@@ -124,14 +124,17 @@ function SpeakerMaster.new(Agent : BasePart | Player | string, TagData : table?)
 
     --// Team Color Appliance \\--
     if (Settings.ApplyTeamColors and IsPlayer) then
-        Agent:GetPropertyChangedSignal("Team"):Connect(function()
+        local function ApplyTeamColor()
             if (Agent.Team ~= nil) then -- This Player is now in a team
-                NewSpeaker.__previousNameColor = NewSpeaker.TagData.NameColor
-                NewSpeaker.TagData.NameColor = Agent.Team.TeamColor.Color
+                NewSpeaker.__previousNameColor = NewSpeaker.Metadata.Classic.Username.Color
+                NewSpeaker.Metadata.Classic.Username.Color = Agent.Team.TeamColor.Color
             else -- This player is no longer in a team
-                NewSpeaker.TagData.NameColor = NewSpeaker.__previousNameColor
+                NewSpeaker.Metadata.Classic.Username.Color = NewSpeaker.__previousNameColor
             end
-        end);
+        end
+
+        ApplyTeamColor();
+        Agent:GetPropertyChangedSignal("Team"):Connect(ApplyTeamColor);
     end
 
     Network.EventSpeakerAdded:FireAllClients(Agent, NewSpeaker.Metadata);
