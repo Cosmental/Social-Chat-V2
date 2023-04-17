@@ -51,6 +51,8 @@ local AlertEvents = {
 
     ["TeamChanged"] = { -- Fires whenever a player's team changes
         ["Trigger"] = function(Submit : callback, Player : Player, Team : Team)
+            if (not Team) then return; end
+            
             Submit(
                 {Player},
                 {Team}

@@ -125,11 +125,16 @@ function SpeakerMaster.new(Agent : BasePart | Player | string, TagData : table?)
     --// Team Color Appliance \\--
     if (Settings.ApplyTeamColors and IsPlayer) then
         local function ApplyTeamColor()
+            print(Agent.Team);
+
             if (Agent.Team ~= nil) then -- This Player is now in a team
                 NewSpeaker.__previousNameColor = NewSpeaker.Metadata.Classic.Username.Color
                 NewSpeaker.Metadata.Classic.Username.Color = Agent.Team.TeamColor.Color
-            else -- This player is no longer in a team
+
+                warn("has team:", Agent.Team);
+            elseif (NewSpeaker.__previousNameColor) then -- This player is no longer in a team
                 NewSpeaker.Metadata.Classic.Username.Color = NewSpeaker.__previousNameColor
+                warn("no team:", NewSpeaker.__previousNameColor);
             end
         end
 
