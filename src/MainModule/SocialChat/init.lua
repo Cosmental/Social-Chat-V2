@@ -28,6 +28,10 @@ local wasInitialized : boolean
 
 --// Initializer
 function GetSocialChat()
+    if (not game:IsLoaded()) then
+        game.Loaded:Wait(); -- Wait's for the game to load. Some games are HEAVY, hence being why we need to add this callback
+    end
+
     if (not wasInitialized) then
 
         --// Sub-Imports
