@@ -133,6 +133,8 @@ return function(Configurations : Folder, Extensions : Folder?)
 							(Name == "Shared" and Shared) or
 							Client
 						);
+					elseif ((not Success and Response) and Response:find("403")) then
+						warn("SocialChat Extension '"..(AssetId).."' failed to install because you do not currently own a copy of this extension! Please ensure that your account owns a copy of this asset.\n\t\t\t\t\t\t\t\t\tFor more info visit:\n\t\t\t\t\t\t\t\t\thttps://devforum.roblox.com/t/402718/2\n\n");
 					else
 						warn("Failed to install "..(Name).." extension with Id '"..(AssetId).."'!");
 					end
@@ -159,9 +161,10 @@ return function(Configurations : Folder, Extensions : Folder?)
 	end
 
 	--// Finalization
-	SocialChat.Parent = game.ReplicatedStorage
 	require(SocialChat);
 	IsSystemReady = true
+	
+	SocialChat.Parent = game.ReplicatedStorage
 	
 	--// Player Handling
 	local function HandlePlayer(Player : Player)

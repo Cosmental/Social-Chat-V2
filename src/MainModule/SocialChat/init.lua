@@ -28,10 +28,6 @@ local wasInitialized : boolean
 
 --// Initializer
 function GetSocialChat()
-    if (not game:IsLoaded()) then
-        game.Loaded:Wait(); -- Wait's for the game to load. Some games are HEAVY, hence being why we need to add this callback
-    end
-
     if (not wasInitialized) then
 
         --// Sub-Imports
@@ -120,6 +116,13 @@ function GetSocialChat()
             ChatServer = Server();
         else
 
+            --// Preloading
+            --\\ Prevents any race-conditions
+
+            if (not game:IsLoaded()) then
+                game.Loaded:Wait(); -- Wait's for the game to load. Some games are HEAVY, hence being why we need to add this callback
+            end
+
             --// Temporary Fixes
             --\\ These are un-needed fixes that are automatically applied to the game which can be fixed through a simple setting (most likely)
 
@@ -131,10 +134,6 @@ function GetSocialChat()
             --// Game Setup
 
             game.ReplicatedStorage:WaitForChild("SocialChatEvents"); -- This ensures that our server gets setup before any of our clients do
-
-            if (not game:IsLoaded()) then
-                game.Loaded:Wait(); -- Wait for our game to load on our client
-            end
             
             Client()({
                 ["Library"] = Library,
