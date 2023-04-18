@@ -231,7 +231,12 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
     --// Instance registration
     if (ThisChannel.History) then
         for _, Info in ipairs(ThisChannel.History) do
-            ThisChannel:Message(Info.Message, ThisChannel.Members[Info.Author].Metadata.Classic);
+            if (not Info.Author) then continue; end -- Speaker doesn't exist (IGNORE)
+
+            local Details : table = ThisChannel.Members[Info.Author];
+            local Metadata : table = (Details.Metadata and Details.Metadata.Classic);
+
+            ThisChannel:Message(Info.Message, Metadata);
         end
     end
 
