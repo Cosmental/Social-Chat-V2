@@ -15,7 +15,9 @@ DataService.__index = DataService
 
 --// Services
 local DataStoreService = game:GetService("DataStoreService");
-local DataStore = DataStoreService:GetDataStore("SocialChatData");
+local _, DataStore = pcall(function() -- Doesn't need a Success/Err check since this is purely to add support for non-published TestPlaces
+    return DataStoreService:GetDataStore("SocialChatData");
+end);
 
 --// Constants
 local MAX_CLIENT_YIELD_TIME = 3
