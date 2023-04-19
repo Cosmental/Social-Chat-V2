@@ -268,7 +268,9 @@ function ChannelAPI:Message(Speaker : Speaker, Message : string, Recipient : Pla
                 table.insert(Recipient._cache, {
                     ["Author"] = Author, -- string | Player
                     ["Message"] = Message, -- string
-                    ["AtTime"] = os.clock() -- number
+
+                    ["AtTime"] = os.clock(), -- number
+                    ["Metadata"] = Speaker.Metadata -- table : Speaker => metadata (visual info)
                 });
             end
         else -- Oh no! Filtering failed :(

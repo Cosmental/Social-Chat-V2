@@ -229,22 +229,25 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
     end
 
     --// Instance registration
-    if (ThisChannel.History) then
-        for _, Info in ipairs(ThisChannel.History) do
-            if (not Info.Author) then continue; end -- Speaker doesn't exist (IGNORE)
-
-            local Details : table = ThisChannel.Members[Info.Author];
-            local Metadata : table = (Details.Metadata and Details.Metadata.Classic);
-
-            ThisChannel:Message(Info.Message, Metadata);
-        end
-    end
-
     Registry[Name] = ThisChannel
     TotalChannels += 1
 
+    Container.Parent = InputFrame -- Parenting before History registration to prevent invisible/tiny squiggly text
+
+    if (ThisChannel.History) then
+        warn(ThisChannel.History);
+
+        for _, Info in ipairs(ThisChannel.History) do
+            if (not Info.Author) then continue; end -- Speaker doesn't exist (IGNORE)
+
+            print(Info.Message, Info.Metadata)
+
+            ThisChannel:Message(Info.Message, Info.Metadata and Info.Metadata.Classic);
+        end
+    end
+
     print("Registered SocialChat Channel: "..TotalChannels.." :: [ "..(Name).." ]");
-    Container.Parent = InputFrame
+
     return ThisChannel
 end
 
