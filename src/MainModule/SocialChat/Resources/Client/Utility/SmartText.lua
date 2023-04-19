@@ -144,7 +144,7 @@ function SmartText:GetBestFontSize(AbsoluteSize : Vector2, TextFont : Enum.Font,
     for _ = 1, (MaxFontSize - MinFontSize) do
         API_LABEL.TextSize = BestFontSize
 
-        local TextFitsX = (API_LABEL.TextFits == true);
+        local TextFitsX = (API_LABEL.TextBounds.X <= AbsoluteSize.X);
         local TextFitsY = (API_LABEL.TextBounds.Y <= AbsoluteSize.Y);
 
         if (not TextFitsX or not TextFitsY) then
