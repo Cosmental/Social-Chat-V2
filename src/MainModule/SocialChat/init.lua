@@ -86,12 +86,12 @@ function GetSocialChat()
 
         if (IsServer) then
             AddToConfiguration(game.ServerStorage:WaitForChild("ServerChatSettings"));
-            AddToConfiguration(game.ReplicatedFirst:WaitForChild("ClientChatSettings"), "Client");
+            AddToConfiguration(game.ReplicatedStorage:WaitForChild("ChatSettings"):WaitForChild("Client"), "Client");
         else
-            AddToConfiguration(game.ReplicatedFirst:WaitForChild("ClientChatSettings"));
+            AddToConfiguration(game.ReplicatedStorage:WaitForChild("ChatSettings"):WaitForChild("Client"));
         end
 
-        AddToConfiguration(game.ReplicatedStorage:WaitForChild("SharedChatSettings"));
+        AddToConfiguration(game.ReplicatedStorage.ChatSettings:WaitForChild("Shared"));
 
         --// Initialization
         if (IsServer) then

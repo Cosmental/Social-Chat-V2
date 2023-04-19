@@ -84,17 +84,23 @@ return function(Configurations : Folder, Extensions : Folder?)
 	
 	--// Configurable Instancing
 	local ServerSettings = Configurations.Server
-	local ClientSettings = Configurations.Client
-	local SharedSettings = Configurations.Shared
 
 	ServerSettings.Name = "ServerChatSettings"
 	ServerSettings.Parent = game.ServerStorage
 
-	ClientSettings.Name = "ClientChatSettings"
-	ClientSettings.Parent = game.ReplicatedFirst
+	local ClientSettings = Configurations.Client
+	local SharedSettings = Configurations.Shared
 
-	SharedSettings.Name = "SharedChatSettings"
-	SharedSettings.Parent = game.ReplicatedStorage
+	local GeneralSettings = Instance.new("Folder");
+	GeneralSettings.Name = "ChatSettings"
+
+	ClientSettings.Name = "Client"
+	ClientSettings.Parent = GeneralSettings
+
+	SharedSettings.Name = "Shared"
+	SharedSettings.Parent = GeneralSettings
+
+	GeneralSettings.Parent = game.ReplicatedStorage
 
 	local SocialChat = script.SocialChat
 	
