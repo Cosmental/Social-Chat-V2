@@ -78,22 +78,18 @@ function ChannelMaster:Initialize(Setup : table)
     FunctUI.new("AdjustingCanvas", ChannelFrame, nil, "X");
 
     --// Gradient Control
-    local LastTick = os.clock(); -- We need to use operating UNIX timestamps to rate-limit our gradient stepper!
-    
     RunService.Heartbeat:Connect(function()
         if (not next(GradientLabels)) then return; end
-        if ((os.clock() - LastTick) <= 1 / 60) then return; end -- 60 FPS Limit
-
-        LastTick = os.clock();
 
         for _, GradientGroup in pairs(GradientLabels) do
             local FrameBuffer = (os.clock() - GradientGroup.LastTick);
-            if (FrameBuffer < GradientGroup.Style.Duration / GradientGroup.Style.Keypoints) then continue; end
+            if (FrameBuffer < (GradientGroup.Style.Duration / GradientGroup.Style.Keypoints)) then continue; end
 
             GradientGroup.LastTick = os.clock();
             GradientGroup.Index += 1
 
             for Index, Object in pairs(GradientGroup.Objects) do
+                if (not Object:IsA("TextLabel") and not Object:IsA("TextButton")) then continue; end
                 Object.TextColor3 = GradientGroup.Style.Color[((Index + GradientGroup.Index) % GradientGroup.Style.Keypoints) + 1];
 
                 local StrokeDifference = math.abs(Object.TextStrokeTransparency - Object.TextTransparency);
@@ -235,13 +231,8 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
     Container.Parent = InputFrame -- Parenting before History registration to prevent invisible/tiny squiggly text
 
     if (ThisChannel.History) then
-        warn(ThisChannel.History);
-
         for _, Info in ipairs(ThisChannel.History) do
             if (not Info.Author) then continue; end -- Speaker doesn't exist (IGNORE)
-
-            print(Info.Message, Info.Metadata)
-
             ThisChannel:Message(Info.Message, Info.Metadata and Info.Metadata.Classic);
         end
     end
@@ -510,6 +501,8 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
     for _, Label in pairs(MainFrame:GetChildren()) do
         if (not Label:IsA("TextLabel") and not Label:IsA("TextButton")) then continue; end -- Just in case...
 
+        local IsGradientLabel : boolean? = IsOfGradient(Content, Label);
+
         local RelativePosition = Label.Position
         local RelativeSize = Label.Size
 
@@ -517,17 +510,19 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
         local BaseStrokeColor = Label.TextStrokeColor3
         local BaseColor = Label.TextColor3
 
-        Settings.OnLabelRendered(Label); -- This should adjust our label visually
+        if (not IsGradientLabel) then
+            Settings.OnLabelRendered(Label); -- This should adjust our label visually
+        end
 
         TweenService:Create(Label, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {
             Position = RelativePosition,
             Size = RelativeSize,
 
-            TextStrokeColor3 = BaseStrokeColor,
-            TextColor3 = BaseColor,
+            TextStrokeColor3 = ((not IsGradientLabel and BaseStrokeColor) or nil),
+            TextColor3 = ((not IsGradientLabel and BaseColor) or nil),
 
-            TextStrokeTransparency = BaseStrokeTransparency,
-            TextTransparency = 0
+            TextStrokeTransparency = ((not IsGradientLabel and BaseStrokeTransparency) or nil),
+            TextTransparency = ((not IsGradientLabel and 0) or nil)
         }):Play();
     end
 
@@ -580,6 +575,18 @@ function Channel:Destroy()
     Registry[self.Name] = nil
     self.Container:Destroy();
     self = nil
+end
+
+--// Functions
+
+--- Returns a boolean value based on whether or not the provided Object is a part of a gradient effect
+function IsOfGradient(Content : table, Object : GuiObject) : boolean?
+    for _, Effect : table in pairs(Content.Gradients) do
+        for _, Item : GuiObject in pairs(Effect.Objects) do
+            if (Item ~= Object) then continue; end
+            return true;
+        end
+    end
 end
 
 ChannelMaster.Registry = Registry
