@@ -76,6 +76,8 @@ return {
 
         Label.TextStrokeTransparency = 1
         Label.TextTransparency = 1
-    end
+    end,
+
+    ["ControlPanelEnabled"] = false, -- Determines if the Control Panel UI will be created when SocialChat initialzes. If you disable this, please credit my resource somewhere within your game!
 
 };

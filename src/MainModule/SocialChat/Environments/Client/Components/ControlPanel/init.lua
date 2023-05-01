@@ -23,13 +23,18 @@ local TopbarButton
 local PanelFrame
 local MainPanel
 
+local IsDisabled : boolean? -- Determines if the ControlPanel is disabled based on Configurations by developers
+
 --// States
-local Pages : table < Page > = {};
-local API : table < table > = {};
+local Pages : table = {};
+local API : table = {};
 
 --// Initialization
 function ControlPanel:Initialize(Setup : table)
     local self = setmetatable(Setup, ControlPanel);
+
+    IsDisabled = (not self.Settings.Channels.ControlPanelEnabled);
+    if (IsDisabled) then return; end
 
     TopbarPlus = self.Library.TopbarPlus
     TopbarButton = TopbarPlus.new();
@@ -116,7 +121,9 @@ end
 
 --- Sets the visibility of the ControlPanel to the provided boolean state
 function ControlPanel:SetEnabled(IsEnabled : boolean?)
+    if (IsDisabled) then return; end -- Control Panel is disabled
     if (self.Enabled == IsEnabled) then return; end -- We're already at this state! Cancel API request.
+    
 	self.Enabled = IsEnabled
 
 	if (IsEnabled) then
