@@ -174,6 +174,22 @@ end
 
 --// Functions
 
+--- Returns a boolean based on whether or not an Object's parent is not currently visible
+function IsAncestorHidden(Object : GuiBase2d)
+	local Tree = Object:GetFullName();
+	local Previous : GuiBase2d?
+
+	for _ = 1, #Tree:split('.') do
+		local Parent = ((Previous and Previous.Parent) or Object.Parent);
+
+		if ((Parent:IsA("GuiBase2d") and not Parent:IsA("ScreenGui")) and not Parent.Visible) then
+			return true;
+		end
+
+		Previous = Parent
+	end
+end
+
 --- Returns a list of hideable instances
 function GetVisibleInstances() : table
 	local Result = {};
@@ -181,7 +197,9 @@ function GetVisibleInstances() : table
 	for _, Object in pairs(ChatFrame:GetDescendants()) do
 		if (not Object:IsA("GuiBase2d")) then continue; end -- Ignores UIListLayouts, Folders, etc.
 		if (not Object.Visible) then continue; end -- Ignore already non-visible Instances
-		
+		if (IsAncestorHidden(Object)) then continue; end -- This object's parent is NOT visible!
+		if (Object:IsDescendantOf(ChatFrame.Input.Channels)) then continue; end -- Too many instances to tween here (ignore)
+
 		if (Object:IsA("ImageButton") or Object:IsA("ImageLabel")) then
 			if (((Object.ImageTransparency >= 1) and (Object.BackgroundTransparency >= 1)) or (Object.Image:gsub("%s", ""):len() == 0)) then continue; end
 

@@ -228,7 +228,7 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
     Registry[Name] = ThisChannel
     TotalChannels += 1
 
-    Container.Parent = InputFrame -- Parenting before History registration to prevent invisible/tiny squiggly text
+    Container.Parent = InputFrame.Channels -- Parenting before History registration to prevent invisible/tiny squiggly text
 
     if (ThisChannel.History) then
         for _, Info in ipairs(ThisChannel.History) do
