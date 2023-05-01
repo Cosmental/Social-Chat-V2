@@ -261,25 +261,31 @@ local function Initialize(Setup : table)
     end);
 
     --// Extension Setup
-    --\\ This is where we setup all of our extensions!
+    --\\ This is where we setup all of our extensions! This is done after SocialChat COMPLETELY sets up to prevent extensions from disable the system through errors
 
-    for _, API : table in pairs(Extensions) do
-        API:Deploy({
-            ["Settings"] = Settings,
-            ["Library"] = Library,
-            ["Trace"] = Setup.Trace,
-            
-            ["Presets"] = script.Presets,
-            ["Remotes"] = Network,
-            ["Src"] = Extensions,
-            ["Components"] = UIComponents,
+    for Name : string, API : table in pairs(Extensions) do
+        local Success, Response = pcall(function()
+            return API:Deploy({
+                ["Settings"] = Settings,
+                ["Library"] = Library,
+                ["Trace"] = Setup.Trace,
+                
+                ["Presets"] = script.Presets,
+                ["Remotes"] = Network,
+                ["Src"] = Extensions,
+                ["Components"] = UIComponents,
+    
+                ["ChatButton"] = ChatToggleButton,
+                ["ChatUI"] = ChatUI,
+                
+                ["Data"] = SocialChatData,
+                ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
+            });
+        end);
 
-            ["ChatButton"] = ChatToggleButton,
-            ["ChatUI"] = ChatUI,
-            
-            ["Data"] = SocialChatData,
-            ["FFLAG_DataFailure"] = DidDataLoadSuccessfully
-        });
+        if (not Success) then
+            warn("Failed to start SocialChat Extension '"..(Name).."'.\n\t\t\t\t\t\t\t\t\tResponse:", Response);
+        end
     end
 
     --// Client Setup
