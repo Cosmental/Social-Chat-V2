@@ -83,30 +83,33 @@ function SpeakerMaster.new(Agent : BasePart | Player | string, TagData : table?)
     local IsInstance = (typeof(Agent) == "Instance");
     local IsPlayer = (IsInstance and Agent:IsA("Player"));
 
+    local Default = Settings.DefaultTagData
+
     local NewSpeaker = setmetatable({
 
         --// METADATA \\--
 
         ["Metadata"] = {
             ["Classic"] = {
-                ["Tag"] = (TagData and TagData.Classic and TagData.Classic.Tag) or nil,
-                ["Content"] = (TagData and TagData.Classic and TagData.Classic.Content) or nil,
+                ["Tag"] = (TagData and TagData.Classic and TagData.Classic.Tag) or Default.Classic.Tag,
+                ["Content"] = (TagData and TagData.Classic and TagData.Classic.Content) or Default.Classic.Content,
 
                 ["Username"] = { -- We only go in depth with our username data because the username color is a required dataset
                     ["Name"] = (
                         (IsPlayer and ((Settings.UseDisplayNames and Agent.DisplayName) or Agent.Name)) -- "Agent" is a Player!
                         or (TagData and TagData.Classic and TagData.Classic.Username and TagData.Classic.Username.Name) -- Agent isn't a player (use tagdata instead)
+                        or (Default.Classic.Username.Name) -- Default Username for non-player appliances
                         or tostring(Agent) -- Agent is not a player AND doesn't have a custom name! (default to it's instance name instead)
                     ),
 
-                    ["Font"] = (TagData and TagData.Classic and TagData.Classic.Username and TagData.Classic.Username.Font) or nil,
+                    ["Font"] = (TagData and TagData.Classic and TagData.Classic.Username and TagData.Classic.Username.Font) or Default.Classic.Username.Font,
                     ["Color"] = (TagData and TagData.Classic and TagData.Classic.Username and TagData.Classic.Username.Color) or GetRandomSpeakerColor(),
                 };
 
                 ["UserId"] = ((IsPlayer and Agent.UserId) or nil), -- UserId is useful for security cases!
             },
 
-            ["Bubble"] = (TagData and TagData.Bubble) or nil
+            ["Bubble"] = (TagData and TagData.Bubble) or Default.Bubble
         };
 
         --// PROGRAMMABLE \\--

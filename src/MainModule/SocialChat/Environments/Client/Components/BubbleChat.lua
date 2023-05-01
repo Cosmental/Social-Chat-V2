@@ -466,9 +466,9 @@ function BubbleController:Chat(Message : string) : table
             if (not Line:IsA("Frame")) then continue; end
 
             for _, Object in pairs(Line:GetChildren()) do
-                if (not Object:IsA("TextLabel") and not Object:IsA("ImageLabel") and not Object:IsA("ImageButton")) then continue; end
-            
-                if (Object:IsA("TextLabel")) then
+                if ((not Object:IsA("TextLabel") and not Object:IsA("TextButton") and not Object:IsA("TextBox")) and (not Object:IsA("ImageButton") and not Object:IsA("ImageLabel"))) then continue; end
+
+                if (Object:IsA("TextLabel") or Object:IsA("TextButton") or Object:IsA("TextBox")) then
                     TweenService:Create(Object, Settings.VisibilityTweenInfo, {
                         TextTransparency = 1,
                         TextStrokeTransparency = 1

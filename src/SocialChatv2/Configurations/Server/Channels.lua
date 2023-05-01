@@ -175,6 +175,35 @@ local SystemChannelSettings = {
         };
     };
 
+    ["DefaultTagData"] = { -- The tagdata that SocialChat will default to
+        ["Classic"] = {
+            ["Tag"] = {
+                -- ["Name"] = "TAG-NAME",
+                -- ["Color"] = Color3.fromRGB(255, 91, 91),
+                ["Font"] = Enum.Font.SourceSans
+            },
+
+            ["Username"] = {
+                -- ["Name"] = "CUSTOM-USERNAME",
+                -- ["Color"] = Color3.fromRGB(36, 33, 49),
+                ["Font"] = Enum.Font.SourceSans
+            },
+
+            ["Content"] = {
+                ["Color"] = Color3.fromRGB(255, 255, 255),
+                ["Font"] = Enum.Font.SourceSans
+            }
+        };
+
+        ["Bubble"] = {
+            ["BubbleTransparency"] = 0,
+            ["BubbleColor"] = Color3.fromRGB(255, 255, 255),
+
+            ["Font"] = Enum.Font.SourceSans,
+            ["TextColor"] = Color3.fromRGB(20, 20, 20);
+        };
+    };
+
     --// BEHAVIOR \\--
 
     ["SystemAlerts"] = { -- A list of system alerts that can be enabled or disabled.
