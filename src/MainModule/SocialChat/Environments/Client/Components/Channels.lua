@@ -228,6 +228,10 @@ function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : tab
     Registry[Name] = ThisChannel
     TotalChannels += 1
 
+    if (not InputFrame:FindFirstChild("Channels")) then
+        error("Outdated SocialChat version. Please update to a more recent version of SocialChat to continue using the resource. This is an important patch.");
+    end
+
     Container.Parent = InputFrame.Channels -- Parenting before History registration to prevent invisible/tiny squiggly text
 
     if (ThisChannel.History) then

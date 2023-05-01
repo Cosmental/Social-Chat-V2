@@ -85,6 +85,10 @@ function SpeakerMaster.new(Agent : BasePart | Player | string, TagData : table?)
 
     local Default = (Settings.DefaultTagData); -- This is a new configuration. Some places won't have it yet so we must handle it accordingly
     
+    if (not Default) then
+        warn("Your version of SocialChat is out-dated! Please update to a more recent version to receive the best from SocialChat v2!");
+    end
+
     local NewSpeaker = setmetatable({
 
         --// METADATA \\--
@@ -98,7 +102,7 @@ function SpeakerMaster.new(Agent : BasePart | Player | string, TagData : table?)
                     ["Name"] = (
                         (IsPlayer and ((Settings.UseDisplayNames and Agent.DisplayName) or Agent.Name)) -- "Agent" is a Player!
                         or (TagData and TagData.Classic and TagData.Classic.Username and TagData.Classic.Username.Name) -- Agent isn't a player (use tagdata instead)
-                        or ((Default and Default.Classic.Username).Name) -- Default Username for non-player appliances
+                        or ((Default and Default.Classic.Username.Name)) -- Default Username for non-player appliances
                         or tostring(Agent) -- Agent is not a player AND doesn't have a custom name! (default to it's instance name instead)
                     ),
 
