@@ -148,7 +148,9 @@ local SystemChannelSettings = {
     --// METADATA \\--
 
     ["ApplyRandomColorAsDefault"] = true, -- Determines if the chat will assign a random color to players' usernames when they join the game.
+
     ["ApplyTeamColors"] = true, -- Determines whether to apply a player's team color to their username in chat messages.
+    ["TeamColorsOverrideRanks"] = false, -- Determines if team colors over-ride rank colors. If true, your rank metadata color will change based on your team
     
     ["ServerErrorColor"] = Color3.fromRGB(255, 80, 80), -- This will be the color used to send server error messages to clients
     ["UsernameColors"] = { -- A list of preset colors that can be randomly assigned to players' usernames. Each value must be in Color3!
