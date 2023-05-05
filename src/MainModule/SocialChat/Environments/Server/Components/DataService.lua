@@ -15,12 +15,17 @@ DataService.__index = DataService
 
 --// Services
 local DataStoreService = game:GetService("DataStoreService");
-local _, DataStore = pcall(function() -- Doesn't need a Success/Err check since this is purely to add support for non-published TestPlaces
-    return DataStoreService:GetDataStore("SocialChatData");
+local _, DataStores = pcall(function() -- Doesn't need a Success/Err check since this is purely to add support for non-published TestPlaces
+    return {
+        UserStore = DataStoreService:GetDataStore("SocialChatData");
+        ServerStore = DataStoreService:GetDataStore("SC-ServerVerifier");
+    };
 end);
 
 --// Constants
-local MAX_CLIENT_YIELD_TIME = 3
+local SERVER_STORAGE_KEY = "SocialChatServer"
+local MAX_CLIENT_YIELD_TIME = 5
+
 local Network
 
 --// Imports
@@ -44,19 +49,113 @@ function DataService:Initialize(Setup : table)
     if (not DataStoresEnabled) then
         warn("DataStores are not currently enabled! This will not allow any data to be stored, and users must configure SocialChat upon joining everytime.\n\t\t\t\t\t\t\t\t\tYou can enable this feature in 'Game Settings -> Security -> Enable Studio Access to API Services'.")
     end
-    
+
+    --// Configuration Changes
+    --\\ Verifies that configurations have not changed. If there IS a change, we can overrule user-data with the new configuration. This is ideal for developer UX
+
+    local Changes : table = {};
+    local Success, Response = pcall(function()
+        return DataStores.ServerStore:GetAsync(SERVER_STORAGE_KEY);
+    end);
+
+    local function Simplify(tbl : table) : table
+        local Result = {};
+
+        for Key, Value in pairs(tbl) do
+            if (type(Value) == "userdata") then continue; end
+            if (type(Key) == "userdata") then continue; end
+            if (type(Value) == "vector") then continue; end
+            if (type(Value) == "function") then continue; end
+
+            if (type(Value) == "table") then
+                Result[Key] = Simplify(Value);
+            else
+                Result[Key] = Value
+            end
+        end
+
+        return Result
+    end
+
+    local ClientSettings : table = Simplify({self.Settings.Client, self.Settings.BubbleChat});
+
+    if (Success) then
+        local Data = Response
+
+        if (Data) then -- Compare data from our last configuration state to our current state
+            local function AlocateChanges(tbl : table, tbl2 : table, path : string?) : boolean
+                if (not tbl2) then return; end
+
+                for Key, Value in pairs(tbl) do
+                    if (type(Value) == "table") then
+                        AlocateChanges(Value, tbl2[Key], (path and path.."/"..Key) or Key);
+                    else
+                        local IsMatch : boolean = (tbl[Key] == tbl2[Key]);
+                        if (IsMatch) then continue; end
+
+                        table.insert(Changes, {
+                            ["Path"] = path,
+                            ["Key"] = Key,
+                            ["Value"] = Value
+                        });
+                    end
+                end
+            end
+
+            AlocateChanges(ClientSettings, Data);
+        end
+
+        local Success, Response = pcall(function()
+            return DataStores.ServerStore:UpdateAsync(SERVER_STORAGE_KEY, function()
+                return ClientSettings
+            end);
+        end);
+
+        if (not Success) then
+            warn("Server Configuration Verification Saving failed due to an internal server issue.\n\t\t\t\t\t\t\t\t\t"..(Response).."\n");
+        end
+    else
+        warn("Server Configuration Verification failed due to an internal server issue.\n\t\t\t\t\t\t\t\t\t"..(Response).."\n");
+    end
+
     --// Data Setup
     local Structure : table = GetDefaultStructure(self.Settings, self.__extensionData);
 
     local function Setup(Player : Player)
         local Success, Response = pcall(function()
-            return DataStore:GetAsync(Player.UserId);
+            return DataStores.UserStore:GetAsync(Player.UserId);
         end);
 
         local Data = Structure
 
         if (Success) then -- NOTE: If Data fails to load, the System will NOT store the user's data. This is to prevent changes in case of Roblox Servers being down and potentially losing data due to corruption
             Data = (Response or Structure);
+            
+            local function Find(Path : string, Key : (string | number)) : any?
+                local Steps = Path:split("/");
+                local Item : table?
+
+                if (#Steps > 1) then
+                    for i = 1, #Steps do
+                        Item = Data.Settings[
+                            (type(tonumber(Steps[i]) == "number") and tonumber(Steps[i])) -- Some keys are numbers.
+                            or Steps[i] -- Others are strings
+                        ];
+                    end
+                else
+                    Item = Data.Settings[Key];
+                end
+
+                return Item
+            end
+
+            for _, ChangeData : table in pairs(Changes) do
+                local Item : table? = Find(tostring(ChangeData.Path), ChangeData.Key);
+
+                Item.Default = ChangeData.Value
+                Item.Value = ChangeData.Value
+            end
+            
             UserData[Player] = Data
         elseif (DataStoresEnabled) then
             warn("SocialChat DataService Failed to preload data for user \""..(Player.Name).."\"! (Server Response: "..(Response)..")");
@@ -74,7 +173,7 @@ function DataService:Initialize(Setup : table)
         if (not self:GetData(Player)) then return; end
 
         local Success, Response = pcall(function()
-            DataStore:UpdateAsync(Player.UserId, function()
+            DataStores.UserStore:UpdateAsync(Player.UserId, function()
                 return UserData[Player];
             end);
         end);
