@@ -6,20 +6,20 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
-  favicon: 'img/favicon.ico',
+  title: 'Social Chat',
+  tagline: 'Roblox\'s #1 Chat System',
+  favicon: 'img/SocialChatLetter.png',
 
   // Set the production url of your site here
-  url: 'https://cosmental.github.io/Social-Chat-V2/',
+  url: 'https://cosmental.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: '/Social-Chat-V2/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  organizationName: 'Cosmental', // Usually your GitHub org/user name.
+  projectName: 'Social Chat V2', // Usually your repo name.
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -42,15 +42,17 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/Cosmental/Social-Chat-V2',
         },
+
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/Cosmental/Social-Chat-V2',
         },
+
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -61,25 +63,37 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      // Defaults
+      colorMode: {
+        defaultMode: 'dark',
+        disableSwitch: false,
+        respectPrefersColorScheme: true,
+      },
+
       // Replace with your project's social card
-      image: 'img/docusaurus-social-card.jpg',
+      image: 'img/SocialChatLogo.png',
       navbar: {
-        title: 'My Site',
-        logo: {
-          alt: 'My Site Logo',
-          src: 'img/logo.svg',
-        },
+        title: 'Social Chat',
+        // logo: {
+        //   alt: 'My Site Logo',
+        //   src: 'img/SocialChatLetter.png',
+        // },
         items: [
           {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Tutorial',
+            label: 'Documentation',
           },
           {to: '/blog', label: 'Blog', position: 'left'},
           {
-            href: 'https://github.com/facebook/docusaurus',
+            href: 'https://github.com/Cosmental/Social-Chat-V2',
             label: 'GitHub',
+            position: 'right',
+          },
+          {
+            href: 'https://www.roblox.com/games/13069293535/SocialChat-Playground',
+            label: 'Roblox',
             position: 'right',
           },
         ],
@@ -91,8 +105,12 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Tutorial',
-                to: '/docs/intro',
+                label: 'SocialChat-v1',
+                to: '/docs/SocialChat-v1',
+              },
+              {
+                label: 'SocialChat-v2',
+                to: '/docs/SocialChat-v2',
               },
             ],
           },
@@ -100,16 +118,16 @@ const config = {
             title: 'Community',
             items: [
               {
-                label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+                label: 'Discord',
+                href: 'https://discord.gg/4BVYecFEzA',
               },
               {
-                label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
+                label: 'Roblox',
+                href: 'https://www.roblox.com/groups/15828562/SocialChat#!/about',
               },
               {
                 label: 'Twitter',
-                href: 'https://twitter.com/docusaurus',
+                href: 'https://twitter.com/CosRBX',
               },
             ],
           },
@@ -122,12 +140,12 @@ const config = {
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/facebook/docusaurus',
+                href: 'https://github.com/Cosmental/Social-Chat-V2',
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} SocialChat. Built with Docusaurus.`,
       },
       prism: {
         theme: lightCodeTheme,
