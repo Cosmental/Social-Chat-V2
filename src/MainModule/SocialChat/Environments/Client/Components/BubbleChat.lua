@@ -484,8 +484,6 @@ function BubbleController:Chat(Message : string) : table
         BiggestXBound = Line.UIListLayout.AbsoluteContentSize.X
     end
 
-    warn(BiggestXBound)
-
     local BubbleSizeX = (
         if (MovementY > 0) then BiggestXBound + Settings.BubblePadding.X -- Bubble is clearly multi-lined. Thus, we can maximize the X-axis
         elseif (MovementX + Settings.BubblePadding.X >= Bounds.X) then MovementX -- Bubble is one line AND fits the container (no changes)
