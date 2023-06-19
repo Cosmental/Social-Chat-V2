@@ -376,18 +376,62 @@ function BubbleController:Chat(Message : string) : table
 
     local CurrentLine = RenderLine();
 
+    local WordSplit = Message:split(" ");
+    local Sub = 0
+
+    local function GetWordAtSub(SubIndex : number) : string
+        if (#WordSplit == 1) then return WordSplit[1]; end
+
+        local AlphaSub = 0
+
+        for _, Word in pairs(WordSplit) do
+            AlphaSub += (Word:gsub("<.->", ""):len() + 1);
+            if (AlphaSub <= SubIndex) then continue; end
+            return Word
+        end
+    end
+
+    local WordMoveX = 0
+    local LastWord
+
     local TextObjects : table = TextRenderer:Generate(
         Message, TextFont,
         function(ContentObject : TextLabel | ImageButton)
-            ContentObject.Parent = CurrentLine -- We need to parent our UI element before-hand in order for calculations to work!
+            local Word = GetWordAtSub(Sub);
+            local WordBounds, MultiLine = SmartText:GetTextSize(
+                Word:gsub("<.->", ""),
+                FontSize,
+                TextFont,
+                Bounds
+            );
 
+            MultiLine = (WordBounds.X >= Bounds.X - Settings.BubblePadding.X); -- Just in case...
+
+            if (Word ~= LastWord) then
+                LastWord = Word
+                WordMoveX += WordBounds.X
+            end
+
+            if (((WordBounds.X + WordMoveX) > (Bounds.X - Settings.BubblePadding.X) and (not MultiLine)) or (MultiLine and Word ~= LastWord)) then
+                local ContentX = CurrentLine.UIListLayout.AbsoluteContentSize.X
+                CurrentLine.Size = UDim2.fromOffset(ContentX, WordBounds.Y);
+                CurrentLine = RenderLine();
+                
+                MovementY += WordBounds.Y
+                WordMoveX = 0
+                MovementX = 0
+            end
+
+            Sub += 1
+            ContentObject.Parent = CurrentLine -- We need to parent our UI element before-hand in order for calculations to work!
+            
             if (not ContentObject:IsA("TextLabel")) then -- Non-Text objects require special handling!
                 ContentObject.Size = UDim2.fromOffset(FontSize, FontSize);
                 MovementX += FontSize
                 return;
             end
 
-            local TextBounds, MultiLine = SmartText:GetTextSize(
+            local TextBounds, _ = SmartText:GetTextSize(
                 ContentObject.Text:gsub("<.->", ""),
                 FontSize,
                 TextFont,
@@ -395,15 +439,6 @@ function BubbleController:Chat(Message : string) : table
             );
 
             ContentObject.Size = UDim2.fromOffset(TextBounds.X, TextBounds.Y);
-
-            if ((TextBounds.X + MovementX > (Bounds.X - Settings.BubblePadding.X)) or (MultiLine)) then
-                CurrentLine.Size = UDim2.new(1, 0, 0, TextBounds.Y);
-                CurrentLine = RenderLine();
-
-                MovementY += TextBounds.Y
-                MovementX = 0
-            end
-            
             ContentObject.Position = UDim2.fromOffset(MovementX, 0);
             ContentObject.TextSize = FontSize
 
@@ -440,8 +475,19 @@ function BubbleController:Chat(Message : string) : table
     end
 
     --// Handling
+    local BiggestXBound = 0
+
+    for _, Line in pairs(Bubble.BackgroundBubble:GetChildren()) do
+        if (not Line:IsA("GuiObject")) then continue; end
+        if (Line.UIListLayout.AbsoluteContentSize.X < BiggestXBound) then continue; end
+
+        BiggestXBound = Line.UIListLayout.AbsoluteContentSize.X
+    end
+
+    warn(BiggestXBound)
+
     local BubbleSizeX = (
-        if (MovementY > 0) then Bounds.X - Settings.BubblePadding.X -- Bubble is clearly multi-lined. Thus, we can maximize the X-axis
+        if (MovementY > 0) then BiggestXBound + Settings.BubblePadding.X -- Bubble is clearly multi-lined. Thus, we can maximize the X-axis
         elseif (MovementX + Settings.BubblePadding.X >= Bounds.X) then MovementX -- Bubble is one line AND fits the container (no changes)
         else MovementX + Settings.BubblePadding.X -- Bubble is small, hence requiring some extra padding (eg: "Hi!");
     );
