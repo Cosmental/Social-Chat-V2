@@ -4,17 +4,23 @@
  */
 
 .heroBanner {
-  padding: 10rem 0;
+  padding: 10rem;
   text-align: center;
   position: relative;
   overflow: hidden;
+
+  /* filter: brightness(40%); */
   color: white;
+
   background-color: #3372b1;
+  background-size: cover;
+  /* background-position: 90%;
+  background-image: url('../img/SOCIALCHAT_GIF_BRANDING.gif'); */
 }
 
 @media screen and (max-width: 996px) {
   .heroBanner {
-    padding: 6rem;
+    padding: 4rem;
   }
 }
 
@@ -22,4 +28,4 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
+};

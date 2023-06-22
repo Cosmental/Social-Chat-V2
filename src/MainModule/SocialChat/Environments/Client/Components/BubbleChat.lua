@@ -68,7 +68,7 @@ function BubbleChat:Initialize(Info : table) : metatable
     BubbleChatContainer = Instance.new("ScreenGui");
     BubbleChatContainer.Name = "BubbleChat"
     BubbleChatContainer.ResetOnSpawn = false -- This MUST be false, otherwise the controller would break on respawn!
-    BubbleChatContainer.Parent = Player.PlayerGui
+    BubbleChatContainer.Parent = self.ChatUI
 
     --// Client Setup
     local function ManageCharacter(Character : Model, Controller : BubbleController)
@@ -150,7 +150,7 @@ function BubbleChat:Initialize(Info : table) : metatable
 
         local Controller = (OverheadControllers[Agent] or BubbleChat.new(Agent, (Metadata and Metadata.Bubble)));
 
-        if (not Controller) then print("no controller") return; end
+        if (not Controller) then return; end
         Controller:Chat(Message);
     end);
 
@@ -616,7 +616,7 @@ function BubbleController:__setThinking(State: boolean?)
     });
 
     TweenService:Create(MainFrame.Bubbles, Settings.VisibilityTweenInfo, {
-        Position = UDim2.fromScale(0.5, (State and 0.83) or .96)
+        Position = UDim2.fromScale(0.5, (State and 0.76) or .96)
     }):Play();
 
     for _, Circle in pairs(Background:GetChildren()) do

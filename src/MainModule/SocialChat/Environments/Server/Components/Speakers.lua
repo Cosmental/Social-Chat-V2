@@ -62,7 +62,7 @@ function SpeakerMaster:Initialize(Setup : table)
     end
 
     CollectionService:GetInstanceAddedSignal("SocialChatClientReady"):Connect(onSocialChatReady);
-    SpeakerMaster.new("SERVER", Settings.ServerTagData);
+    SpeakerMaster.new("SERVER");
 
     return self
 end
@@ -179,6 +179,7 @@ function GetTag(Player : Player)
 	for _, Tag in pairs(ChatTags) do
 		if (Tag.PriorityOrder >= Priority) then continue; end --// Skips this tag if its equal to/over our priority
 		local Requirements = Tag.Requirements
+        if (not Requirements) then continue; end -- This tag is PROBABLY not meant to be auto-given out!
 
 		--// Requirement checking
 		if (not table.find(Requirements.UserIds, Player.UserId)) then

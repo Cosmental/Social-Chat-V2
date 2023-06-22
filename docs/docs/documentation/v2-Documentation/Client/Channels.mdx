@@ -1,0 +1,90 @@
+---
+sidebar_position: 2
+sidebar_label: Channels
+tags:
+  - v2
+  - Channels
+  - API
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Channels (Server)
+The Channels component in Social Chat is responsible for managing chat channels on the server-side. It handles essential functionalities such as message filtering, message storage, network limitations
+to prevent Distributed Denial of Service (DDoS) attacks, and replication of Speaker metadata.
+
+## Filtering
+The Channels component implements a robust filtering mechanism to ensure that messages sent by players comply with Roblox's Terms of Service and community guidelines. This helps maintain a safe and
+appropriate chat environment. Messages that violate the guidelines are automatically filtered and blocked from being displayed to other players.
+
+## Message Storage
+Social Chat's Channels component facilitates the storage and retrieval of chat messages. It manages the persistence of messages, allowing players to view past messages within a channel. The stored
+messages can be accessed for moderation purposes or to provide a history of chat interactions within the game.
+
+## Network Limitations
+To prevent potential DDoS attacks or excessive resource consumption, the Channels component enforces network limitations. This ensures that players cannot flood the chat system with a high volume of
+messages in a short period. The network limitations help maintain server stability and prevent abuse of the chat system.
+
+## Speaker Metadata Replication
+The Channels component handles the replication of Speaker metadata across clients. Speaker metadata includes information about the chat user, such as display name, role, or any other relevant details.
+This allows for consistent display of user information in the chat interface across all connected players.
+
+:::tip
+The Channels component on the Server side is responsible for critical aspects of Social Chat's functionality, including message filtering, storage, network limitations, and metadata replication.
+Understanding how to configure and utilize this component effectively will help ensure a secure and reliable chat system for your game.
+:::
+
+In the following sections, we will explore each aspect of the Channels component in detail, explaining how to configure and customize its behavior to suit your specific requirements.
+
+<br/>
+
+---
+<br/>
+~~
+# Documentation
+
+:::caution
+Some methods are only available for certain environments. You must use the
+API documentation that associates with the type of script you are working
+with.
+
+This is due to Roblox's [**`Client-Server Model`**](https://create.roblox.com/docs/projects/client-server)
+which is required when it comes to game security.
+:::
+
+## Methods
+
+### Channels.new()
+
+Registers a new channel under the executed environment. This method should
+be used on the **Server and Client** in order to work properly. If the
+channel is created on just the client, the server will not be able to see
+or send messages to other users.
+
+#### Parameters:
+| Key | Type | Default | Description |
+| :-: | :-: | :-: | :-: |
+| Name | `string` | nil | The designated Channel name for this instance. |
+
+```lua
+local SocialChat = require(game.ReplicatedStorage:WaitForChild("SocialChat"));
+local Channels = SocialChat.Src.Channels
+
+local Example = Channels.new("MyNewChannel"); -- Creates a channel named
+Example:myMethod(); -- Runs "myMethod" on the 'MyNewChannel' object
+```
+
+### Channels:ApplySyntaxParameter()
+
+---
+
+## Channel
+
+---
+
+### Properties
+
+---
+
+### Functions

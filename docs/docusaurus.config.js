@@ -39,18 +39,10 @@ const config = {
       ({
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/Cosmental/Social-Chat-V2',
         },
 
         blog: {
           showReadingTime: true,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/Cosmental/Social-Chat-V2',
         },
 
         theme: {
@@ -79,13 +71,32 @@ const config = {
         //   src: 'img/SocialChatLetter.png',
         // },
         items: [
+          /*
+              [MAIN PAGES]
+          */
+
+          // {
+          //   type: 'docSidebar',
+          //   sidebarId: 'docsSidebar',
+          //   docId: 'starting/goal',
+          //   position: 'left',
+          //   label: 'Getting Started',
+          // },
+
           {
-            type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
+            type: 'doc',
+            sidebarId: 'startSidebar',
+            docId: '/category/docs',
             position: 'left',
-            label: 'Documentation',
+            label: 'Docs',
           },
+
+          // {to: '/gettingStarted', label: 'Getting Started', position: 'left'},
           {to: '/blog', label: 'Blog', position: 'left'},
+
+          /*
+              [LINKS]
+          */
           {
             href: 'https://github.com/Cosmental/Social-Chat-V2',
             label: 'GitHub',
@@ -98,6 +109,7 @@ const config = {
           },
         ],
       },
+
       footer: {
         style: 'dark',
         links: [
@@ -147,9 +159,12 @@ const config = {
         ],
         copyright: `Copyright © ${new Date().getFullYear()} SocialChat. Built with Docusaurus.`,
       },
+
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
+
+        additionalLanguages: ['lua']
       },
     }),
 };

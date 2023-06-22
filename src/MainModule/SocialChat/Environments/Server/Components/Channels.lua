@@ -57,7 +57,6 @@ function ChannelAPI:Initialize(Setup : table)
     Network = self.Remotes.Channels
 
     --// Setup
-
     ServerErrorMetadata = {
         ["Classic"] = {
             ["Content"] = {

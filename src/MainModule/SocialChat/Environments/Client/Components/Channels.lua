@@ -518,7 +518,7 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
             Settings.OnLabelRendered(Label); -- This should adjust our label visually
         end
 
-        TweenService:Create(Label, TweenInfo.new(0.5, Enum.EasingStyle.Exponential), {
+        TweenService:Create(Label, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
             Position = RelativePosition,
             Size = RelativeSize,
 

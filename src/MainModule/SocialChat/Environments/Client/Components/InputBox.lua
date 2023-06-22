@@ -530,7 +530,7 @@ function InputBox:Initialize(Info : table) : metatable
 
     --// Font Sizing
     local function UpdateFontSize()
-        local FontSize = SmartText:GetBestFontSize(ChatBox.AbsoluteSize, ChatBox.Font, 0, 20);
+        local FontSize = SmartText:GetBestFontSize(ChatBox.AbsoluteSize, ChatBox.Font, 0, (IsMobile and 100) or 20);
         
         if (not IsMobile) then
             DisplayLabel.TextSize = FontSize

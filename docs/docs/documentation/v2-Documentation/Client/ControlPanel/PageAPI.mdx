@@ -1,0 +1,59 @@
+---
+sidebar_position: 3
+sidebar_label: 🎞 Page API
+tags:
+  - v2
+  - Control Panel
+  - Pages
+  - User Interface
+---
+
+# Social Chat v2
+
+Ready to modernize? Here's how you can get started with SocialChat's adhesive API!
+
+### Getting Started
+
+To get started, create a script (Client or Server) and **require** the asset from ``ReplicatedStorage``!
+```lua
+local SocialChat = require(game.ReplicatedStorage:WaitForChild("SocialChat"));
+```
+<br/>
+
+:::tip
+This method of requiring SocialChat works on **both** Client, and Server environments!
+:::
+---
+
+**SocialChat v2** uses the same approach as the original v1 API by using
+a table **Src** (source) reference to use API compontents seperately. This
+helps reduce API clutter as well as keeping everything structured for developers
+to use!
+
+Normally, requiring the resource will return the following:
+```lua
+{
+  ["Extensions"] = {...}, -- These can only be viewed on the client. The server will see an empty array
+  ["Library"] = {...}, -- Library Modules used by your current environment.
+  ["Settings"] = {...}, -- SocialChat configurations for your given environment. The Server can see client configurations
+  ["Src"] = {...} -- The source array that holds all SocialChat components.
+};
+```
+<br/>
+
+We want to focus on the **`Src`** item, as it holds every API component we can access
+provided by SocialChat! Below is an example of a script that references the **`Src`**
+item from SocialChat to access the [**`Channels`**](./Channels) API!
+
+```lua title="Example:"
+local SocialChat = require(game.ReplicatedStorage:WaitForChild("SocialChat"));
+local Channels = SocialChat.Src.Channels -- Returns the "Channels" API module from the 'Src' table
+
+Channels:ThisMethod() -- Now we can freely use API methods from the "Channels" API!
+```
+<br/>
+
+:::caution IMPORTANT:
+Social Chat currently uses [**Object-Oriented**](https://devforum.roblox.com/t/all-about-object-oriented-programming/8585)
+programming with variables and functions in `PascalCase`.
+:::

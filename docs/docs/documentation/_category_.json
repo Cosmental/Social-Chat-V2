@@ -1,0 +1,8 @@
+{
+  "label": "Docs",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Welcome to SocialChat's documentation page! You may pick the version of SocialChat you wish to use, however, some releases may no longer be supported."
+  }
+}
