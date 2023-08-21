@@ -12,6 +12,9 @@
 local ControlPanel = {};
 ControlPanel.__index = ControlPanel
 
+--// Services
+local UserInputService = game:GetService("UserInputService");
+
 --// Imports
 local Navigator = require(script.API.Navigator);
 local TopbarPlus
@@ -44,6 +47,11 @@ function ControlPanel:Initialize(Setup : table)
     PanelFrame = self.ChatUI.ControlPanel
     MainPanel = PanelFrame.MainPanel
     script.PanelReference.Value = PanelFrame
+
+    local IsMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled);
+
+    PanelFrame.DeviceConstraints[(IsMobile and "MobileConstraint") or "ComputerConstraint"].Parent = PanelFrame
+    PanelFrame.DeviceConstraints:Destroy();
     
     --// TopbarPlus Setup
     TopbarButton:setImage("rbxassetid://12290420075")
