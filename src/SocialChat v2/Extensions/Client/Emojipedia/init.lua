@@ -155,8 +155,8 @@ function Emojipedia:Deploy(SocialChat : metatable)
     Settings = (ExtensionData.Settings.Value or ExtensionData.Settings.Default);
 
     --// UI Setup
-    InputBox.Size = UDim2.fromScale(0.781, 0.85);
-    InputBox.Position = UDim2.fromScale(0.81, 0.5);
+    InputBox.Size = UDim2.fromScale(0.74, 0.85);
+    InputBox.Position = UDim2.fromScale(0.76, 0.5);
 
     EmojiMatch.Parent = InputFrame
     EmotePanel.Parent = InputFrame
