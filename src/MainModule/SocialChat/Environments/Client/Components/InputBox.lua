@@ -37,7 +37,7 @@ local CursorFrame = Instance.new("Frame");
 local SelectionBox = Instance.new("Frame");
 local PlaceholderLabel : Instance?
 
-local IsMobile = true-- (UserInputService.TouchEnabled and not UserInputService.MouseEnabled);
+local IsMobile = (UserInputService.TouchEnabled and not UserInputService.MouseEnabled);
 local Player = game.Players.LocalPlayer
 
 local SyntaxFormatting = "<font color=\"rgb(190,190,190)\">%s</font>"
