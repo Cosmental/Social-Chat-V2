@@ -347,7 +347,7 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
     });
 
     for Keyword : string, Handler : Function in pairs(RenderHandlers) do
-        ContentRenderer:Replace(Keyword, Handler);
+        ContentRenderer:Replace(Keyword, Handler, Metadata and Metadata.UserId);
     end
     
     local Content = {

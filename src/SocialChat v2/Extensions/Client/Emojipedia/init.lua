@@ -51,6 +51,7 @@ local ConfigurationMeta : table = { -- Visual Metadata for our configurations me
 };
 
 --// Services
+local MarketplaceService = game:GetService("MarketplaceService");
 local UserInputService = game:GetService("UserInputService");
 local TweenService = game:GetService("TweenService");
 local TextService = game:GetService("TextService");
@@ -279,20 +280,22 @@ function Emojipedia:Deploy(SocialChat : metatable)
     --// Category Setup
     for _, Category in pairs(Categories:GetDescendants()) do
         if (not Category:IsA("Folder") or not Category:FindFirstChildOfClass("ModuleScript")) then continue; end
-        if (not Category:FindFirstChild("Meta") or not Category:FindFirstChild("IconData")) then
-            Trace:Error(Category.Name.." is missing data! Each category must contain a 'Meta' ModuleScript and a 'IconData' ModuleScript.");
+        if (not Category:FindFirstChild("Meta") or not Category:FindFirstChild("Emojis")) then
+            Trace:Error(Category.Name.." is missing data! Each category must contain a 'Meta' ModuleScript and a 'Emojis' ModuleScript.");
             continue;
         end
 
-        local Icon = require(Category.IconData);
         local Meta = require(Category.Meta);
+        local Emotes = require(Category.Emojis);
 
         Emojis[Category.Name] = {
-            ["Icon"] = Icon,
-            ["Meta"] = Meta
+            ["Icon"] = Meta.Icon,
+            ["Whitelist"] = Meta.Requirements,
+
+            ["Meta"] = Emotes
         };
 
-        self:CreateSection(Icon, Meta);
+        self:CreateSection(Meta.Icon, Emotes, Meta.Requirements);
     end
 
     self.Components.InputBox.Highlighter:SetHandler(function(Phrase : string)
@@ -515,13 +518,13 @@ end
 --// Methods
 
 --- Creates a new Emojipedia section that can hold emojis
-function Emojipedia:CreateSection(IconData : table, Emotes : table) : Frame & ImageButton
+function Emojipedia:CreateSection(IconData : table, Emotes : table, WhitelistData : table?) : (Frame & ImageButton)?
     Trace:Assert(type(IconData) == "table", "Parameter type mismatch. Expected 'IconData' to be of type 'table'. (got "..(type(IconData))..")");
     Trace:Assert(type(Emotes) == "table", "Parameter type mismatch. Expected 'Emotes' to be of type 'table'. (got "..(type(IconData))..")");
     Trace:Assert(IconData.Name, "The provided 'IconData' does not supply a 'Name'!");
     Trace:Assert(IconData.ImageId, "The provided 'IconData' does not supply an 'ImageId'!");
 
-    --// Emoji Setup
+    --// Section Setup
     local Section = Presets.Section:Clone();
 
     Section.Icon.ImageRectOffset = (IconData.ImageRectOffset or Vector2.new(0, 0));
@@ -531,6 +534,46 @@ function Emojipedia:CreateSection(IconData : table, Emotes : table) : Frame & Im
     Section.Name = IconData.Name.."_Section"
     Section.Category.Text = IconData.Name
 
+    --// Whitelisting
+    local UserHasAccess : boolean = true
+
+    if (WhitelistData and WhitelistData.RequiresWhitelist) then -- Whitelist enabled
+        UserHasAccess = HasAccessToEmoji(Player.UserId, WhitelistData);
+        
+        if (not UserHasAccess) then
+            if (WhitelistData.GamepassId > 0) then
+                Section.Locked.MouseButton1Click:Connect(function()
+                    MarketplaceService:PromptGamePassPurchase(Player, WhitelistData.GamepassId);
+                end);
+
+                MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(Client : Player, PassId : number, WasPurchased : boolean?)
+                    if (not WasPurchased) then return; end
+                    if (not Client == Player) then return; end
+                    if (not PassId == WhitelistData.GamepassId) then return; end
+
+                    -- Thank you for your purchase client message?
+                    Section.Locked.Visible = false
+                    UserHasAccess = true
+                end);
+            elseif (WhitelistData.GamepassId <= 0 and WhitelistData.GroupId <= 0) then -- Locked, but only accessible to whitelisted users
+                Section:Destroy();
+                return;
+            end
+
+            --// Text Updates
+            if (WhitelistData.GroupId > 0 and WhitelistData.RankRequirement > 0) then
+                Section.Locked.Paywall.Info.Text = "Join Group"
+            end
+
+            if (WhitelistData.GamepassId > 0) then
+                Section.Locked.Paywall.Info.Text = "Unlock Now"
+            end
+        end
+    end
+
+    Section.Locked.Visible = (not UserHasAccess);
+
+    --// Emoji Setup
     for _, Emoji in pairs(Emotes) do
         local Item : ImageButton | TextButton = RenderEmoji(Emoji);
         local Emote : string = Emoji.Aliases[1]; -- Each emoji should have at least ONE alias
@@ -541,6 +584,7 @@ function Emojipedia:CreateSection(IconData : table, Emotes : table) : Frame & Im
         end
 
         Item.MouseButton1Click:Connect(function()
+            if (not UserHasAccess) then return; end
             if (not InputBox:IsFocused()) then
                 InputBox:CaptureFocus();
             end
@@ -550,14 +594,18 @@ function Emojipedia:CreateSection(IconData : table, Emotes : table) : Frame & Im
         end);
 
         for _, Alias : string in pairs(Emoji.Aliases) do -- All aliases must be formattable!
-            Channels:HandleRender(":"..Alias..":", function()
+            Channels:HandleRender(":"..Alias..":", function(UserId : number)
+                if (not HasAccessToEmoji(UserId, WhitelistData)) then return; end -- User cant use this emoji (display text)
+
                 local Object = RenderEmoji(Emoji);
     
                 Object:SetAttribute("_smImg", true);
                 return Object
             end);
     
-            BubbleChat:HandleRender(":"..Alias..":", function()
+            BubbleChat:HandleRender(":"..Alias..":", function(Agent : BasePart | Player)
+                if (Agent:IsA("Player") and not HasAccessToEmoji(Agent.UserId, WhitelistData)) then return; end -- User cant use this emoji (display text)
+
                 local Object = RenderEmoji(Emoji, true);
     
                 Object:SetAttribute("_smImg", true);
@@ -673,6 +721,31 @@ function Emojipedia:__handleChange(Query : string, Value : any?)
 end
 
 --// Functions
+
+--- Checks if a user has permission to render an emoji
+function HasAccessToEmoji(User : Player, WhitelistData : table) : boolean?
+    local UserHasAccess = false
+
+    if (WhitelistData and WhitelistData.RequiresWhitelist) then -- Whitelist enabled
+        if ((table.find(WhitelistData.Whitelist, Player.UserId)) or (table.find(WhitelistData.Whitelist, Player.Name))) then -- Requires server update to re-check
+            UserHasAccess = true
+        elseif ((WhitelistData.GroupId > 0) and (Player:GetRankInGroup(WhitelistData.GroupId) >= WhitelistData.RankRequirement)) then -- Requires rejoin to re-check
+            UserHasAccess = true
+        elseif (WhitelistData.GamepassId > 0) then -- Gamepass Whitelist
+            local Success, PassOwned = pcall(function()
+                return MarketplaceService:UserOwnsGamePassAsync(Player.UserId, WhitelistData.GamepassId);
+            end);
+
+            if (Success and PassOwned) then
+                UserHasAccess = true
+            end
+        end
+    else
+        UserHasAccess = true
+    end
+
+    return UserHasAccess
+end
 
 --- Creates a Button for the emojipedia side panel
 function CreateButton(Name : string, ImageId : string, ImageRectSize : Vector2?, ImageRectOffset : Vector2?) : ImageButton

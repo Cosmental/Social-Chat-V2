@@ -60,11 +60,18 @@ function StringObject:Define(Key : string, Callback : callback)
     self._hyperFunctions[Key] = Callback
 end
 
-function StringObject:Replace(KeyWord : string, Replacement : callback | string)
+function StringObject:Replace(KeyWord : string, Replacement : callback | string, ... : any?)
     assert(type(KeyWord) == "string", "A string type was not passed for the \"key\" parameter. Received \""..(type(KeyWord)).."\"");
     assert(not self._replacements[KeyWord], "The provided KeyWord \""..(KeyWord).."\" is already in use!");
 
-    self._replacements[KeyWord] = Replacement
+    if (type(Replacement) == "function") then
+        self._replacements[KeyWord] = {
+            ["Callback"] = Replacement,
+            ["Arguments"] = (table.pack(...) or {});
+        };
+    else
+        self._replacements[KeyWord] = Replacement
+    end
 end
 
 --- Creates a new set of TextLabels using previously assigned property metadata. [ THIS WILL NOT FORMAT YOUR LABELS! You must use the SmartText module for further functuality! ]
@@ -100,14 +107,15 @@ function StringObject:Generate(Text : string, TextFont : Enum.Font, Callback : c
         --// Replacements
         --\\ Here we can look for phrase replacements (if any)
 
-        local PhraseReplacement : string | callback = (Character ~= " " and self._replacements[Word]);
+        local PhraseReplacement : string | table = (Character ~= " " and self._replacements[Word]);
 
-        if (type(PhraseReplacement) == "function") then
+        if (type(PhraseReplacement) == "table") then
             if (Starts ~= StartIndex) then continue; end -- Ignore any non-starting subindexes from the provided word
 
-            local ReplacementObject = PhraseReplacement(); -- This function MUST return an instance!
+            local ReplacementObject = PhraseReplacement.Callback(table.unpack(PhraseReplacement.Arguments)); -- This function MUST return an instance!
+            if (not ReplacementObject) then continue; end -- Nothing returned? Thats ok! (Cancel)
 
-            if ((not ReplacementObject) or (typeof(ReplacementObject) ~= "Instance") or (not ReplacementObject:IsA("GuiObject"))) then
+            if ((typeof(ReplacementObject) ~= "Instance") or (not ReplacementObject:IsA("GuiObject"))) then
                 error("RichString replacement error. The replacement for \""..(Word).."\" did not return a GuiObject Instance!");
             end
 
