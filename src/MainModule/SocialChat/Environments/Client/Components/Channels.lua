@@ -163,7 +163,7 @@ end
 --- Creates a new channel using the provided parameters
 function ChannelMaster:Create(Name : string, Members : table?, ChatHistory : table?, IsPrivate : boolean?) : Channel
     local Container = self.Presets.MessageContainer:Clone();
-    Container.Name = "CHANNE_"..Name.."_CONTAINER"
+    Container.Name = "CHANNEL_"..Name.."_CONTAINER"
     Container.Visible = false
 
     local ThisChannel = setmetatable({
