@@ -94,8 +94,11 @@ function GetSocialChat()
             AddToConfiguration(game.ReplicatedStorage:WaitForChild("ChatSettings"):WaitForChild("Client"));
 
             if (Library.TopbarPlus) then
+                local VoiceChatConfiguration : BoolValue? = game.ReplicatedStorage.ChatSettings.Client:WaitForChild("IsVoiceChatEnabled", 3);
+                local VoiceChatEnabled = ((VoiceChatConfiguration and VoiceChatConfiguration.Value) or true); -- true by default
+
                 Library.TopbarPlus.voiceChatEnabled = (
-                    (game.ReplicatedStorage.ChatSettings.Client.IsVoiceChatEnabled.Value) -- Please configure this in your own game! Developers cant check this automatically with scripts (yet)
+                    (VoiceChatEnabled) -- Please configure this in your own game! Developers cant check this automatically with scripts (yet)
                 );
             end
         end
