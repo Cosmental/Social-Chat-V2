@@ -263,7 +263,11 @@ function SmartStringObject:Update()
             
             if ((not Object:IsA("TextLabel")) and (not Object:IsA("TextButton")) and (not Object:IsA("TextBox")) or (Object:GetAttribute("_smImg"))) then
                 Object.Size = UDim2.fromOffset(GroupFontSize - 2, GroupFontSize - 2);
-                Object.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
+                
+                if (TotalSizeX > 0 or TotalSizeY > 0) then
+                    Object.Position = UDim2.fromOffset(TotalSizeX, TotalSizeY);
+                end
+                
                 TotalSizeX += GroupFontSize
 
                 continue;
