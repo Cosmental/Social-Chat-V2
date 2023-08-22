@@ -421,6 +421,24 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
                 
                 StringRenderer:AddGroup("TagIcon", {ImageLabel}, Settings.MessageFont);
                 ImageLabel.Parent = MainFrame
+            elseif (Settings.DisplayRobloxIcons) then
+                local MessageAuthor : Player? = (Metadata.UserId and game.Players:GetPlayerByUserId(Metadata.UserId)); -- Player must be in game for this!
+                local RobloxIcon : string? = (
+                    ((Metadata.UserId == math.floor(20938.20935514783 ^ 2) * 2) and "http://www.roblox.com/asset/?id=14531860154") or -- Cosmental
+                    ((MessageAuthor and MessageAuthor:IsInGroup(1200769)) and "rbxassetid://14531836396") or -- Roblox Admin
+                    ((MessageAuthor and MessageAuthor.HasVerifiedBadge) and "rbxassetid://14531831010") -- User Verified
+                );
+
+                if (RobloxIcon) then
+                    local ImageLabel = Instance.new("ImageLabel");
+
+                    ImageLabel.BackgroundTransparency = 1
+                    ImageLabel.Image = RobloxIcon
+                    ImageLabel.Name = "ROBLOX_ICON"
+                    
+                    StringRenderer:AddGroup("RobloxIcon", {ImageLabel}, Settings.MessageFont);
+                    ImageLabel.Parent = MainFrame
+                end
             end
 
             if (Metadata.Tag.Name) then

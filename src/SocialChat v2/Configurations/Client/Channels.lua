@@ -60,6 +60,7 @@ return {
 
     ["MaxFontSize"] = 18, -- The default desired font size for chat messages.
     ["MessageFont"] = Enum.Font.SourceSans, -- The desired default font for our messages
+    ["DisplayRobloxIcons"] = true, -- Shows the Verified Badge, Roblox Admin Badge, and Developer Badge for eligable users in chat
 
     --// MISC \\--
 
