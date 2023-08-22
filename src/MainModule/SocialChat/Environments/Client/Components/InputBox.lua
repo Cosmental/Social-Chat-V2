@@ -529,15 +529,26 @@ function InputBox:Initialize(Info : table) : metatable
     end);
 
     --// Font Sizing
+    local FontSizeConstraint : UITextSizeConstraint?
+
+    if (IsMobile) then
+        FontSizeConstraint = Instance.new("UITextSizeConstraint");
+
+        ChatBox.TextWrapped = true
+        ChatBox.TextScaled = true
+    end
+
     local function UpdateFontSize()
         local FontSize = SmartText:GetBestFontSize(ChatBox.AbsoluteSize, ChatBox.Font, 0, (IsMobile and 100) or 20);
         
         if (not IsMobile) then
             DisplayLabel.TextSize = FontSize
             PlaceholderLabel.TextSize = FontSize
+            ChatBox.TextSize = FontSize
+        else
+            FontSizeConstraint.MaxTextSize = FontSize
+            FontSizeConstraint.MinTextSize = 0
         end
-
-        ChatBox.TextSize = FontSize
     end
 
     UpdateFontSize();

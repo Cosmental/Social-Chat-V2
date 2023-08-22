@@ -316,7 +316,7 @@ function BubbleChat:Configure(Configuration : string, Value : any?)
 end
 
 --- Adds a new string replacement to BubbleChat StringObject's
-function BubbleChat:HandleRender(Keyword : string, Handler : Function)
+function BubbleChat:HandleRender(Keyword : string, Handler : Function, Agent : any?)
     Trace:Assert(type(Keyword) == "string", "A string type was not passed for the \"Keyword\" parameter. (got "..(type(Keyword))..")");
     Trace:Assert(type(Handler) == "function", "The provided 'Handler' callback was not a function! (got "..(type(Handler))..")");
     Trace:Assert(not RenderHandlers[Keyword], "The provided 'Keyword' parameter \""..(Keyword).."\" is already in use!");
@@ -352,7 +352,7 @@ function BubbleController:Chat(Message : string) : table
     });
 
     for Keyword : string, Replacement : callback in pairs(RenderHandlers) do
-        TextRenderer:Replace(Keyword, Replacement);
+        TextRenderer:Replace(Keyword, Replacement, self.Agent);
     end
 
     local Content = {

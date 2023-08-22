@@ -12,6 +12,9 @@
 local ControlPanel = {};
 ControlPanel.__index = ControlPanel
 
+--// Services
+local UserInputService = game:GetService("UserInputService");
+
 --// Imports
 local Navigator = require(script.API.Navigator);
 local TopbarPlus
@@ -23,6 +26,7 @@ local TopbarButton
 local PanelFrame
 local MainPanel
 
+local IsMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled);
 local IsDisabled : boolean? -- Determines if the ControlPanel is disabled based on Configurations by developers
 
 --// States
@@ -44,6 +48,14 @@ function ControlPanel:Initialize(Setup : table)
     PanelFrame = self.ChatUI.ControlPanel
     MainPanel = PanelFrame.MainPanel
     script.PanelReference.Value = PanelFrame
+
+    if (PanelFrame:FindFirstChild("DeviceConstraints")) then
+        PanelFrame.DeviceConstraints[(IsMobile and "MobileConstraint") or "ComputerConstraint"].Parent = PanelFrame
+        PanelFrame.DeviceConstraints:Destroy();
+    else
+        warn("This version of SocialChat may be outdated! DeviceConstraints not found within ControlPanel! This may lead to issues with Mobile devices that have been patched in a more recent version of SocialChat!");
+    end
+
     
     --// TopbarPlus Setup
     TopbarButton:setImage("rbxassetid://12290420075")
@@ -53,10 +65,20 @@ function ControlPanel:Initialize(Setup : table)
 
     TopbarButton:bindEvent("selected", function()
         self:SetEnabled(true);
+        
+        if (IsMobile) then
+            self.ChatButton:deselect();
+            self.ChatButton:lock();
+        end
     end);
 
     TopbarButton:bindEvent("deselected", function()
         self:SetEnabled(false);
+        
+        if (IsMobile) then
+            self.ChatButton:select();
+            self.ChatButton:unlock();
+        end
     end);
 
     --// SidePanel Setup

@@ -20,6 +20,9 @@ local IsServer = game:GetService("RunService"):IsServer();
 local VERSION = require(script:WaitForChild("VERSION"));
 local Trace = require(script:WaitForChild("Trace"));
 
+--// Constants
+local Player = game.Players.LocalPlayer
+
 --// States
 local ChatServer : table?
 local ChatClient : table?
@@ -89,6 +92,15 @@ function GetSocialChat()
             AddToConfiguration(game.ReplicatedStorage:WaitForChild("ChatSettings"):WaitForChild("Client"), "Client");
         else
             AddToConfiguration(game.ReplicatedStorage:WaitForChild("ChatSettings"):WaitForChild("Client"));
+
+            if (Library.TopbarPlus) then
+                local VoiceChatConfiguration : BoolValue? = game.ReplicatedStorage.ChatSettings.Client:WaitForChild("IsVoiceChatEnabled", 3);
+                local VoiceChatEnabled = ((VoiceChatConfiguration and VoiceChatConfiguration.Value) or true); -- true by default
+
+                Library.TopbarPlus.voiceChatEnabled = (
+                    (VoiceChatEnabled) -- Please configure this in your own game! Developers cant check this automatically with scripts (yet)
+                );
+            end
         end
 
         AddToConfiguration(game.ReplicatedStorage.ChatSettings:WaitForChild("Shared"));
