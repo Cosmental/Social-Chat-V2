@@ -103,7 +103,6 @@ return function(Configurations : Folder, Extensions : Folder?)
 	GeneralSettings.Parent = game.ReplicatedStorage
 
 	local SocialChat = script.SocialChat
-	
 	Configurations.Chat.Parent = SocialChat.Environments.Client
 	Configurations:Destroy();
 	

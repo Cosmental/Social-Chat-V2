@@ -26,6 +26,7 @@ local TopbarButton
 local PanelFrame
 local MainPanel
 
+local IsMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled);
 local IsDisabled : boolean? -- Determines if the ControlPanel is disabled based on Configurations by developers
 
 --// States
@@ -48,8 +49,6 @@ function ControlPanel:Initialize(Setup : table)
     MainPanel = PanelFrame.MainPanel
     script.PanelReference.Value = PanelFrame
 
-    local IsMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled);
-
     PanelFrame.DeviceConstraints[(IsMobile and "MobileConstraint") or "ComputerConstraint"].Parent = PanelFrame
     PanelFrame.DeviceConstraints:Destroy();
     
@@ -61,10 +60,20 @@ function ControlPanel:Initialize(Setup : table)
 
     TopbarButton:bindEvent("selected", function()
         self:SetEnabled(true);
+        
+        if (IsMobile) then
+            self.ChatButton:deselect();
+            self.ChatButton:lock();
+        end
     end);
 
     TopbarButton:bindEvent("deselected", function()
         self:SetEnabled(false);
+        
+        if (IsMobile) then
+            self.ChatButton:select();
+            self.ChatButton:unlock();
+        end
     end);
 
     --// SidePanel Setup

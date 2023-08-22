@@ -155,8 +155,16 @@ function Emojipedia:Deploy(SocialChat : metatable)
     Settings = (ExtensionData.Settings.Value or ExtensionData.Settings.Default);
 
     --// UI Setup
-    InputBox.Size = UDim2.fromScale(0.74, 0.85);
-    InputBox.Position = UDim2.fromScale(0.76, 0.5);
+    if (not UserInputService.TouchEnabled and UserInputService.KeyboardEnabled) then -- PC Adjustments
+        InputBox.Size = UDim2.fromScale(0.78, 0.85);
+        InputBox.Position = UDim2.fromScale(0.8, 0.5);
+
+        EmoteBtn.Size = UDim2.fromScale(.11, .545);
+        EmoteBtn.Position = UDim2.fromScale(.89, .5);
+    else -- Mobile Adjustments
+        InputBox.Size = UDim2.fromScale(0.704, 0.85);
+        InputBox.Position = UDim2.fromScale(0.724, 0.5);
+    end
 
     EmojiMatch.Parent = InputFrame
     EmotePanel.Parent = InputFrame
@@ -750,11 +758,11 @@ function AddBubble(Element : GuiObject, Content : string) : GuiObject
         if (Input.UserInputType ~= Enum.UserInputType.MouseMovement) then return; end
         if (Settings.DisplayEmojiNameOnHover and Settings.DisplayEmojiNameOnHover.Value == false) then return; end
 
-        TweenService:Create(Bubble, TweenInfo.new(0.2), {
+        TweenService:Create(Bubble, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut), {
             Size = UDim2.fromOffset(math.max(32, ContentSize.X), 32);
         }):Play();
 
-        TweenService:Create(Bubble.Carrot, TweenInfo.new(0.1), {
+        TweenService:Create(Bubble.Carrot, TweenInfo.new(0.1, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut), {
             Size = UDim2.fromOffset(24, 24);
         }):Play();
     end);
@@ -762,11 +770,11 @@ function AddBubble(Element : GuiObject, Content : string) : GuiObject
     Element.InputEnded:Connect(function(Input : InputObject)
         if (Input.UserInputType ~= Enum.UserInputType.MouseMovement) then return; end
 
-        TweenService:Create(Bubble, TweenInfo.new(0.1), {
+        TweenService:Create(Bubble, TweenInfo.new(0.1, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut), {
             Size = UDim2.fromOffset(0, 0);
         }):Play();
 
-        TweenService:Create(Bubble.Carrot, TweenInfo.new(0.1), {
+        TweenService:Create(Bubble.Carrot, TweenInfo.new(0.1, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut), {
             Size = UDim2.fromOffset(0, 0);
         }):Play();
     end);
