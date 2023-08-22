@@ -418,6 +418,8 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
                 ImageLabel.BackgroundTransparency = 1
                 ImageLabel.Image = "rbxthumb://type=Asset&id="..(Metadata.Tag.Icon).."&w=420&h=420"
                 ImageLabel.Name = "TAG_ICON"
+                ImageLabel.AnchorPoint = Vector2.new(0, 1);
+                ImageLabel.Position = UDim2.fromScale(0, 1);
                 
                 StringRenderer:AddGroup("TagIcon", {ImageLabel}, Settings.MessageFont);
                 ImageLabel.Parent = MainFrame
@@ -435,6 +437,8 @@ function Channel:Message(Message : string, Metadata : table?, IsPrivateMessage :
                     ImageLabel.BackgroundTransparency = 1
                     ImageLabel.Image = RobloxIcon
                     ImageLabel.Name = "ROBLOX_ICON"
+                    ImageLabel.AnchorPoint = Vector2.new(0, 1);
+                    ImageLabel.Position = UDim2.fromScale(0, 1);
                     
                     StringRenderer:AddGroup("RobloxIcon", {ImageLabel}, Settings.MessageFont);
                     ImageLabel.Parent = MainFrame
