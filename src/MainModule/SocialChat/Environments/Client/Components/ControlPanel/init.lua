@@ -49,8 +49,13 @@ function ControlPanel:Initialize(Setup : table)
     MainPanel = PanelFrame.MainPanel
     script.PanelReference.Value = PanelFrame
 
-    PanelFrame.DeviceConstraints[(IsMobile and "MobileConstraint") or "ComputerConstraint"].Parent = PanelFrame
-    PanelFrame.DeviceConstraints:Destroy();
+    if (PanelFrame:FindFirstChild("DeviceConstraints")) then
+        PanelFrame.DeviceConstraints[(IsMobile and "MobileConstraint") or "ComputerConstraint"].Parent = PanelFrame
+        PanelFrame.DeviceConstraints:Destroy();
+    else
+        warn("This version of SocialChat may be outdated! DeviceConstraints not found within ControlPanel! This may lead to issues with Mobile devices that have been patched in a more recent version of SocialChat!");
+    end
+
     
     --// TopbarPlus Setup
     TopbarButton:setImage("rbxassetid://12290420075")
