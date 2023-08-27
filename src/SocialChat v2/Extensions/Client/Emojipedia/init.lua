@@ -17,7 +17,7 @@ Emojipedia.__meta = {
     CreatorId = 876817222, -- Creator's UserId
     Description = "Welcome to emojipedia! This extension provides additional support for emojis through SocialChat.\n\nPreset Emojis drawn by <font color=\"rgb(0, 85, 255)\"><b>@Keeratisatian</b></font>", -- Extension Description
     IconId = "http://www.roblox.com/asset/?id=13828033478", -- Extension IconId (must be a decal Id such as "rbxassetid://ID-HERE")
-    Version = "1.1" -- Extension version (will be displayed)
+    Version = "1.2" -- Extension version (will be displayed)
 };
 
 local ConfigurationMeta : table = { -- Visual Metadata for our configurations menu
@@ -140,7 +140,7 @@ function Emojipedia:Deploy(SocialChat : metatable)
     EmotePanel = script.Content.EmojiSearch
     EmojiMatch = script.Content.EmojiMatch
     SidePanel = EmotePanel.Panel.Shortcuts
-    EmoteBtn = script.Content.Emote
+    EmoteBtn = script.Content.Emojipedia.Button
 
     EmojiBubbleCache = Instance.new("ScreenGui");
     EmojiBubbleCache.DisplayOrder = 1
@@ -156,20 +156,19 @@ function Emojipedia:Deploy(SocialChat : metatable)
     Settings = (ExtensionData.Settings.Value or ExtensionData.Settings.Default);
 
     --// UI Setup
-    if (not UserInputService.TouchEnabled and UserInputService.KeyboardEnabled) then -- PC Adjustments
-        InputBox.Size = UDim2.fromScale(0.78, 0.85);
-        InputBox.Position = UDim2.fromScale(0.8, 0.5);
+    InputBar.Position = UDim2.fromScale(.553, .85);
+    InputBar.Size = UDim2.fromScale(.87, .13);
 
-        EmoteBtn.Size = UDim2.fromScale(.11, .545);
-        EmoteBtn.Position = UDim2.fromScale(.89, .5);
+    if (not UserInputService.TouchEnabled and UserInputService.KeyboardEnabled) then -- PC Adjustments
+        EmotePanel.Position = UDim2.fromScale(.118, 1.02);
     else -- Mobile Adjustments
-        InputBox.Size = UDim2.fromScale(0.704, 0.85);
-        InputBox.Position = UDim2.fromScale(0.724, 0.5);
+        EmotePanel.Position = UDim2.fromScale(0, 1.02);
+        EmotePanel.Position += UDim2.fromOffset(35, 0);
     end
 
     EmojiMatch.Parent = InputFrame
     EmotePanel.Parent = InputFrame
-    EmoteBtn.Parent = InputBar
+    script.Content.Emojipedia.Parent = InputFrame
 
     FunctUI.new('AdjustingCanvas', EmotePanel.Search);
     FunctUI.new('AdjustingCanvas', EmotePanel.Categories);
