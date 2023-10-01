@@ -259,7 +259,7 @@ function VerifyMetadata(Agent : string | Player, Metadata : table) : boolean?
             
             local ProductInfo = MarketplaceService:GetProductInfo(Icon);
 
-            if (ProductInfo.AssetTypeId ~= Enum.AssetType.Decal.Value) then
+            if (ProductInfo.AssetTypeId ~= Enum.AssetType.Decal.Value and ProductInfo.AssetTypeId ~= Enum.AssetType.Image.Value) then
                 Trace:Error("The provided Icon AssetId ("..(Icon)..") was not a valid Decal asset! Are you sure this Asset was uploaded as an image?");
             end
         end
