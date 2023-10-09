@@ -20,6 +20,10 @@ local newIcon = Icon.new()
 ```
 --]]
 
+--- idk LOL
+-- @Cosmental
+local IsMobile = (game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled);
+
 return {
     
     -- Settings which describe how an item behaves or transitions between states
@@ -38,21 +42,21 @@ return {
         -- How items appear normally (i.e. when they're 'deselected')
         deselected = {
             iconBackgroundColor = Color3.fromRGB(0, 0, 0),
-            iconBackgroundTransparency = 0.5,
-            iconCornerRadius = UDim.new(0.25, 0),
+            iconBackgroundTransparency = 0.3,
+            iconCornerRadius = UDim.new(1, 0),
             iconGradientColor = ColorSequence.new(Color3.fromRGB(255, 255, 255)),
             iconGradientRotation = 0,
             iconImage = "",
             iconImageColor =Color3.fromRGB(255, 255, 255),
             iconImageTransparency = 0,
-            iconImageYScale = 0.63,
+            iconImageYScale = 0.55,
             iconImageRatio = 1,
-            iconLabelYScale = 0.45,
+            iconLabelYScale = 0.4,
             iconScale = UDim2.new(1, 0, 1, 0),
             forcedIconSizeX = 32;
             forcedIconSizeY = 32;
-            iconSize = UDim2.new(0, 32, 0, 32),
-            iconOffset = UDim2.new(0, 0, 0, 0),
+            iconSize = UDim2.new(1, 0, 1, 0),
+            iconOffset = (IsMobile and UDim2.new(0, -45, 1, 2)) or UDim2.new(0, -45, 1.18, 0),
             iconText = "",
             iconTextColor = Color3.fromRGB(255, 255, 255),
             iconFont = Enum.Font.GothamSemibold,

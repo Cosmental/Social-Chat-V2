@@ -14,7 +14,7 @@ local topbarContainer = Instance.new("Frame")
 topbarContainer.BackgroundTransparency = 1
 topbarContainer.Name = "TopbarContainer"
 topbarContainer.Position = UDim2.new(0, 0, 0, 0)
-topbarContainer.Size = UDim2.new(1, 0, 0, 36)
+topbarContainer.Size = UDim2.new(1, 0, 0, 45)
 topbarContainer.Visible = true
 topbarContainer.ZIndex = 1
 topbarContainer.Parent = topbarPlusGui
@@ -26,8 +26,15 @@ iconContainer.Name = "IconContainer"
 iconContainer.Position = UDim2.new(0, 104, 0, 4)
 iconContainer.Visible = false
 iconContainer.ZIndex = 1
+iconContainer.AnchorPoint = Vector2.new(0, 1);
 iconContainer.Parent = topbarContainer
 iconContainer.Active = false
+
+--- @Cosmental
+-- UI Edits for consistency across devices
+local iconAspectRatio = Instance.new("UIAspectRatioConstraint");
+iconAspectRatio.AspectRatio = 1
+iconAspectRatio.Parent = iconContainer
 
 local iconButton = Instance.new("TextButton")
 iconButton.Name = "IconButton"
@@ -104,7 +111,7 @@ local noticeFrame = Instance.new("ImageLabel")
 noticeFrame.BackgroundTransparency = 1
 noticeFrame.Name = "NoticeFrame"
 noticeFrame.Position = UDim2.new(0.45, 0, 0, -2)
-noticeFrame.Size = UDim2.new(1, 0, 0.7, 0)
+noticeFrame.Size = UDim2.new(1, 0, 0.55, 0)
 noticeFrame.Visible = true
 noticeFrame.ZIndex = 12--4
 noticeFrame.ImageTransparency = 1
@@ -116,7 +123,7 @@ local noticeLabel = Instance.new("TextLabel")
 noticeLabel.Name = "NoticeLabel"
 noticeLabel.BackgroundTransparency = 1
 noticeLabel.Position = UDim2.new(0.25, 0, 0.15, 0)
-noticeLabel.Size = UDim2.new(0.5, 0, 0.7, 0)
+noticeLabel.Size = UDim2.new(0.5, 0, 0.75, 0)
 noticeLabel.Visible = true
 noticeLabel.ZIndex = 13--5
 noticeLabel.Font = Enum.Font.Arial
@@ -212,7 +219,7 @@ tipFrame.Active = false
 
 local tipCorner = Instance.new("UICorner")
 tipCorner.Name = "TipCorner"
-tipCorner.CornerRadius = UDim.new(0.25,0)
+tipCorner.CornerRadius = UDim.new(1,0)
 tipCorner.Parent = tipFrame
 
 local tipLabel = Instance.new("TextLabel")
