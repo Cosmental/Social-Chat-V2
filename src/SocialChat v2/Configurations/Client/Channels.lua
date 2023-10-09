@@ -1,3 +1,5 @@
+local RunService = game:GetService("RunService");
+
 return {
     
     --// BEHAVIOR \\--
@@ -81,5 +83,6 @@ return {
     end,
 
     ["ControlPanelEnabled"] = true, -- Determines if the Control Panel UI will be created when SocialChat initialzes. If you disable this, please credit my resource somewhere within your game!
+    ["ModernTopbarPlusEnabled"] = RunService:IsStudio() or false, -- Set this to 'true' if you want TopbarPlus to match Roblox's modern UI
 
 };

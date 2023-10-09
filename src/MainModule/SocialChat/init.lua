@@ -93,6 +93,14 @@ function GetSocialChat()
         else
             AddToConfiguration(game.ReplicatedStorage:WaitForChild("ChatSettings"):WaitForChild("Client"));
 
+            --// TopbarPlus Configuration
+            local DoesUseModernTBP : boolean? = Configurations.Channels.ModernTopbarPlusEnabled
+
+            if (not DoesUseModernTBP) then
+                Library.TopbarPlus = Library.LegacyTBP
+                Library.LegacyTBP = nil
+            end
+
             if (Library.TopbarPlus) then
                 local VoiceChatConfiguration : BoolValue? = game.ReplicatedStorage.ChatSettings.Client:WaitForChild("IsVoiceChatEnabled", 3);
                 local VoiceChatEnabled = ((VoiceChatConfiguration and VoiceChatConfiguration.Value) or true); -- true by default

@@ -66,7 +66,7 @@ local alignmentDetails = {}
 alignmentDetails["left"] = {
 	startScale = 0,
 	getOffset = function()
-		local offset = 58 + IconController.leftOffset
+		local offset = 48 + IconController.leftOffset
 		if checkTopbarEnabled() then
 			local chatEnabled = starterGui:GetCoreGuiEnabled("Chat")
 			if chatEnabled then
@@ -108,7 +108,7 @@ alignmentDetails["right"] = {
 		local localHumanoid = localCharacter and localCharacter:FindFirstChild("Humanoid")
 		local isR6 = if localHumanoid and localHumanoid.RigType == Enum.HumanoidRigType.R6 then true else false -- Even though the EmotesMenu doesn't appear for R6 players, it will still register as enabled unless manually disabled
 		if (checkTopbarEnabled() or VRService.VREnabled) and (starterGui:GetCoreGuiEnabled(Enum.CoreGuiType.PlayerList) or starterGui:GetCoreGuiEnabled(Enum.CoreGuiType.Backpack) or (not isR6 and starterGui:GetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu))) then
-			offset += 58
+			offset += 48
 		end
 		return offset
 	end,
