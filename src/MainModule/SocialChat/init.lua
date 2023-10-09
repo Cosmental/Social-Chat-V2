@@ -14,6 +14,7 @@
 
 --// Services
 local CollectionService = game:GetService("CollectionService");
+local ContentProvider = game:GetService("ContentProvider")
 local IsServer = game:GetService("RunService"):IsServer();
 
 --// Imports
@@ -39,27 +40,6 @@ function GetSocialChat()
 
         local Server = ((IsServer) and (require(Environments.Server)));
         local Client = ((not IsServer) and (require(Environments.Client)));
-
-        --// Module Collection
-        local Library = {};
-
-        local function AddToLibrary(Container : Folder) : table
-            for _, Module in pairs(Container:GetDescendants()) do
-                if (not Module:IsA("ModuleScript")) then continue; end
-                if (Module.Parent:IsA("ModuleScript")) then continue; end
-
-                local Success, Response = pcall(function()
-                    return require(Module);
-                end);
-
-                if (Success) then
-                    Library[Module.Name] = Response
-                end
-            end
-        end
-
-        AddToLibrary((IsServer and Resources.Server) or Resources.Client);
-        AddToLibrary(Resources.Shared);
 
         --// Configurations
         local Configurations = {};
@@ -92,15 +72,61 @@ function GetSocialChat()
             AddToConfiguration(game.ReplicatedStorage:WaitForChild("ChatSettings"):WaitForChild("Client"), "Client");
         else
             AddToConfiguration(game.ReplicatedStorage:WaitForChild("ChatSettings"):WaitForChild("Client"));
+        end
 
-            --// TopbarPlus Configuration
-            local DoesUseModernTBP : boolean? = Configurations.Channels.ModernTopbarPlusEnabled
+        AddToConfiguration(game.ReplicatedStorage.ChatSettings:WaitForChild("Shared"));
 
-            if (not DoesUseModernTBP) then
-                Library.TopbarPlus = Library.LegacyTBP
-                Library.LegacyTBP = nil
+        --// Module Collection
+        local Library = {};
+
+        local function AddToLibrary(Container : Folder) : table
+            for _, Module in pairs(Container:GetDescendants()) do
+                if (not Module:IsA("ModuleScript")) then continue; end
+                if (Module.Parent:IsA("ModuleScript")) then continue; end
+
+                --[[
+                    TopbarPlus UI Config Controller
+                        >> Yes this is very inefficient but its the only method I could think of for this scenario
+                ]]--
+
+                local DoesUseModernTBP : boolean? = Configurations.Channels.ModernTopbarPlusEnabled
+
+                if (not DoesUseModernTBP and Module.Name == "ModernTBP") then
+                    Module.Parent.LegacyTBP.Name = "TopbarPlus"
+
+                    if (Library.LegacyTBP) then
+                        Library.TopbarPlus = Library.LegacyTBP
+                        Library.LegacyTBP = nil
+                    end
+
+                    continue;
+                elseif (DoesUseModernTBP and Module.Name == "LegacyTBP") then
+                    Module.Parent.ModernTBP.Name = "TopbarPlus"
+
+                    if (Library.ModernTBP) then
+                        Library.TopbarPlus = Library.ModernTBP
+                        Library.ModernTBP = nil
+                    end
+
+                    continue;
+                end
+
+                --// Requiring Protocol
+                local Success, Response = pcall(function()
+                    return require(Module);
+                end);
+
+                if (Success) then
+                    Library[Module.Name] = Response
+                end
             end
+        end
 
+        AddToLibrary((IsServer and Resources.Server) or Resources.Client);
+        AddToLibrary(Resources.Shared);
+
+        --// TopbarPlus Configuration
+        if (not IsServer) then
             if (Library.TopbarPlus) then
                 local VoiceChatConfiguration : BoolValue? = game.ReplicatedStorage.ChatSettings.Client:WaitForChild("IsVoiceChatEnabled", 3);
                 local VoiceChatEnabled = ((VoiceChatConfiguration and VoiceChatConfiguration.Value) or true); -- true by default
@@ -110,8 +136,6 @@ function GetSocialChat()
                 );
             end
         end
-
-        AddToConfiguration(game.ReplicatedStorage.ChatSettings:WaitForChild("Shared"));
 
         --// Initialization
         if (IsServer) then

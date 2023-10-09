@@ -92,6 +92,8 @@ function DataService:Initialize(Setup : table)
                     else
                         local IsMatch : boolean = (tbl[Key] == tbl2[Key]);
                         if (IsMatch) then continue; end
+                        if (Key == "ControlPanelEnabled") then continue; end
+                        if (Key == "ModernTopbarPlusEnabled") then continue; end
 
                         table.insert(Changes, {
                             ["Path"] = path,
