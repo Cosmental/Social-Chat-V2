@@ -30,10 +30,9 @@ local wasInitialized : boolean
 --// Initializer
 function GetSocialChat()
     if (not IsServer) then
-        local UserInputService = game:GetService("UserInputService");
         local GuiService = game:GetService("GuiService");
-
-        local IsConsole = (GuiService:IsTenFootInterface() and UserInputService.GamepadEnabled);
+        local IsConsole = GuiService:IsTenFootInterface();
+        
         if (IsConsole) then return false; end -- Console users can not use SocialChat
     end
 
