@@ -14,15 +14,12 @@
 
 --// Services
 local CollectionService = game:GetService("CollectionService");
-local ContentProvider = game:GetService("ContentProvider")
+
 local IsServer = game:GetService("RunService"):IsServer();
 
 --// Imports
 local VERSION = require(script:WaitForChild("VERSION"));
 local Trace = require(script:WaitForChild("Trace"));
-
---// Constants
-local Player = game.Players.LocalPlayer
 
 --// States
 local ChatServer : table?
@@ -32,8 +29,15 @@ local wasInitialized : boolean
 
 --// Initializer
 function GetSocialChat()
-    if (not wasInitialized) then
+    if (not IsServer) then
+        local UserInputService = game:GetService("UserInputService");
+        local GuiService = game:GetService("GuiService");
 
+        local IsConsole = (GuiService:IsTenFootInterface() and UserInputService.GamepadEnabled);
+        if (IsConsole) then return false; end -- Console users can not use SocialChat
+    end
+
+    if (not wasInitialized) then
         --// Sub-Imports
         local Environments = script.Environments
         local Resources = script.Resources
